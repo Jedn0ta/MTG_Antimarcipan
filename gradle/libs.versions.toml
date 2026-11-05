@@ -12,7 +12,6 @@ mlkitText = "16.0.1"
 retrofit = "2.11.0"
 okhttp = "4.12.0"
 serialization = "1.7.3"
-retrofitSerialization = "1.0.0"
 room = "2.6.1"
 coil = "2.7.0"
 
@@ -38,7 +37,7 @@ camerax-view = { group = "androidx.camera", name = "camera-view", version.ref = 
 mlkit-text-recognition = { group = "com.google.mlkit", name = "text-recognition", version.ref = "mlkitText" }
 
 retrofit = { group = "com.squareup.retrofit2", name = "retrofit", version.ref = "retrofit" }
-retrofit-serialization = { group = "com.jakewharton.retrofit", name = "retrofit2-kotlinx-serialization-converter", version.ref = "retrofitSerialization" }
+retrofit-serialization = { group = "com.squareup.retrofit2", name = "converter-kotlinx-serialization", version.ref = "retrofit" }
 okhttp-logging = { group = "com.squareup.okhttp3", name = "logging-interceptor", version.ref = "okhttp" }
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "serialization" }
 
