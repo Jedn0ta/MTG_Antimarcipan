@@ -1,0 +1,120 @@
+package com.example.antimarcipan.scan
+
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.antimarcipan.ui.AppViewModelFactory
+import com.example.antimarcipan.ui.CardThumb
+import com.example.antimarcipan.ui.EmptyState
+
+@Composable
+fun ScanScreen(
+    vm: ScanViewModel = viewModel(factory = AppViewModelFactory),
+) {
+    val context = LocalContext.current
+    var hasPermission by remember {
+        mutableStateOf(
+            ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) ==
+                PackageManager.PERMISSION_GRANTED
+        )
+    }
+    val launcher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted -> hasPermission = granted }
+
+    val state by vm.state.collectAsStateWithLifecycle()
+
+    Box(Modifier.fillMaxSize()) {
+        if (!hasPermission) {
+            Column(
+                Modifier.fillMaxSize().padding(24.dp),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                EmptyState(
+                    "Potřebuju přístup ke kameře",
+                    "Antimarcipán skenuje karty foťákem a čte jejich jména.",
+                )
+                Button(onClick = { launcher.launch(Manifest.permission.CAMERA) }) {
+                    Text("Povolit kameru")
+                }
+            }
+        } else {
+            CameraPreview(
+                onText = vm::onTextRecognized,
+                modifier = Modifier.fillMaxSize(),
+            )
+
+            // Status / candidate overlay
+            Column(
+                Modifier.fillMaxWidth().align(Alignment.BottomCenter).padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                val candidate = state.candidate
+                if (candidate != null) {
+                    Card {
+                        Row(
+                            Modifier.fillMaxWidth().padding(12.dp),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            CardThumb(candidate.bestImageUrl)
+                            Column(Modifier.weight(1f)) {
+                                Text(candidate.name, style = MaterialTheme.typography.titleMedium)
+                                Text(
+                                    candidate.typeLine ?: "",
+                                    style = MaterialTheme.typography.bodySmall,
+                                )
+                                candidate.prices?.usd?.let { Text("$$it", style = MaterialTheme.typography.bodySmall) }
+                            }
+                        }
+                        Row(
+                            Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            OutlinedButton(onClick = vm::dismissCandidate, modifier = Modifier.weight(1f)) {
+                                Text("Zahodit")
+                            }
+                            Button(onClick = vm::addCandidate, modifier = Modifier.weight(1f)) {
+                                Text("Přidat do sbírky")
+                            }
+                        }
+                    }
+                } else {
+                    Card {
+                        Text(
+                            state.status,
+                            Modifier.padding(16.dp),
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
