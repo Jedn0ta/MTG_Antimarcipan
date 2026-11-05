@@ -67,26 +67,26 @@ fun ScanScreen(
                 EmptyState(
                     "Potřebuju přístup ke kameře",
                     if (deniedOnce)
-                        "Kamera je zakázaná. Povol ji tlačítkem níž, nebo v nastavení aplikace, pokud se okno už neukazuje."
+                        "Kamera je zakázaná. Povol ji tlačítkem níž, nebo přes nastavení aplikace, pokud se okno už neukazuje."
                     else
                         "Antimarcipán skenuje karty foťákem a čte jejich jména.",
                 )
                 Button(onClick = { launcher.launch(Manifest.permission.CAMERA) }) {
                     Text("Povolit kameru")
                 }
-                if (deniedOnce) {
-                    OutlinedButton(
-                        onClick = {
-                            val intent = Intent(
-                                Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
-                                Uri.fromParts("package", context.packageName, null),
-                            ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                            context.startActivity(intent)
-                        },
-                        modifier = Modifier.padding(top = 8.dp),
-                    ) {
-                        Text("Otevřít nastavení aplikace")
-                    }
+                // Vždy k dispozici — když je oprávnění zakázané natrvalo,
+                // systémové okno se už neukáže a tohle je jediná cesta.
+                OutlinedButton(
+                    onClick = {
+                        val intent = Intent(
+                            Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                            Uri.fromParts("package", context.packageName, null),
+                        ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        context.startActivity(intent)
+                    },
+                    modifier = Modifier.padding(top = 8.dp),
+                ) {
+                    Text("Otevřít nastavení aplikace")
                 }
             }
         } else {
