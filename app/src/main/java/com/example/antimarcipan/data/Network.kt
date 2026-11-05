@@ -2,6 +2,7 @@ package com.example.antimarcipan.data
 
 import com.example.antimarcipan.data.edhrec.EdhrecApi
 import com.example.antimarcipan.data.scryfall.ScryfallApi
+import com.example.antimarcipan.data.update.UpdateApi
 import kotlinx.serialization.json.Json
 import okhttp3.Interceptor
 import okhttp3.MediaType.Companion.toMediaType
@@ -22,12 +23,17 @@ object Network {
     // EDHREC's community JSON host. Unofficial — no public contract, be gentle.
     private const val EDHREC_BASE = "https://json.edhrec.com/"
 
-    private const val USER_AGENT = "MtgScanner/0.1 (personal hobby app)"
+    private const val GITHUB_BASE = "https://api.github.com/"
+
+    private const val USER_AGENT = "Antimarcipan/0.1 (personal hobby app)"
 
     private val json = Json {
         ignoreUnknownKeys = true
         coerceInputValues = true
     }
+
+    /** Shared OkHttp client — reused for raw downloads (APK, version.json). */
+    val httpClient: OkHttpClient get() = client
 
     /** Adds required headers and enforces Scryfall's ~10 req/s rate limit. */
     private val politeInterceptor = Interceptor { chain ->
@@ -79,4 +85,15 @@ object Network {
             .build()
             .create(EdhrecApi::class.java)
     }
+
+    val github: UpdateApi by lazy {
+        Retrofit.Builder()
+            .baseUrl(GITHUB_BASE)
+            .client(client)
+            .addConverterFactory(json.asConverterFactory(contentType))
+            .build()
+            .create(UpdateApi::class.java)
+    }
+
+    val jsonParser: Json get() = json
 }

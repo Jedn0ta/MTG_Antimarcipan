@@ -1,7 +1,10 @@
 package com.example.antimarcipan.scan
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
+import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
@@ -43,9 +46,14 @@ fun ScanScreen(
                 PackageManager.PERMISSION_GRANTED
         )
     }
+    // true = uživatel žádost aspoň jednou odmítl (možná natrvalo)
+    var deniedOnce by remember { mutableStateOf(false) }
     val launcher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
-    ) { granted -> hasPermission = granted }
+    ) { granted ->
+        hasPermission = granted
+        if (!granted) deniedOnce = true
+    }
 
     val state by vm.state.collectAsStateWithLifecycle()
 
@@ -58,10 +66,27 @@ fun ScanScreen(
             ) {
                 EmptyState(
                     "Potřebuju přístup ke kameře",
-                    "Antimarcipán skenuje karty foťákem a čte jejich jména.",
+                    if (deniedOnce)
+                        "Kamera je zakázaná. Povol ji tlačítkem níž, nebo v nastavení aplikace, pokud se okno už neukazuje."
+                    else
+                        "Antimarcipán skenuje karty foťákem a čte jejich jména.",
                 )
                 Button(onClick = { launcher.launch(Manifest.permission.CAMERA) }) {
                     Text("Povolit kameru")
+                }
+                if (deniedOnce) {
+                    OutlinedButton(
+                        onClick = {
+                            val intent = Intent(
+                                Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                                Uri.fromParts("package", context.packageName, null),
+                            ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                            context.startActivity(intent)
+                        },
+                        modifier = Modifier.padding(top = 8.dp),
+                    ) {
+                        Text("Otevřít nastavení aplikace")
+                    }
                 }
             }
         } else {

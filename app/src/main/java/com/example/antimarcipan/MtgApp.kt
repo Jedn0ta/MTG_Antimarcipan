@@ -5,6 +5,7 @@ import com.example.antimarcipan.data.CollectionRepository
 import com.example.antimarcipan.data.DeckRepository
 import com.example.antimarcipan.data.SynergyRepository
 import com.example.antimarcipan.data.local.AppDatabase
+import com.example.antimarcipan.data.update.UpdateRepository
 
 /** Hand-rolled dependency container — swap for Hilt/Koin as the app grows. */
 class AppContainer(app: Application) {
@@ -12,6 +13,7 @@ class AppContainer(app: Application) {
     val collectionRepository = CollectionRepository(db.collectionDao())
     val deckRepository = DeckRepository(db.deckDao())
     val synergyRepository = SynergyRepository(db.collectionDao())
+    val updateRepository = UpdateRepository(app)
 }
 
 class MtgApp : Application() {

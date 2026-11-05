@@ -17,6 +17,13 @@ android {
         versionCode = 1
         versionName = "0.1.0"
         vectorDrawables { useSupportLibrary = true }
+
+        // Commit, ze kterého je build (předáno z CI přes -PgitSha=...).
+        val gitSha = (project.findProperty("gitSha") as String?) ?: "dev"
+        buildConfigField("String", "GIT_SHA", "\"$gitSha\"")
+        // Repo, ze kterého se stahují aktualizace.
+        buildConfigField("String", "UPDATE_REPO", "\"Jedn0ta/MTG_Antimarcipan\"")
+        buildConfigField("String", "UPDATE_TAG", "\"latest-debug\"")
     }
 
     buildTypes {
@@ -33,7 +40,10 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
     kotlinOptions { jvmTarget = "17" }
-    buildFeatures { compose = true }
+    buildFeatures {
+        compose = true
+        buildConfig = true
+    }
     packaging {
         resources { excludes += "/META-INF/{AL2.0,LGPL2.1}" }
     }

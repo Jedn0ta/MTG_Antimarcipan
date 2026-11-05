@@ -28,7 +28,19 @@ jobs:
         run: chmod +x ./gradlew
 
       - name: Build debug APK
-        run: ./gradlew assembleDebug --stacktrace
+        run: ./gradlew assembleDebug -PgitSha=${{ github.sha }} --stacktrace
+
+      - name: Generate version.json
+        run: |
+          VN=$(grep -m1 'versionName' app/build.gradle.kts | sed -E 's/.*"([^"]+)".*/\1/')
+          cat > version.json <<EOF
+          {
+            "sha": "${{ github.sha }}",
+            "versionName": "${VN}",
+            "builtAt": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          }
+          EOF
+          cat version.json
 
       - name: Upload APK as artifact
         uses: actions/upload-artifact@v4
@@ -37,8 +49,8 @@ jobs:
           path: app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
 
-      # Vytvoří / aktualizuje Release "latest-debug" s přiloženým APK,
-      # aby se dal stáhnout přímo z telefonu bez přihlášení.
+      # Vytvoří / aktualizuje Release "latest-debug" s přiloženým APK + version.json,
+      # aby appka poznala novou verzi a dala se stáhnout přímo z telefonu.
       - name: Publish to Release
         uses: softprops/action-gh-release@v2
         with:
@@ -47,6 +59,9 @@ jobs:
           body: >
             Automaticky sestavené debug APK z posledního commitu.
             Stáhni soubor app-debug.apk níže a nainstaluj v telefonu
-            (povol instalaci z neznámých zdrojů).
-          files: app/build/outputs/apk/debug/*.apk
+            (povol instalaci z neznámých zdrojů), nebo použij v appce
+            Nastavení → Zkontrolovat aktualizaci.
+          files: |
+            app/build/outputs/apk/debug/*.apk
+            version.json
           make_latest: true

@@ -10,6 +10,7 @@ import com.example.antimarcipan.advisor.AdvisorViewModel
 import com.example.antimarcipan.collection.CollectionViewModel
 import com.example.antimarcipan.decks.DeckViewModel
 import com.example.antimarcipan.scan.ScanViewModel
+import com.example.antimarcipan.settings.SettingsViewModel
 import com.example.antimarcipan.synergy.SynergyViewModel
 
 private fun CreationExtras.app(): MtgApp = (this[APPLICATION_KEY] as MtgApp)
@@ -26,5 +27,8 @@ val AppViewModelFactory: ViewModelProvider.Factory = viewModelFactory {
     }
     initializer {
         AdvisorViewModel(app().container.deckRepository)
+    }
+    initializer {
+        SettingsViewModel(app().container.updateRepository)
     }
 }
