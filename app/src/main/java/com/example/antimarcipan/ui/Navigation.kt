@@ -1,16 +1,12 @@
 package com.example.antimarcipan.ui
 
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.CameraAlt
-import androidx.compose.material.icons.filled.Hub
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Style
-import androidx.compose.material.icons.filled.ViewModule
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -29,9 +25,11 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.dp
 import com.example.antimarcipan.MtgApp
+import com.example.antimarcipan.R
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
@@ -49,12 +47,16 @@ import com.example.antimarcipan.synergy.SynergyScreen
 private const val SETTINGS_ROUTE = "settings"
 private const val MANUAL_ROUTE = "manual_add"
 
-private enum class Dest(val route: String, val label: String, val icon: ImageVector) {
-    Scan("scan", "Sken", Icons.Filled.CameraAlt),
-    Collection("collection", "Sbírka", Icons.Filled.ViewModule),
-    Decks("decks", "Balíky", Icons.Filled.Style),
-    Synergy("synergy", "Synergie", Icons.Filled.Hub),
-    Advisor("advisor", "Anti Marcipán", Icons.Filled.AutoAwesome),
+private enum class Dest(
+    val route: String,
+    val label: String,
+    @androidx.annotation.DrawableRes val icon: Int,
+) {
+    Scan("scan", "Sken", R.drawable.ic_nav_scan),
+    Collection("collection", "Sbírka", R.drawable.ic_nav_collection),
+    Decks("decks", "Balíky", R.drawable.ic_nav_decks),
+    Synergy("synergy", "Synergie", R.drawable.ic_nav_synergy),
+    Advisor("advisor", "Anti Marcipán", R.drawable.ic_nav_advisor),
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -134,7 +136,13 @@ fun AntimarcipanApp() {
                                     restoreState = true
                                 }
                             },
-                            icon = { Icon(dest.icon, contentDescription = dest.label) },
+                            icon = {
+                                Icon(
+                                    painter = painterResource(dest.icon),
+                                    contentDescription = dest.label,
+                                    modifier = Modifier.size(24.dp),
+                                )
+                            },
                             label = { Text(dest.label, maxLines = 1) },
                             colors = androidx.compose.material3.NavigationBarItemDefaults.colors(
                                 selectedIconColor = MaterialTheme.colorScheme.onPrimary,
