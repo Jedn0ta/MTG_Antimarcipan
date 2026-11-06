@@ -2,6 +2,11 @@ package com.example.antimarcipan.synergy
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Lightbulb
+import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material3.Icon
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -240,20 +245,22 @@ private fun scryfallImageUrl(name: String, version: String): String {
 
 @Composable
 private fun TipCard(tip: com.example.antimarcipan.data.advisor.AdvisorTip) {
-    val (icon, tint) = when (tip.level) {
-        com.example.antimarcipan.data.advisor.TipLevel.GOOD ->
-            androidx.compose.material.icons.Icons.Filled.CheckCircle to Color(0xFF2E9E5B)
-        com.example.antimarcipan.data.advisor.TipLevel.WARN ->
-            androidx.compose.material.icons.Icons.Filled.Warning to Color(0xFFD98324)
-        com.example.antimarcipan.data.advisor.TipLevel.TIP ->
-            androidx.compose.material.icons.Icons.Filled.Lightbulb to MaterialTheme.colorScheme.primary
+    val icon = when (tip.level) {
+        com.example.antimarcipan.data.advisor.TipLevel.GOOD -> Icons.Filled.CheckCircle
+        com.example.antimarcipan.data.advisor.TipLevel.WARN -> Icons.Filled.Warning
+        com.example.antimarcipan.data.advisor.TipLevel.TIP -> Icons.Filled.Lightbulb
+    }
+    val tint = when (tip.level) {
+        com.example.antimarcipan.data.advisor.TipLevel.GOOD -> Color(0xFF2E9E5B)
+        com.example.antimarcipan.data.advisor.TipLevel.WARN -> Color(0xFFD98324)
+        com.example.antimarcipan.data.advisor.TipLevel.TIP -> MaterialTheme.colorScheme.primary
     }
     Row(
         Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.Top,
     ) {
-        androidx.compose.material3.Icon(icon, contentDescription = null, tint = tint)
+        Icon(icon, contentDescription = null, tint = tint)
         Column(Modifier.weight(1f)) {
             Text(tip.title, style = MaterialTheme.typography.titleSmall)
             Text(
