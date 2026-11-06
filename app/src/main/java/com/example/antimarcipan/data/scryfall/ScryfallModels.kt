@@ -67,3 +67,15 @@ data class ScryfallList(
     @SerialName("total_cards") val totalCards: Int = 0,
     @SerialName("has_more") val hasMore: Boolean = false,
 )
+
+@Serializable
+data class RulingList(
+    val data: List<Ruling> = emptyList(),
+)
+
+@Serializable
+data class Ruling(
+    val source: String? = null,
+    @SerialName("published_at") val publishedAt: String? = null,
+    val comment: String? = null,
+)

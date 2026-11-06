@@ -117,6 +117,9 @@ class CollectionViewModel(
         _selection.update { it - scryfallId }
     }
 
+    suspend fun rulingsFor(scryfallId: String): List<String> =
+        repo.rulings(scryfallId).getOrElse { emptyList() }
+
     private fun <T> Set<T>.toggle(item: T): Set<T> =
         if (contains(item)) this - item else this + item
 }

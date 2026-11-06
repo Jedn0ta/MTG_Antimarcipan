@@ -5,6 +5,7 @@ import coil.ImageLoader
 import coil.ImageLoaderFactory
 import coil.disk.DiskCache
 import coil.memory.MemoryCache
+import coil.decode.SvgDecoder
 import coil.request.CachePolicy
 import com.example.antimarcipan.data.CollectionRepository
 import com.example.antimarcipan.data.DeckRepository
@@ -37,6 +38,7 @@ class MtgApp : Application(), ImageLoaderFactory {
     /** Explicitní Coil loader — vlastní OkHttp (bez rate-limiteru), cache, crossfade. */
     override fun newImageLoader(): ImageLoader =
         ImageLoader.Builder(this)
+            .components { add(SvgDecoder.Factory()) }
             .crossfade(true)
             .memoryCachePolicy(CachePolicy.ENABLED)
             .diskCachePolicy(CachePolicy.ENABLED)

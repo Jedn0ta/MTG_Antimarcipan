@@ -44,4 +44,8 @@ interface ScryfallApi {
         @Path("set") set: String,
         @Path("number") collectorNumber: String,
     ): ScryfallCard
+
+    /** Oficiální rulings (výklady pravidel) ke konkrétní kartě. */
+    @GET("cards/{id}/rulings")
+    suspend fun rulings(@Path("id") id: String): RulingList
 }

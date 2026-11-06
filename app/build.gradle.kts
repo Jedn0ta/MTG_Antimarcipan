@@ -104,4 +104,5 @@ dependencies {
 
     // Card images
     implementation(libs.coil.compose)
+    implementation(libs.coil.svg)
 }

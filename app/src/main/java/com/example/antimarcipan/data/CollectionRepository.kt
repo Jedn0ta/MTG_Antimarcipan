@@ -52,6 +52,14 @@ class CollectionRepository(
         byName
     }
 
+    /** Oficiální rulings ke kartě (ze Scryfallu). */
+    suspend fun rulings(scryfallId: String): Result<List<String>> = runCatching {
+        scryfall.rulings(scryfallId).data.mapNotNull { r ->
+            val c = r.comment ?: return@mapNotNull null
+            if (r.publishedAt != null) "• $c  (${r.publishedAt})" else "• $c"
+        }
+    }
+
     /** Vyhledání karet podle jména (pro ruční přidání). */
     suspend fun searchByName(query: String): Result<List<ScryfallCard>> = runCatching {
         require(query.trim().length >= 2) { "Zadej aspoň 2 znaky" }

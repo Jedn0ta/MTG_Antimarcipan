@@ -69,11 +69,7 @@ class ScanViewModel(
                         candidate = card,
                         looking = false,
                         status = editionLabel(card),
-                        shop = null,
-                        shopUrl = shopRepo.searchUrl(card.name),
-                        najadaUrl = com.example.antimarcipan.data.shop.ShopLinks.najada(card.name),
                     )
-                    loadShopPrice(card.name)
                 }
                 .onFailure {
                     _state.value = _state.value.copy(

@@ -16,10 +16,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material3.AssistChip
+import androidx.compose.material.icons.filled.Translate
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
@@ -41,7 +42,6 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.antimarcipan.data.local.Deck
-import com.example.antimarcipan.data.shop.ShopResult
 import com.example.antimarcipan.ui.AppViewModelFactory
 import com.example.antimarcipan.ui.CardThumb
 import com.example.antimarcipan.ui.DeckPickerDialog
@@ -133,14 +133,6 @@ fun ScanScreen(
                         onAddDeck = vm::addToDeck,
                         onLoadPrints = vm::loadPrints,
                         onSelectPrint = vm::selectPrint,
-                        onOpenShop = { url ->
-                            runCatching {
-                                context.startActivity(
-                                    Intent(Intent.ACTION_VIEW, Uri.parse(url))
-                                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                                )
-                            }
-                        },
                     )
                 } else {
                     Card {
@@ -216,77 +208,64 @@ private fun CandidateCard(
     onAddDeck: (Long) -> Unit,
     onLoadPrints: () -> Unit,
     onSelectPrint: (com.example.antimarcipan.data.scryfall.ScryfallCard) -> Unit,
-    onOpenShop: (String) -> Unit,
 ) {
     val candidate = state.candidate ?: return
     var showDeckPicker by remember { mutableStateOf(false) }
     var showEditions by remember { mutableStateOf(false) }
+    var showEnglish by remember { mutableStateOf(false) }
 
     Card {
         Row(
             Modifier.fillMaxWidth().padding(12.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
+            verticalAlignment = Alignment.Top,
         ) {
-            CardThumb(candidate.bestImageUrl)
+            // Větší náhled nalezené karty — líp poznáš správnou edici
+            CardThumb(candidate.bestImageUrl, width = 104.dp, height = 145.dp)
             Column(Modifier.weight(1f)) {
-                Text(candidate.name, style = MaterialTheme.typography.titleMedium)
-                Text(
-                    candidate.setName ?: candidate.set?.uppercase() ?: "",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.primary,
-                )
-                Text(
-                    candidate.typeLine ?: "",
-                    style = MaterialTheme.typography.bodySmall,
-                )
-                candidate.prices?.eur?.let {
-                    Text("Scryfall: €$it", style = MaterialTheme.typography.bodySmall)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        candidate.name,
+                        Modifier.weight(1f),
+                        style = MaterialTheme.typography.titleMedium,
+                    )
+                    // Překlad: anglická textace (oracle je vždy anglicky)
+                    androidx.compose.material3.IconButton(
+                        onClick = { showEnglish = !showEnglish },
+                        modifier = Modifier.size(32.dp),
+                    ) {
+                        androidx.compose.material3.Icon(
+                            androidx.compose.material.icons.Icons.Filled.Translate,
+                            contentDescription = "Anglická textace",
+                            tint = if (showEnglish) MaterialTheme.colorScheme.primary
+                            else MaterialTheme.colorScheme.onSurface,
+                        )
+                    }
+                }
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    com.example.antimarcipan.ui.SetSymbol(candidate.set, size = 16.dp)
+                    Text(
+                        candidate.setName ?: candidate.set?.uppercase() ?: "",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
+                Text(candidate.typeLine ?: "", style = MaterialTheme.typography.bodySmall)
+                if (showEnglish) {
+                    Text(
+                        buildString {
+                            append("EN: ${candidate.name}\n")
+                            candidate.typeLine?.let { append("$it\n") }
+                            candidate.oracleText?.let { append(it) }
+                        },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.85f),
+                    )
                 }
             }
         }
 
-        // Cena z Černého rytíře
-        Row(
-            Modifier.fillMaxWidth().padding(horizontal = 12.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            val shopText = when {
-                state.shopLoading -> "Černý rytíř: zjišťuji…"
-                state.shop is ShopResult.Found ->
-                    "Černý rytíř: ${(state.shop as ShopResult.Found).priceText}"
-                state.shop is ShopResult.NotFound -> "Černý rytíř: nenalezeno"
-                state.shop is ShopResult.Error -> "Černý rytíř: nedostupné"
-                else -> "Černý rytíř"
-            }
-            Text(shopText, Modifier.weight(1f), style = MaterialTheme.typography.bodySmall)
-            state.shopUrl?.let { url ->
-                TextButton(onClick = { onOpenShop(url) }) { Text("Otevřít") }
-            }
-        }
-        (state.shop as? ShopResult.Found)?.note?.let {
-            Text(
-                it,
-                Modifier.padding(horizontal = 12.dp),
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-            )
-        }
-
-        // Najáda (odkaz na vyhledání karty)
-        Row(
-            Modifier.fillMaxWidth().padding(horizontal = 12.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text("Najáda", Modifier.weight(1f), style = MaterialTheme.typography.bodySmall)
-            state.najadaUrl?.let { url ->
-                TextButton(onClick = { onOpenShop(url) }) { Text("Otevřít") }
-            }
-        }
-
-        // Výběr jiné edice
+        // Výběr jiné edice — podle symbolů edic
         TextButton(
             onClick = {
                 showEditions = !showEditions
@@ -303,13 +282,21 @@ private fun CandidateCard(
                 Row(
                     Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())
                         .padding(horizontal = 12.dp, vertical = 4.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(14.dp),
                 ) {
                     state.prints.forEach { p ->
-                        AssistChip(
-                            onClick = { onSelectPrint(p); showEditions = false },
-                            label = { Text(p.set?.uppercase() ?: (p.setName ?: "?")) },
-                        )
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            modifier = Modifier
+                                .clickable { onSelectPrint(p); showEditions = false }
+                                .padding(4.dp),
+                        ) {
+                            com.example.antimarcipan.ui.SetSymbol(p.set, size = 26.dp)
+                            Text(
+                                p.set?.uppercase() ?: "?",
+                                style = MaterialTheme.typography.labelSmall,
+                            )
+                        }
                     }
                 }
             }

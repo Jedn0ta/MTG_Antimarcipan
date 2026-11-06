@@ -5,6 +5,9 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -51,6 +54,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -67,6 +71,7 @@ import com.example.antimarcipan.ui.ConfirmDialog
 import com.example.antimarcipan.ui.DeckPickerDialog
 import com.example.antimarcipan.ui.EmptyState
 import com.example.antimarcipan.ui.ManaCost
+import kotlinx.coroutines.withTimeoutOrNull
 
 private fun CardColor.drawableRes(): Int = when (this) {
     CardColor.W -> R.drawable.mana_w
@@ -156,12 +161,11 @@ fun CollectionScreen(
         } else {
             LazyColumn(Modifier.weight(1f)) {
                 items(cards, key = { it.scryfallId }) { card ->
-                    SwipeRow(
-                        onRequestDelete = { pendingDelete = card },
-                        onRequestAddToDeck = { pendingAddDeck = card },
-                    ) {
+                    SwipeToAddDeck(onRequestAddToDeck = { pendingAddDeck = card }) {
                         CollectionRow(
                             card = card,
+                            onLongDelete = { pendingDelete = card },
+                            loadRulings = { vm.rulingsFor(it) },
                             onOpenGatherer = {
                                 runCatching {
                                     context.startActivity(
@@ -178,7 +182,7 @@ fun CollectionScreen(
                 }
             }
             Text(
-                "Swipe doprava = do balíku · doleva = smazat · ikona = pravidla na Gathereru",
+                "Swipe doprava = do balíku · dlouhé podržení = smazat · ikona = rulings/Gatherer",
                 Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
@@ -308,53 +312,53 @@ private fun SortRow(filter: CollectionFilter, vm: CollectionViewModel) {
 
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
-private fun SwipeRow(
-    onRequestDelete: () -> Unit,
+private fun SwipeToAddDeck(
     onRequestAddToDeck: () -> Unit,
     content: @Composable () -> Unit,
 ) {
     val dismissState = rememberSwipeToDismissBoxState(
         confirmValueChange = { value ->
-            when (value) {
-                SwipeToDismissBoxValue.EndToStart -> onRequestDelete()
-                SwipeToDismissBoxValue.StartToEnd -> onRequestAddToDeck()
-                else -> {}
-            }
-            false // nikdy nemizí rovnou — čeká na potvrzení / výběr
+            if (value == SwipeToDismissBoxValue.StartToEnd) onRequestAddToDeck()
+            false // nemizí — jen vyvolá výběr balíku
         },
     )
     SwipeToDismissBox(
         state = dismissState,
+        enableDismissFromEndToStart = false,
         backgroundContent = {
-            val toStart = dismissState.dismissDirection == SwipeToDismissBoxValue.EndToStart
-            val align = if (toStart) Alignment.CenterEnd else Alignment.CenterStart
-            Box(Modifier.fillMaxWidth().padding(horizontal = 20.dp), contentAlignment = align) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                ) {
-                    if (toStart) {
-                        Icon(Icons.Filled.Delete, contentDescription = null, tint = Color(0xFFD95C5C))
-                        Text("Smazat", color = Color(0xFFD95C5C))
-                    } else {
-                        Icon(Icons.Filled.Add, contentDescription = null, tint = Color(0xFF2E9E5B))
-                        Text("Do balíku", color = Color(0xFF2E9E5B))
-                    }
-                }
+            Box(Modifier.fillMaxWidth().padding(horizontal = 20.dp), contentAlignment = Alignment.CenterStart) {
+                Icon(Icons.Filled.Add, contentDescription = null, tint = Color(0xFF2E9E5B))
             }
         },
         content = { content() },
     )
 }
 
+/** Podržení prstem po zadaný čas → akce (bez reakce na swipe/zrušení). */
+private fun Modifier.longHold(durationMs: Long, onHold: () -> Unit): Modifier =
+    this.pointerInput(Unit) {
+        awaitEachGesture {
+            awaitFirstDown(requireUnconsumed = false)
+            val completed = withTimeoutOrNull(durationMs) {
+                waitForUpOrCancellation()
+                true // prst zvednut nebo gesto zrušeno před časem
+            }
+            if (completed == null) onHold() // stále drženo → long hold
+        }
+    }
+
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
 private fun CollectionRow(
     card: CollectionCard,
     onOpenGatherer: () -> Unit,
+    onLongDelete: () -> Unit,
+    loadRulings: suspend (String) -> List<String>,
 ) {
     Row(
-        Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
+        Modifier.fillMaxWidth()
+            .longHold(2500L, onLongDelete)
+            .padding(horizontal = 12.dp, vertical = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -414,12 +418,36 @@ private fun CollectionRow(
                 Text("ks: ${card.quantity}", style = MaterialTheme.typography.labelSmall)
             }
         }
-        IconButton(onClick = onOpenGatherer) {
-            Icon(
-                Icons.AutoMirrored.Filled.MenuBook,
-                contentDescription = "Pravidla na Gathereru",
-                tint = MaterialTheme.colorScheme.primary,
-            )
+        // Gatherer: ťuknutí otevře kartu, podržení ukáže rulings v tooltipu
+        val rulingsTooltip = rememberTooltipState(isPersistent = true)
+        var rulings by remember(card.scryfallId) { mutableStateOf<List<String>?>(null) }
+        androidx.compose.runtime.LaunchedEffect(rulingsTooltip.isVisible) {
+            if (rulingsTooltip.isVisible && rulings == null) {
+                rulings = loadRulings(card.scryfallId)
+            }
+        }
+        TooltipBox(
+            positionProvider = TooltipDefaults.rememberRichTooltipPositionProvider(),
+            tooltip = {
+                RichTooltip(title = { Text("Rulings — ${card.name}") }) {
+                    Text(
+                        when {
+                            rulings == null -> "Načítám…"
+                            rulings!!.isEmpty() -> "Žádné rulings k této kartě."
+                            else -> rulings!!.joinToString("\n\n")
+                        }
+                    )
+                }
+            },
+            state = rulingsTooltip,
+        ) {
+            IconButton(onClick = onOpenGatherer) {
+                Icon(
+                    Icons.AutoMirrored.Filled.MenuBook,
+                    contentDescription = "Rulings / Gatherer",
+                    tint = MaterialTheme.colorScheme.primary,
+                )
+            }
         }
     }
 }
