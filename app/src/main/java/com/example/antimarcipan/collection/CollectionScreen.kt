@@ -403,7 +403,7 @@ private fun CollectionRow(
                 onProgress = { ringProgress = it },
             )
         }
-        if (ringProgress > 0f && ringProgress < 1f) {
+        if (ringProgress > 0.18f && ringProgress < 1f) {
             androidx.compose.material3.CircularProgressIndicator(
                 progress = { ringProgress },
                 strokeWidth = 3.dp,

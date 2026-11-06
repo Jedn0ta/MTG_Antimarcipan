@@ -367,18 +367,29 @@ private fun DeckDetailView(vm: DeckViewModel, deck: Deck) {
             }
 
             if (lands.isNotEmpty()) {
+                // Basicy první, pak ostatní země
+                val orderedLands = lands.sortedBy { if (isBasicLand(it.card)) 0 else 1 }
                 item { SectionHeader("Země (${lands.sumOf { it.deckQuantity }})") }
-                items(lands, key = { "L-" + it.card.scryfallId }) { entry ->
-                    DeckEntryRow(
-                        entry = entry,
-                        isBasic = isBasicLand(entry.card),
-                        isCommander = entry.card.scryfallId == deck.commanderScryfallId,
-                        showCommander = format == DeckFormat.COMMANDER,
-                        onCommander = { vm.setCommander(entry.card) },
-                        onLongRemove = { pendingRemove = entry.card },
-                        onChangeQty = { q -> vm.setDeckCardQty(deck.id, entry.card.scryfallId, q) },
-                    )
-                    HorizontalDivider()
+                item {
+                    Card(
+                        Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
+                        colors = androidx.compose.material3.CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                        ),
+                    ) {
+                        orderedLands.forEachIndexed { i, entry ->
+                            DeckEntryRow(
+                                entry = entry,
+                                isBasic = isBasicLand(entry.card),
+                                isCommander = entry.card.scryfallId == deck.commanderScryfallId,
+                                showCommander = format == DeckFormat.COMMANDER,
+                                onCommander = { vm.setCommander(entry.card) },
+                                onLongRemove = { pendingRemove = entry.card },
+                                onChangeQty = { q -> vm.setDeckCardQty(deck.id, entry.card.scryfallId, q) },
+                            )
+                            if (i < orderedLands.lastIndex) HorizontalDivider()
+                        }
+                    }
                 }
             }
 

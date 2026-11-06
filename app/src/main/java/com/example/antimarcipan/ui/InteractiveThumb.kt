@@ -53,7 +53,8 @@ fun InteractiveThumb(
         ) {
             CardThumb(card.thumbModel(), width = width, height = height)
         }
-        if (progress > 0f && progress < 1f) {
+        // Kolečko až po krátkém podržení (ne při obyčejném ťuknutí)
+        if (progress > 0.18f && progress < 1f) {
             CircularProgressIndicator(
                 progress = { progress },
                 strokeWidth = 3.dp,
