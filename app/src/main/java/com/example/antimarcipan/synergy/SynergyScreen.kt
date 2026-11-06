@@ -83,15 +83,15 @@ fun SynergyScreen(
 
                     if (report.misfits.isNotEmpty()) {
                         item { SectionTitle("Zvaž výměnu (${report.misfits.size})") }
-                        items(report.misfits, key = { "m-" + it.card.scryfallId }) { FitRow(it) }
+                        items(report.misfits) { FitRow(it) }
                     }
 
                     item { SectionTitle("Všechny karty podle vhodnosti") }
-                    items(report.fits, key = { "f-" + it.card.scryfallId }) { FitRow(it) }
+                    items(report.fits) { FitRow(it) }
 
                     if (state.suggestions.isNotEmpty()) {
                         item { SectionTitle("Návrhy karet · ${state.suggestionsSource}") }
-                        items(state.suggestions, key = { "s-" + it.name }) { RecRow(it) }
+                        items(state.suggestions) { RecRow(it) }
                     }
                 }
             }

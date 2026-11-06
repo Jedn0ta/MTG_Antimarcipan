@@ -12,9 +12,11 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 data class SynergyUiState(
     val deckName: String? = null,
@@ -58,39 +60,51 @@ class SynergyViewModel(
 
     fun analyzeDeck(deckId: Long) {
         viewModelScope.launch {
-            val deck = deckRepo.deck(deckId)
-            val cards = deckRepo.deckCards(deckId).first()
-            if (cards.isEmpty()) {
+            try {
+                val deck = deckRepo.deck(deckId)
+                val cards = deckRepo.deckCards(deckId).first()
+                if (cards.isEmpty()) {
+                    _state.value = SynergyUiState(
+                        deckName = deck?.name,
+                        error = "Balík je prázdný. Přidej karty v záložce Balíky.",
+                    )
+                    return@launch
+                }
+                _state.value = SynergyUiState(deckName = deck?.name, loading = true)
+
+                // Těžší výpočet mimo hlavní vlákno.
+                val report = withContext(Dispatchers.Default) { SynergyEngine.analyze(cards) }
+
+                // Návrhy: velitel → EDHREC, jinak Scryfall podle barev + tématu.
+                // Síť je už uvnitř ošetřená (Result), ale pro jistotu i tady.
+                val commander = deck?.commanderName
+                val exclude = cards.map { it.name }.toSet()
+                val (suggestions, source) = try {
+                    if (!commander.isNullOrBlank()) {
+                        val recs = synergyRepo.recommendationsFor(commander).getOrElse { emptyList() }
+                        recs to "EDHREC · velitel $commander"
+                    } else {
+                        val frag = report.topThemes.firstNotNullOfOrNull { themeQuery[it] }
+                        val recs = synergyRepo.suggestFromScryfall(report.colors, frag, exclude)
+                            .getOrElse { emptyList() }
+                        recs to "Scryfall · barvy + téma"
+                    }
+                } catch (e: Exception) {
+                    emptyList<SynergyRecommendation>() to "Návrhy se nenačetly"
+                }
+
                 _state.value = SynergyUiState(
                     deckName = deck?.name,
-                    error = "Balík je prázdný. Přidej karty v záložce Balíky.",
+                    commanderName = commander,
+                    report = report,
+                    suggestions = suggestions.take(40),
+                    suggestionsSource = source,
                 )
-                return@launch
+            } catch (e: Exception) {
+                _state.value = SynergyUiState(
+                    error = "Analýza selhala: ${e.message ?: e.javaClass.simpleName}",
+                )
             }
-            _state.value = SynergyUiState(deckName = deck?.name, loading = true)
-
-            val report = SynergyEngine.analyze(cards)
-
-            // Návrhy: velitel → EDHREC, jinak Scryfall podle barev + tématu
-            val commander = deck?.commanderName
-            val exclude = cards.map { it.name }.toSet()
-            val (suggestions, source) = if (!commander.isNullOrBlank()) {
-                val recs = synergyRepo.recommendationsFor(commander).getOrElse { emptyList() }
-                recs to "EDHREC · velitel $commander"
-            } else {
-                val frag = report.topThemes.firstNotNullOfOrNull { themeQuery[it] }
-                val recs = synergyRepo.suggestFromScryfall(report.colors, frag, exclude)
-                    .getOrElse { emptyList() }
-                recs to "Scryfall · barvy + téma"
-            }
-
-            _state.value = SynergyUiState(
-                deckName = deck?.name,
-                commanderName = commander,
-                report = report,
-                suggestions = suggestions.filter { !it.owned || true }.take(40),
-                suggestionsSource = source,
-            )
         }
     }
 }

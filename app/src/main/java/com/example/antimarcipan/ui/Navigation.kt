@@ -88,6 +88,9 @@ fun AntimarcipanApp() {
 
     Scaffold(
         containerColor = Color.Transparent,
+        // Bez tohoto spadne barva textu na černou (průhledné pozadí) a na
+        // tmavém pozadí není vidět. Držíme světlý obsah.
+        contentColor = MaterialTheme.colorScheme.onSurface,
         topBar = {
             TopAppBar(
                 colors = TopAppBarDefaults.topAppBarColors(
