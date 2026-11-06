@@ -21,6 +21,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items as gridItems
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -29,6 +32,8 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.FilterList
+import androidx.compose.material.icons.filled.GridView
+import androidx.compose.material.icons.automirrored.filled.ViewList
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Remove
@@ -237,7 +242,8 @@ private fun DeckDetailView(vm: DeckViewModel, deck: Deck) {
     var showMenu by remember { mutableStateOf(false) }
     var showBasics by remember { mutableStateOf(false) }
     var showTypeFilter by remember { mutableStateOf(false) }
-    val selectedTypes = remember { androidx.compose.runtime.mutableStateListOf<com.example.antimarcipan.collection.CardType>() }
+    var gridMode by remember { mutableStateOf(false) }
+    val selectedTypes = remember { androidx.compose.runtime.mutableStateListOf<String>() }
     var pendingRemove by remember { mutableStateOf<CollectionCard?>(null) }
 
     val coverPicker = rememberLauncherForActivityResult(
@@ -289,6 +295,12 @@ private fun DeckDetailView(vm: DeckViewModel, deck: Deck) {
                     else MaterialTheme.colorScheme.primary,
                 )
             }
+            IconButton(onClick = { gridMode = !gridMode }) {
+                Icon(
+                    if (gridMode) Icons.AutoMirrored.Filled.ViewList else Icons.Filled.GridView,
+                    contentDescription = if (gridMode) "Seznam" else "Mřížka",
+                )
+            }
             Box {
                 IconButton(onClick = { showMenu = true }) {
                     Icon(Icons.Filled.MoreVert, contentDescription = "Akce")
@@ -330,30 +342,50 @@ private fun DeckDetailView(vm: DeckViewModel, deck: Deck) {
         }
         HorizontalDivider()
 
+        // Typy a tribaly odvozené přímo z balíku (hlavní typy + podtypy stvoření)
+        val typeTokens = remember(deckCards) { deckTypeTokens(deckCards.map { it.card }) }
+
         androidx.compose.animation.AnimatedVisibility(visible = showTypeFilter) {
             androidx.compose.foundation.layout.FlowRow(
                 Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp),
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
             ) {
-                com.example.antimarcipan.collection.CardType.entries.forEach { t ->
+                if (typeTokens.isEmpty()) {
+                    Text(
+                        "Zatím není co filtrovat.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                    )
+                }
+                typeTokens.forEach { token ->
                     androidx.compose.material3.FilterChip(
-                        selected = selectedTypes.contains(t),
+                        selected = selectedTypes.contains(token),
                         onClick = {
-                            if (selectedTypes.contains(t)) selectedTypes.remove(t) else selectedTypes.add(t)
+                            if (selectedTypes.contains(token)) selectedTypes.remove(token)
+                            else selectedTypes.add(token)
                         },
-                        label = { Text(t.label) },
+                        label = { Text(token) },
                     )
                 }
             }
         }
 
         val visible = deckCards.filter { entry ->
-            selectedTypes.isEmpty() || selectedTypes.any {
-                entry.card.typeLine?.contains(it.needle, ignoreCase = true) == true
+            selectedTypes.isEmpty() || selectedTypes.any { token ->
+                entry.card.typeLine?.contains(token, ignoreCase = true) == true
             }
         }
         val lands = visible.filter { isLandCard(it.card) }
         val others = visible.filter { !isLandCard(it.card) }
+
+        if (gridMode) {
+            DeckGrid(
+                lands = lands,
+                others = others,
+                emptyDeck = deckCards.isEmpty(),
+            )
+            return@Column
+        }
 
         LazyColumn(Modifier.fillMaxSize()) {
             if (deckCards.isEmpty()) {
@@ -486,6 +518,91 @@ private fun Modifier.longHold(durationMs: Long, onHold: () -> Unit): Modifier =
             if (completed == null) onHold()
         }
     }
+
+/** Hlavní typy + podtypy stvoření (tribaly) přítomné v balíku — pro filtr. */
+private val MAIN_TYPES = listOf(
+    "Creature", "Instant", "Sorcery", "Artifact", "Enchantment",
+    "Planeswalker", "Land", "Battle",
+)
+
+private fun deckTypeTokens(cards: List<CollectionCard>): List<String> {
+    val mains = linkedSetOf<String>()
+    val subtypes = linkedSetOf<String>()
+    cards.forEach { c ->
+        val line = c.typeLine ?: return@forEach
+        MAIN_TYPES.forEach { if (line.contains(it, ignoreCase = true)) mains.add(it) }
+        // Podtypy jen pro stvoření (tribaly: Elf, Knight, …)
+        if (line.contains("Creature", ignoreCase = true)) {
+            line.substringAfter("—", "").trim()
+                .split(" ")
+                .map { it.trim() }
+                .filter { it.length > 2 }
+                .forEach { subtypes.add(it) }
+        }
+    }
+    // Hlavní typy první, pak tribaly abecedně
+    return mains.toList() + subtypes.toList().sorted()
+}
+
+@Composable
+private fun DeckGrid(
+    lands: List<com.example.antimarcipan.data.local.DeckCardWithQty>,
+    others: List<com.example.antimarcipan.data.local.DeckCardWithQty>,
+    emptyDeck: Boolean,
+) {
+    if (emptyDeck) {
+        Text(
+            "Zatím prázdný — přepni na seznam a přidej karty ze sbírky.",
+            Modifier.padding(16.dp),
+            style = MaterialTheme.typography.bodySmall,
+        )
+        return
+    }
+    val orderedLands = lands.sortedBy { if (isBasicLand(it.card)) 0 else 1 }
+    LazyVerticalGrid(
+        columns = GridCells.Adaptive(84.dp),
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        if (orderedLands.isNotEmpty()) {
+            item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(maxLineSpan) }) {
+                SectionHeader("Země (${orderedLands.sumOf { it.deckQuantity }})")
+            }
+            gridItems(orderedLands, key = { "gl-" + it.card.scryfallId }) { entry ->
+                DeckGridCell(entry)
+            }
+        }
+        item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(maxLineSpan) }) {
+            SectionHeader("Ostatní karty (${others.sumOf { it.deckQuantity }})")
+        }
+        gridItems(others, key = { "go-" + it.card.scryfallId }) { entry ->
+            DeckGridCell(entry)
+        }
+    }
+}
+
+@Composable
+private fun DeckGridCell(entry: com.example.antimarcipan.data.local.DeckCardWithQty) {
+    Box(contentAlignment = Alignment.TopEnd) {
+        com.example.antimarcipan.ui.InteractiveThumb(card = entry.card, width = 84.dp, height = 117.dp)
+        if (entry.deckQuantity > 1) {
+            Box(
+                Modifier
+                    .padding(3.dp)
+                    .background(MaterialTheme.colorScheme.primary, RoundedCornerShape(8.dp))
+                    .padding(horizontal = 6.dp, vertical = 1.dp),
+            ) {
+                Text(
+                    "×${entry.deckQuantity}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onPrimary,
+                )
+            }
+        }
+    }
+}
 
 private val BASIC_LANDS = setOf(
     "plains", "island", "swamp", "mountain", "forest", "wastes",
