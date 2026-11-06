@@ -24,7 +24,9 @@ class CollectionRepository(
     val count: Flow<Int> = dao.observeCount()
 
     // Vlastní klient na stahování obrázků (bez Scryfall rate-limiteru).
-    private val imageClient = OkHttpClient()
+    private val imageClient = OkHttpClient.Builder()
+        .callTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
+        .build()
 
     /**
      * Identifikuje kartu z OCR textu. Nejdřív najde kartu podle jména (fuzzy),
@@ -102,7 +104,10 @@ class CollectionRepository(
                 val dir = File(appContext.filesDir, "card_images").apply { mkdirs() }
                 val out = File(dir, "$id.jpg")
                 if (out.exists() && out.length() > 0) return@runCatching out.absolutePath
-                val req = Request.Builder().url(url).build()
+                val req = Request.Builder()
+                    .url(url)
+                    .header("User-Agent", "Antimarcipan/0.1")
+                    .build()
                 imageClient.newCall(req).execute().use { resp ->
                     if (!resp.isSuccessful) return@runCatching null
                     val body = resp.body ?: return@runCatching null

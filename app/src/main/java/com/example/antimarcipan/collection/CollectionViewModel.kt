@@ -105,6 +105,13 @@ class CollectionViewModel(
         }
     }
 
+    fun addCardToDeck(deckId: Long, scryfallId: String, onDone: () -> Unit) {
+        viewModelScope.launch {
+            deckRepo.addCard(deckId, scryfallId)
+            onDone()
+        }
+    }
+
     fun remove(scryfallId: String) {
         viewModelScope.launch { repo.remove(scryfallId) }
         _selection.update { it - scryfallId }

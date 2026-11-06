@@ -19,10 +19,11 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.MenuBook
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
@@ -57,6 +58,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.antimarcipan.R
+import com.example.antimarcipan.data.gathererLink
 import com.example.antimarcipan.data.local.CollectionCard
 import com.example.antimarcipan.data.thumbModel
 import com.example.antimarcipan.ui.AppViewModelFactory
@@ -82,13 +84,12 @@ fun CollectionScreen(
     val context = LocalContext.current
     val cards by vm.cards.collectAsStateWithLifecycle()
     val filter by vm.filter.collectAsStateWithLifecycle()
-    val selection by vm.selection.collectAsStateWithLifecycle()
     val decks by vm.decks.collectAsStateWithLifecycle()
     val sets by vm.availableSets.collectAsStateWithLifecycle()
 
     var showAdvanced by remember { mutableStateOf(false) }
-    var showDeckPicker by remember { mutableStateOf(false) }
     var pendingDelete by remember { mutableStateOf<CollectionCard?>(null) }
+    var pendingAddDeck by remember { mutableStateOf<CollectionCard?>(null) }
 
     Column(Modifier.fillMaxSize()) {
         // Hledání
@@ -155,42 +156,44 @@ fun CollectionScreen(
         } else {
             LazyColumn(Modifier.weight(1f)) {
                 items(cards, key = { it.scryfallId }) { card ->
-                    SwipeToDelete(onRequestDelete = { pendingDelete = card }) {
+                    SwipeRow(
+                        onRequestDelete = { pendingDelete = card },
+                        onRequestAddToDeck = { pendingAddDeck = card },
+                    ) {
                         CollectionRow(
                             card = card,
-                            selected = selection.contains(card.scryfallId),
-                            onToggleSelect = { vm.toggleSelect(card.scryfallId) },
-                            onRemove = { pendingDelete = card },
+                            onOpenGatherer = {
+                                runCatching {
+                                    context.startActivity(
+                                        android.content.Intent(
+                                            android.content.Intent.ACTION_VIEW,
+                                            android.net.Uri.parse(card.gathererLink()),
+                                        ).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                                    )
+                                }
+                            },
                         )
                     }
                     HorizontalDivider()
                 }
             }
-        }
-
-        if (selection.isNotEmpty()) {
-            Surface(tonalElevation = 3.dp) {
-                Row(
-                    Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text("Vybráno ${selection.size}", Modifier.weight(1f))
-                    TextButton(onClick = vm::clearSelection) { Text("Zrušit") }
-                    TextButton(onClick = { showDeckPicker = true }) { Text("Do balíku") }
-                }
-            }
+            Text(
+                "Swipe doprava = do balíku · doleva = smazat · ikona = pravidla na Gathereru",
+                Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+            )
         }
     }
 
-    if (showDeckPicker) {
+    pendingAddDeck?.let { card ->
         DeckPickerDialog(
             decks = decks,
-            onDismiss = { showDeckPicker = false },
+            onDismiss = { pendingAddDeck = null },
             onPick = { deck ->
-                showDeckPicker = false
-                vm.addSelectionToDeck(deck.id) { n ->
-                    Toast.makeText(context, "Přidáno $n karet do „${deck.name}“", Toast.LENGTH_SHORT).show()
+                pendingAddDeck = null
+                vm.addCardToDeck(deck.id, card.scryfallId) {
+                    Toast.makeText(context, "Přidáno do „${deck.name}“", Toast.LENGTH_SHORT).show()
                 }
             },
         )
@@ -303,30 +306,40 @@ private fun SortRow(filter: CollectionFilter, vm: CollectionViewModel) {
     }
 }
 
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
-private fun SwipeToDelete(onRequestDelete: () -> Unit, content: @Composable () -> Unit) {
+private fun SwipeRow(
+    onRequestDelete: () -> Unit,
+    onRequestAddToDeck: () -> Unit,
+    content: @Composable () -> Unit,
+) {
     val dismissState = rememberSwipeToDismissBoxState(
         confirmValueChange = { value ->
-            if (value == SwipeToDismissBoxValue.EndToStart) {
-                onRequestDelete()
+            when (value) {
+                SwipeToDismissBoxValue.EndToStart -> onRequestDelete()
+                SwipeToDismissBoxValue.StartToEnd -> onRequestAddToDeck()
+                else -> {}
             }
-            false // nikdy nemizí rovnou — čeká na potvrzení v dialogu
+            false // nikdy nemizí rovnou — čeká na potvrzení / výběr
         },
     )
     SwipeToDismissBox(
         state = dismissState,
-        enableDismissFromStartToEnd = false,
         backgroundContent = {
-            Box(
-                Modifier.fillMaxWidth().padding(end = 20.dp),
-                contentAlignment = Alignment.CenterEnd,
-            ) {
+            val toStart = dismissState.dismissDirection == SwipeToDismissBoxValue.EndToStart
+            val align = if (toStart) Alignment.CenterEnd else Alignment.CenterStart
+            Box(Modifier.fillMaxWidth().padding(horizontal = 20.dp), contentAlignment = align) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
-                    Icon(Icons.Filled.Delete, contentDescription = null, tint = Color(0xFFD95C5C))
-                    Text("Smazat", color = Color(0xFFD95C5C))
+                    if (toStart) {
+                        Icon(Icons.Filled.Delete, contentDescription = null, tint = Color(0xFFD95C5C))
+                        Text("Smazat", color = Color(0xFFD95C5C))
+                    } else {
+                        Icon(Icons.Filled.Add, contentDescription = null, tint = Color(0xFF2E9E5B))
+                        Text("Do balíku", color = Color(0xFF2E9E5B))
+                    }
                 }
             }
         },
@@ -338,17 +351,13 @@ private fun SwipeToDelete(onRequestDelete: () -> Unit, content: @Composable () -
 @Composable
 private fun CollectionRow(
     card: CollectionCard,
-    selected: Boolean,
-    onToggleSelect: () -> Unit,
-    onRemove: () -> Unit,
+    onOpenGatherer: () -> Unit,
 ) {
     Row(
         Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Checkbox(checked = selected, onCheckedChange = { onToggleSelect() })
-
         // Náhled + tooltip s textem karty na podržení
         val tooltipState = rememberTooltipState(isPersistent = true)
         TooltipBox(
@@ -405,8 +414,12 @@ private fun CollectionRow(
                 Text("ks: ${card.quantity}", style = MaterialTheme.typography.labelSmall)
             }
         }
-        IconButton(onClick = onRemove) {
-            Icon(Icons.Filled.Delete, contentDescription = "Odebrat")
+        IconButton(onClick = onOpenGatherer) {
+            Icon(
+                Icons.AutoMirrored.Filled.MenuBook,
+                contentDescription = "Pravidla na Gathereru",
+                tint = MaterialTheme.colorScheme.primary,
+            )
         }
     }
 }

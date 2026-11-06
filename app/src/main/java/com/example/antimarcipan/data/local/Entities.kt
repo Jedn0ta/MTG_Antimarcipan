@@ -23,6 +23,8 @@ data class CollectionCard(
     val imageUrl: String?,
     /** Lokálně stažený náhled karty (aby se zobrazoval offline a spolehlivě). */
     val localImagePath: String? = null,
+    /** Odkaz na tuto konkrétní kartu na Gathereru (oficiální pravidla). */
+    val gathererUrl: String? = null,
     val priceUsd: String?,
     val quantity: Int = 1,
     val addedAt: Long = System.currentTimeMillis(),

@@ -26,6 +26,7 @@ data class ScryfallCard(
     @SerialName("card_faces") val cardFaces: List<CardFace> = emptyList(),
     val prices: Prices? = null,
     @SerialName("scryfall_uri") val scryfallUri: String? = null,
+    @SerialName("related_uris") val relatedUris: RelatedUris? = null,
 ) {
     /** Best available normal-size image, falling back to the front face. */
     val bestImageUrl: String?
@@ -45,6 +46,11 @@ data class ImageUris(
     val small: String? = null,
     val normal: String? = null,
     @SerialName("art_crop") val artCrop: String? = null,
+)
+
+@Serializable
+data class RelatedUris(
+    val gatherer: String? = null,
 )
 
 @Serializable
