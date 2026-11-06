@@ -62,8 +62,21 @@ interface DeckDao {
     @Query("UPDATE decks SET coverImagePath = :path WHERE id = :deckId")
     suspend fun setCover(deckId: Long, path: String?)
 
+    @Query("UPDATE decks SET format = :format WHERE id = :deckId")
+    suspend fun setFormat(deckId: Long, format: String)
+
     @Query("SELECT COUNT(*) FROM deck_cards WHERE deckId = :deckId")
     suspend fun deckCardCount(deckId: Long): Int
+
+    /** Barevné identity karet v balíku (pro odvození barev balíku). */
+    @Query(
+        """
+        SELECT c.colorIdentity FROM collection_cards c
+        INNER JOIN deck_cards dc ON dc.scryfallId = c.scryfallId
+        WHERE dc.deckId = :deckId
+        """
+    )
+    suspend fun deckColorIdentities(deckId: Long): List<String>
 
     @Upsert
     suspend fun upsertDeckCard(deckCard: DeckCard)

@@ -21,12 +21,14 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Style
+import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -58,11 +60,13 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
+import com.example.antimarcipan.data.colorIdentityList
 import com.example.antimarcipan.data.local.CollectionCard
 import com.example.antimarcipan.data.thumbModel
 import com.example.antimarcipan.data.local.Deck
 import com.example.antimarcipan.ui.AppViewModelFactory
 import com.example.antimarcipan.ui.CardThumb
+import com.example.antimarcipan.ui.ColorIdentityPips
 import com.example.antimarcipan.ui.ConfirmDialog
 import java.io.File
 
@@ -114,6 +118,7 @@ private fun DeckListView(vm: DeckViewModel) {
                 items(decks, key = { it.id }) { deck ->
                     DeckListRow(
                         deck = deck,
+                        colors = produceDeckColors(vm, deck.id),
                         onOpen = { vm.select(deck.id) },
                         onDelete = { pendingDeleteDeck = deck },
                     )
@@ -124,13 +129,11 @@ private fun DeckListView(vm: DeckViewModel) {
     }
 
     if (showNewDeck) {
-        DeckNameDialog(
-            title = "Nový balík",
-            initial = "",
+        NewDeckDialog(
             onDismiss = { showNewDeck = false },
-            onConfirm = { name ->
+            onConfirm = { name, format ->
                 showNewDeck = false
-                vm.createDeck(name)
+                vm.createDeck(name, format)
             },
         )
     }
@@ -147,7 +150,20 @@ private fun DeckListView(vm: DeckViewModel) {
 }
 
 @Composable
-private fun DeckListRow(deck: Deck, onOpen: () -> Unit, onDelete: () -> Unit) {
+private fun produceDeckColors(vm: DeckViewModel, deckId: Long): Set<String> {
+    val state = androidx.compose.runtime.produceState(initialValue = emptySet<String>(), deckId) {
+        value = vm.deckColors(deckId)
+    }
+    return state.value
+}
+
+@Composable
+private fun DeckListRow(
+    deck: Deck,
+    colors: Set<String>,
+    onOpen: () -> Unit,
+    onDelete: () -> Unit,
+) {
     Row(
         Modifier.fillMaxWidth().clickable { onOpen() }.padding(horizontal = 16.dp, vertical = 10.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -157,10 +173,14 @@ private fun DeckListRow(deck: Deck, onOpen: () -> Unit, onDelete: () -> Unit) {
         Column(Modifier.weight(1f)) {
             Text(deck.name, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Text(
-                deck.commanderName?.let { "Velitel: $it" } ?: "Bez velitele",
+                DeckFormat.from(deck.format).label +
+                    (deck.commanderName?.let { " · ${it}" } ?: ""),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
             )
+            ColorIdentityPips(colors, symbolSize = 16)
         }
         IconButton(onClick = onDelete) {
             Icon(Icons.Filled.Delete, contentDescription = "Smazat balík")
@@ -202,11 +222,15 @@ private fun DeckDetailView(vm: DeckViewModel, deck: Deck) {
     val collection by vm.collection.collectAsStateWithLifecycle()
 
     var showRename by remember { mutableStateOf(false) }
+    var showFormat by remember { mutableStateOf(false) }
     var pendingRemove by remember { mutableStateOf<CollectionCard?>(null) }
 
     val coverPicker = rememberLauncherForActivityResult(
         ActivityResultContracts.PickVisualMedia()
     ) { uri -> if (uri != null) vm.setCover(deck.id, uri) }
+
+    val format = DeckFormat.from(deck.format)
+    val deckColors = deckCards.flatMap { it.colorIdentityList() }.toSet()
 
     Column(Modifier.fillMaxSize()) {
         // Hlavička balíku
@@ -221,13 +245,38 @@ private fun DeckDetailView(vm: DeckViewModel, deck: Deck) {
             DeckCover(deck.coverImagePath, size = 64.dp)
             Column(Modifier.weight(1f)) {
                 Text(deck.name, style = MaterialTheme.typography.titleLarge, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                Text(
-                    "Velitel: ${deck.commanderName ?: "— nenastaven —"} · ${deckCards.size} karet",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Text(
+                        "${format.label} · ${deckCards.size} karet",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                    )
+                    ColorIdentityPips(deckColors, symbolSize = 16)
+                }
+                if (format == DeckFormat.COMMANDER) {
+                    Text(
+                        "Velitel: ${deck.commanderName ?: "— nenastaven —"}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                    )
+                }
+            }
+            IconButton(onClick = { showFormat = true }) {
+                Icon(Icons.Filled.Tune, contentDescription = "Formát balíku")
             }
         }
+
+        // Legalita balíku
+        DeckLegalityPanel(
+            DeckRules.legality(
+                format = format,
+                cards = deckCards,
+                hasCommander = deck.commanderScryfallId != null,
+            )
+        )
 
         // Akce
         Row(
@@ -264,11 +313,6 @@ private fun DeckDetailView(vm: DeckViewModel, deck: Deck) {
             }
         }
 
-        val duplicates = DeckDuplicates.duplicateNames(deckCards)
-        if (duplicates.isNotEmpty()) {
-            DuplicateWarning(duplicates)
-        }
-
         LazyColumn(Modifier.fillMaxSize()) {
             item { SectionHeader("Karty v balíku — swipe doleva odebere") }
             if (deckCards.isEmpty()) {
@@ -285,6 +329,7 @@ private fun DeckDetailView(vm: DeckViewModel, deck: Deck) {
                     DeckCardRow(
                         card = card,
                         isCommander = card.scryfallId == deck.commanderScryfallId,
+                        showCommander = format == DeckFormat.COMMANDER,
                         onCommander = { vm.setCommander(card) },
                         onRemove = { pendingRemove = card },
                     )
@@ -342,6 +387,142 @@ private fun DeckDetailView(vm: DeckViewModel, deck: Deck) {
             onDismiss = { pendingRemove = null },
         )
     }
+
+    if (showFormat) {
+        FormatDialog(
+            current = format,
+            onDismiss = { showFormat = false },
+            onPick = { f -> showFormat = false; vm.setFormat(deck.id, f) },
+        )
+    }
+}
+
+@Composable
+private fun DeckLegalityPanel(legality: DeckLegality) {
+    if (legality.format == DeckFormat.FREEFORM) return
+    val issues = buildList {
+        if (!legality.sizeOk) add("málo karet: ${legality.totalCards}/${legality.minCards}")
+        if (!legality.singletonOk) add("duplicity: ${legality.duplicates.joinToString(", ")}")
+        if (!legality.commanderOk) add("chybí velitel")
+    }
+    val ok = legality.isLegal
+    Card(
+        Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp),
+        colors = androidx.compose.material3.CardDefaults.cardColors(
+            containerColor = if (ok) Color(0xFF234D34) else Color(0xFF4D3A23)
+        ),
+    ) {
+        Row(
+            Modifier.fillMaxWidth().padding(14.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.Top,
+        ) {
+            Icon(
+                if (ok) Icons.Filled.CheckCircle else Icons.Filled.Warning,
+                contentDescription = null,
+                tint = if (ok) Color(0xFF7FDBA3) else Color(0xFFE9C46A),
+            )
+            Column {
+                Text(
+                    if (ok) "${legality.format.label}: v pořádku (${legality.totalCards} karet)"
+                    else "${legality.format.label}: ${legality.totalCards} karet",
+                    style = MaterialTheme.typography.titleSmall,
+                    color = Color.White,
+                )
+                val rule = when (legality.format) {
+                    DeckFormat.COMMANDER -> "100 karet, každá nezákladní 1×, velitel."
+                    DeckFormat.SINGLETON -> "min. 100 karet, každá nezákladní právě 1× (kromě základních zemí)."
+                    DeckFormat.FREEFORM -> ""
+                }
+                Text(
+                    rule + if (issues.isNotEmpty()) "  Chybí: " + issues.joinToString("; ") else "",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color.White.copy(alpha = 0.85f),
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun FormatDialog(
+    current: DeckFormat,
+    onDismiss: () -> Unit,
+    onPick: (DeckFormat) -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Formát balíku") },
+        text = {
+            Column {
+                DeckFormat.entries.forEach { f ->
+                    Row(
+                        Modifier.fillMaxWidth().clickable { onPick(f) }.padding(vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    ) {
+                        androidx.compose.material3.RadioButton(
+                            selected = f == current,
+                            onClick = { onPick(f) },
+                        )
+                        Column {
+                            Text(f.label, style = MaterialTheme.typography.bodyLarge)
+                            Text(
+                                when (f) {
+                                    DeckFormat.COMMANDER -> "100 karet, singleton, 1 velitel"
+                                    DeckFormat.SINGLETON -> "jednokarťák: 100+ karet, singleton, bez velitele"
+                                    DeckFormat.FREEFORM -> "bez omezení"
+                                },
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {},
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Zavřít") } },
+    )
+}
+
+@Composable
+private fun NewDeckDialog(
+    onDismiss: () -> Unit,
+    onConfirm: (String, DeckFormat) -> Unit,
+) {
+    var name by remember { mutableStateOf("") }
+    var format by remember { mutableStateOf(DeckFormat.SINGLETON) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Nový balík") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text("Název balíku") },
+                    singleLine = true,
+                )
+                Text("Formát", style = MaterialTheme.typography.labelMedium)
+                DeckFormat.entries.forEach { f ->
+                    Row(
+                        Modifier.fillMaxWidth().clickable { format = f }.padding(vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    ) {
+                        androidx.compose.material3.RadioButton(
+                            selected = f == format,
+                            onClick = { format = f },
+                        )
+                        Text(f.label)
+                    }
+                }
+            }
+        },
+        confirmButton = { TextButton(onClick = { onConfirm(name, format) }) { Text("Vytvořit") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Zrušit") } },
+    )
 }
 
 @Composable
@@ -390,6 +571,7 @@ private fun SectionHeader(text: String) {
 private fun DeckCardRow(
     card: CollectionCard,
     isCommander: Boolean,
+    showCommander: Boolean,
     onCommander: () -> Unit,
     onRemove: () -> Unit,
 ) {
@@ -407,13 +589,15 @@ private fun DeckCardRow(
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
             )
         }
-        IconButton(onClick = onCommander) {
-            Icon(
-                Icons.Filled.Star,
-                contentDescription = "Nastavit jako velitele",
-                tint = if (isCommander) MaterialTheme.colorScheme.primary
-                else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
-            )
+        if (showCommander) {
+            IconButton(onClick = onCommander) {
+                Icon(
+                    Icons.Filled.Star,
+                    contentDescription = "Nastavit jako velitele",
+                    tint = if (isCommander) MaterialTheme.colorScheme.primary
+                    else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+                )
+            }
         }
         IconButton(onClick = onRemove) {
             Icon(Icons.Filled.Delete, contentDescription = "Odebrat z balíku")

@@ -17,6 +17,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -190,7 +192,7 @@ private fun AddedConfirmation(tick: Int, text: String?, modifier: Modifier = Mod
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 androidx.compose.material3.Icon(
-                    androidx.compose.material.icons.Icons.Filled.CheckCircle,
+                    Icons.Filled.CheckCircle,
                     contentDescription = null,
                     tint = androidx.compose.ui.graphics.Color.White,
                     modifier = Modifier.size(56.dp),

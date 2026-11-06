@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -40,6 +41,17 @@ class CollectionViewModel(
             CollectionFiltering.apply(cards, f)
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    /** Edice dostupné ve sbírce (pro filtr podle edice). */
+    val availableSets: StateFlow<List<SetOption>> =
+        repo.cards.map { list ->
+            list.filter { it.setCode != null }
+                .groupBy { it.setCode!! }
+                .map { (code, group) ->
+                    SetOption(code, group.first().setName ?: code.uppercase())
+                }
+                .sortedBy { it.label }
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
     // --- filtr ---
     fun setQuery(q: String) { _filter.value = _filter.value.copy(query = q) }
 
@@ -57,6 +69,10 @@ class CollectionViewModel(
 
     fun toggleCmc(bucket: Int) = _filter.update {
         it.copy(cmcBuckets = it.cmcBuckets.toggle(bucket))
+    }
+
+    fun toggleSet(code: String) = _filter.update {
+        it.copy(sets = it.sets.toggle(code))
     }
 
     fun setSort(sort: SortBy) = _filter.update {

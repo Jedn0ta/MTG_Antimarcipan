@@ -12,7 +12,8 @@ class DeckRepository(private val dao: DeckDao) {
 
     fun deckCards(deckId: Long): Flow<List<CollectionCard>> = dao.observeDeckCards(deckId)
 
-    suspend fun createDeck(name: String): Long = dao.insertDeck(Deck(name = name))
+    suspend fun createDeck(name: String, format: String = "FREEFORM"): Long =
+        dao.insertDeck(Deck(name = name, format = format))
 
     suspend fun deleteDeck(deckId: Long) = dao.deleteDeck(deckId)
 
@@ -32,5 +33,15 @@ class DeckRepository(private val dao: DeckDao) {
 
     suspend fun setCover(deckId: Long, path: String?) = dao.setCover(deckId, path)
 
+    suspend fun setFormat(deckId: Long, format: String) = dao.setFormat(deckId, format)
+
     suspend fun cardCount(deckId: Long): Int = dao.deckCardCount(deckId)
+
+    /** Vrátí množinu barev (W/U/B/R/G), které balík hraje. */
+    suspend fun deckColors(deckId: Long): Set<String> =
+        dao.deckColorIdentities(deckId)
+            .flatMap { it.split(",") }
+            .map { it.trim() }
+            .filter { it.isNotEmpty() }
+            .toSet()
 }

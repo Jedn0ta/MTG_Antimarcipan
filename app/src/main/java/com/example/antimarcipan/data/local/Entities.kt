@@ -37,6 +37,8 @@ data class Deck(
     val commanderName: String? = null,
     /** Lokální cesta k náhledovému obrázku balíku (např. rub obalu). */
     val coverImagePath: String? = null,
+    /** Formát: COMMANDER, SINGLETON (jednokarťák), FREEFORM. */
+    val format: String = "FREEFORM",
     val createdAt: Long = System.currentTimeMillis(),
 )
 

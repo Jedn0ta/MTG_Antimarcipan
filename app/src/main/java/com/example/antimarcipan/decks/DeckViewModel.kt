@@ -53,9 +53,9 @@ class DeckViewModel(
 
     fun closeDeck() { selectedDeckId.value = null }
 
-    fun createDeck(name: String) {
+    fun createDeck(name: String, format: DeckFormat = DeckFormat.FREEFORM) {
         viewModelScope.launch {
-            val id = deckRepo.createDeck(name.ifBlank { "Nový balík" })
+            val id = deckRepo.createDeck(name.ifBlank { "Nový balík" }, format.code)
             selectedDeckId.value = id
         }
     }
@@ -63,6 +63,12 @@ class DeckViewModel(
     fun renameDeck(deckId: Long, name: String) {
         viewModelScope.launch { deckRepo.rename(deckId, name) }
     }
+
+    fun setFormat(deckId: Long, format: DeckFormat) {
+        viewModelScope.launch { deckRepo.setFormat(deckId, format.code) }
+    }
+
+    suspend fun deckColors(deckId: Long): Set<String> = deckRepo.deckColors(deckId)
 
     fun deleteDeck(deckId: Long) {
         viewModelScope.launch {

@@ -42,13 +42,18 @@ data class CollectionFilter(
     val rarities: Set<Rarity> = emptySet(),
     /** Vybrané mana value (0..6, 7 = 7+). Prázdné = všechny. */
     val cmcBuckets: Set<Int> = emptySet(),
+    /** Vybrané edice (set kódy). Prázdné = všechny. */
+    val sets: Set<String> = emptySet(),
     val sortBy: SortBy = SortBy.ADDED,
     val sortDesc: Boolean = true,
 ) {
     val isActive: Boolean
         get() = query.isNotBlank() || colors.isNotEmpty() || types.isNotEmpty() ||
-            rarities.isNotEmpty() || cmcBuckets.isNotEmpty()
+            rarities.isNotEmpty() || cmcBuckets.isNotEmpty() || sets.isNotEmpty()
 }
+
+/** Edice dostupná ve sbírce pro filtr. */
+data class SetOption(val code: String, val label: String)
 
 object CollectionFiltering {
 
@@ -58,7 +63,8 @@ object CollectionFiltering {
                 matchesColors(card, f.colors) &&
                 matchesTypes(card, f.types) &&
                 matchesRarity(card, f.rarities) &&
-                matchesCmc(card, f.cmcBuckets)
+                matchesCmc(card, f.cmcBuckets) &&
+                matchesSet(card, f.sets)
         }
         val sorted = when (f.sortBy) {
             SortBy.ADDED -> filtered.sortedBy { it.addedAt }
@@ -103,6 +109,11 @@ object CollectionFiltering {
         val cmc = (card.cmc ?: 0.0).toInt()
         val bucket = if (cmc >= 7) 7 else cmc
         return buckets.contains(bucket)
+    }
+
+    private fun matchesSet(card: CollectionCard, sets: Set<String>): Boolean {
+        if (sets.isEmpty()) return true
+        return card.setCode != null && sets.contains(card.setCode)
     }
 
     private fun rarityRank(r: String?): Int = when (r?.lowercase()) {

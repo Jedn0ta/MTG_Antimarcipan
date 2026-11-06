@@ -23,18 +23,23 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.RichTooltip
 import androidx.compose.material3.Surface
 import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TooltipBox
+import androidx.compose.material3.TooltipDefaults
 import androidx.compose.material3.rememberSwipeToDismissBoxState
+import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -79,6 +84,7 @@ fun CollectionScreen(
     val filter by vm.filter.collectAsStateWithLifecycle()
     val selection by vm.selection.collectAsStateWithLifecycle()
     val decks by vm.decks.collectAsStateWithLifecycle()
+    val sets by vm.availableSets.collectAsStateWithLifecycle()
 
     var showAdvanced by remember { mutableStateOf(false) }
     var showDeckPicker by remember { mutableStateOf(false) }
@@ -121,7 +127,7 @@ fun CollectionScreen(
         }
 
         AnimatedVisibility(visible = showAdvanced) {
-            AdvancedFilters(filter, vm)
+            AdvancedFilters(filter, vm, sets)
         }
 
         SortRow(filter, vm)
@@ -225,7 +231,11 @@ private fun ColorPip(res: Int, selected: Boolean, onClick: () -> Unit) {
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun AdvancedFilters(filter: CollectionFilter, vm: CollectionViewModel) {
+private fun AdvancedFilters(
+    filter: CollectionFilter,
+    vm: CollectionViewModel,
+    sets: List<SetOption>,
+) {
     Column(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp)) {
         Text("Typ", style = MaterialTheme.typography.labelMedium)
         FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -255,6 +265,18 @@ private fun AdvancedFilters(filter: CollectionFilter, vm: CollectionViewModel) {
                     onClick = { vm.toggleCmc(b) },
                     label = { Text(if (b == 7) "7+" else b.toString()) },
                 )
+            }
+        }
+        if (sets.isNotEmpty()) {
+            Text("Edice", style = MaterialTheme.typography.labelMedium)
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                sets.forEach { s ->
+                    FilterChip(
+                        selected = filter.sets.contains(s.code),
+                        onClick = { vm.toggleSet(s.code) },
+                        label = { Text(s.label) },
+                    )
+                }
             }
         }
         if (filter.isActive) {
@@ -328,11 +350,11 @@ private fun CollectionRow(
         Checkbox(checked = selected, onCheckedChange = { onToggleSelect() })
 
         // Náhled + tooltip s textem karty na podržení
-        val tooltipState = androidx.compose.material3.rememberTooltipState(isPersistent = true)
-        androidx.compose.material3.TooltipBox(
-            positionProvider = androidx.compose.material3.TooltipDefaults.rememberRichTooltipPositionProvider(),
+        val tooltipState = rememberTooltipState(isPersistent = true)
+        TooltipBox(
+            positionProvider = TooltipDefaults.rememberRichTooltipPositionProvider(),
             tooltip = {
-                androidx.compose.material3.RichTooltip(
+                RichTooltip(
                     title = { Text(card.name) },
                     text = {
                         Text(
