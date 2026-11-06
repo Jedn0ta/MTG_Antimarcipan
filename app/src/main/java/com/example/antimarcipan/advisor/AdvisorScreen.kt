@@ -35,7 +35,6 @@ import com.example.antimarcipan.data.advisor.AdvisorTip
 import com.example.antimarcipan.data.advisor.TipLevel
 import com.example.antimarcipan.ui.AppViewModelFactory
 import com.example.antimarcipan.ui.EmptyState
-import com.example.antimarcipan.ui.ScreenTitle
 
 @Composable
 fun AdvisorScreen(
@@ -46,10 +45,9 @@ fun AdvisorScreen(
     var selectedDeckId by remember { mutableStateOf<Long?>(null) }
 
     Column(Modifier.fillMaxSize()) {
-        ScreenTitle("Anti Marcipán")
         Text(
             "Rozbor balíku a rady při hře.",
-            Modifier.padding(horizontal = 16.dp),
+            Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
         )

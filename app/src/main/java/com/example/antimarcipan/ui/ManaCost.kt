@@ -24,10 +24,36 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.material3.Text
 import com.example.antimarcipan.R
 
-/** Vykreslí manacost (např. "{2}{G}{G}", "{W/U}") jako řadu ikon many. */
+/**
+ * Vykreslí manacost (např. "{2}{G}{G}", "{W/U}") jako řadu ikon many.
+ * Karty hratelné více způsoby (split / modal / fuse) mají cenu oddělenou
+ * " // " — každou část vykreslíme zvlášť a mezi ně dáme oddělovač „//“.
+ */
 @Composable
 fun ManaCost(cost: String?, symbolSize: Int = 16) {
     if (cost.isNullOrBlank()) return
+    // Rozdělíme na části podle "//" (split / oboustranné / fuse karty).
+    val parts = cost.split("//").map { it.trim() }.filter { it.isNotEmpty() }
+    if (parts.isEmpty()) return
+
+    Row(horizontalArrangement = Arrangement.spacedBy(3.dp), verticalAlignment = Alignment.CenterVertically) {
+        parts.forEachIndexed { index, part ->
+            if (index > 0) {
+                Text(
+                    "//",
+                    style = TextStyle(
+                        fontSize = (symbolSize * 0.72).sp,
+                        fontWeight = FontWeight.Bold,
+                    ),
+                )
+            }
+            ManaCostPart(part, symbolSize)
+        }
+    }
+}
+
+@Composable
+private fun ManaCostPart(cost: String, symbolSize: Int) {
     val tokens = Regex("\\{([^}]+)\\}").findAll(cost).map { it.groupValues[1] }.toList()
     if (tokens.isEmpty()) return
 

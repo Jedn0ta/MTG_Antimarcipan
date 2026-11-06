@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -110,11 +111,11 @@ private fun DeckListView(vm: DeckViewModel) {
         Row(
             Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.End,
         ) {
-            Text("Moje balíky", Modifier.weight(1f), style = MaterialTheme.typography.titleLarge)
             Button(onClick = { showNewDeck = true }) {
                 Icon(Icons.Filled.Add, contentDescription = null)
-                Text(" Nový")
+                Text(" Nový balík")
             }
         }
         HorizontalDivider()
@@ -259,83 +260,89 @@ private fun DeckDetailView(vm: DeckViewModel, deck: Deck) {
     val flatCards = deckCards.flatMap { e -> List(e.deckQuantity) { e.card } }
 
     Column(Modifier.fillMaxSize()) {
-        // Hlavička — kompaktní
-        Row(
-            Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 6.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            IconButton(onClick = vm::closeDeck) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Zpět")
-            }
-            DeckCover(deck.coverImagePath, size = 40.dp)
-            Column(Modifier.weight(1f)) {
+        // Hlavička — název na vlastním řádku (čitelný, snese delší názvy),
+        // pod ním metadata a přepínače zobrazení.
+        Column(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 6.dp)) {
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                IconButton(onClick = vm::closeDeck) {
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Zpět")
+                }
+                DeckCover(deck.coverImagePath, size = 44.dp)
                 Text(
                     deck.name,
-                    style = MaterialTheme.typography.titleMedium,
-                    maxLines = 1,
+                    Modifier.weight(1f),
+                    style = MaterialTheme.typography.titleLarge,
+                    maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                 )
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text(
-                        format.label,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-                    )
-                    ColorIdentityPips(deckColors, symbolSize = 15)
+                Box {
+                    IconButton(onClick = { showMenu = true }) {
+                        Icon(Icons.Filled.MoreVert, contentDescription = "Akce")
+                    }
+                    androidx.compose.material3.DropdownMenu(
+                        expanded = showMenu,
+                        onDismissRequest = { showMenu = false },
+                    ) {
+                        androidx.compose.material3.DropdownMenuItem(
+                            text = { Text("Název") },
+                            leadingIcon = { Icon(Icons.Filled.Edit, contentDescription = null) },
+                            onClick = { showMenu = false; showRename = true },
+                        )
+                        androidx.compose.material3.DropdownMenuItem(
+                            text = { Text("Náhled") },
+                            leadingIcon = { Icon(Icons.Filled.Image, contentDescription = null) },
+                            onClick = {
+                                showMenu = false
+                                coverPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                            },
+                        )
+                        androidx.compose.material3.DropdownMenuItem(
+                            text = { Text("Export decklistu") },
+                            leadingIcon = { Icon(Icons.Filled.Share, contentDescription = null) },
+                            onClick = { showMenu = false; shareDecklist(context, deck.name, flatCards) },
+                        )
+                        androidx.compose.material3.DropdownMenuItem(
+                            text = { Text("Formát balíku") },
+                            leadingIcon = { Icon(Icons.Filled.Tune, contentDescription = null) },
+                            onClick = { showMenu = false; showFormat = true },
+                        )
+                        androidx.compose.material3.DropdownMenuItem(
+                            text = { Text("Přidat základní země") },
+                            leadingIcon = { Icon(Icons.Filled.Add, contentDescription = null) },
+                            onClick = { showMenu = false; showBasics = true },
+                        )
+                    }
                 }
             }
-            // Minimální legalita: kolik doplnit
-            DeckNeed(format, flatCards.size)
-            IconButton(onClick = { showTypeFilter = !showTypeFilter }) {
-                Icon(
-                    Icons.Filled.FilterList,
-                    contentDescription = "Filtr typů",
-                    tint = if (selectedTypes.isEmpty()) MaterialTheme.colorScheme.onSurface
-                    else MaterialTheme.colorScheme.primary,
+            Row(
+                Modifier.fillMaxWidth().padding(start = 4.dp, top = 4.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    format.label,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
                 )
-            }
-            IconButton(onClick = { gridMode = !gridMode }) {
-                Icon(
-                    if (gridMode) Icons.AutoMirrored.Filled.ViewList else Icons.Filled.GridView,
-                    contentDescription = if (gridMode) "Seznam" else "Mřížka",
-                )
-            }
-            Box {
-                IconButton(onClick = { showMenu = true }) {
-                    Icon(Icons.Filled.MoreVert, contentDescription = "Akce")
+                ColorIdentityPips(deckColors, symbolSize = 15)
+                DeckNeed(format, flatCards.size)
+                Spacer(Modifier.weight(1f))
+                IconButton(onClick = { showTypeFilter = !showTypeFilter }) {
+                    Icon(
+                        Icons.Filled.FilterList,
+                        contentDescription = "Filtr typů",
+                        tint = if (selectedTypes.isEmpty()) MaterialTheme.colorScheme.onSurface
+                        else MaterialTheme.colorScheme.primary,
+                    )
                 }
-                androidx.compose.material3.DropdownMenu(
-                    expanded = showMenu,
-                    onDismissRequest = { showMenu = false },
-                ) {
-                    androidx.compose.material3.DropdownMenuItem(
-                        text = { Text("Název") },
-                        leadingIcon = { Icon(Icons.Filled.Edit, contentDescription = null) },
-                        onClick = { showMenu = false; showRename = true },
-                    )
-                    androidx.compose.material3.DropdownMenuItem(
-                        text = { Text("Náhled") },
-                        leadingIcon = { Icon(Icons.Filled.Image, contentDescription = null) },
-                        onClick = {
-                            showMenu = false
-                            coverPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
-                        },
-                    )
-                    androidx.compose.material3.DropdownMenuItem(
-                        text = { Text("Export decklistu") },
-                        leadingIcon = { Icon(Icons.Filled.Share, contentDescription = null) },
-                        onClick = { showMenu = false; shareDecklist(context, deck.name, flatCards) },
-                    )
-                    androidx.compose.material3.DropdownMenuItem(
-                        text = { Text("Formát balíku") },
-                        leadingIcon = { Icon(Icons.Filled.Tune, contentDescription = null) },
-                        onClick = { showMenu = false; showFormat = true },
-                    )
-                    androidx.compose.material3.DropdownMenuItem(
-                        text = { Text("Přidat základní země") },
-                        leadingIcon = { Icon(Icons.Filled.Add, contentDescription = null) },
-                        onClick = { showMenu = false; showBasics = true },
+                IconButton(onClick = { gridMode = !gridMode }) {
+                    Icon(
+                        if (gridMode) Icons.AutoMirrored.Filled.ViewList else Icons.Filled.GridView,
+                        contentDescription = if (gridMode) "Seznam" else "Mřížka",
                     )
                 }
             }
@@ -425,18 +432,40 @@ private fun DeckDetailView(vm: DeckViewModel, deck: Deck) {
                 }
             }
 
-            item { SectionHeader("Ostatní karty (${others.sumOf { it.deckQuantity }})") }
-            items(others, key = { "O-" + it.card.scryfallId }) { entry ->
-                DeckEntryRow(
-                    entry = entry,
-                    isBasic = false,
-                    isCommander = entry.card.scryfallId == deck.commanderScryfallId,
-                    showCommander = format == DeckFormat.COMMANDER,
-                    onCommander = { vm.setCommander(entry.card) },
-                    onLongRemove = { pendingRemove = entry.card },
-                    onChangeQty = {},
-                )
-                HorizontalDivider()
+            if (others.isNotEmpty()) {
+                item { SectionHeader("Ostatní karty (${others.sumOf { it.deckQuantity }})") }
+                item {
+                    Card(
+                        Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
+                        colors = androidx.compose.material3.CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                        ),
+                    ) {
+                        others.forEachIndexed { i, entry ->
+                            DeckEntryRow(
+                                entry = entry,
+                                isBasic = false,
+                                isCommander = entry.card.scryfallId == deck.commanderScryfallId,
+                                showCommander = format == DeckFormat.COMMANDER,
+                                onCommander = { vm.setCommander(entry.card) },
+                                onLongRemove = { pendingRemove = entry.card },
+                                onChangeQty = {},
+                            )
+                            if (i < others.lastIndex) HorizontalDivider()
+                        }
+                    }
+                }
+            }
+
+            if (selectedTypes.isNotEmpty() && lands.isEmpty() && others.isEmpty() && deckCards.isNotEmpty()) {
+                item {
+                    Text(
+                        "Filtru „${selectedTypes.joinToString(", ")}“ neodpovídá žádná karta.",
+                        Modifier.padding(16.dp),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                    )
+                }
             }
 
             item { SectionHeader("Přidat ze sbírky") }

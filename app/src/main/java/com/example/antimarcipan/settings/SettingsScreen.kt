@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -42,7 +43,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.antimarcipan.BuildConfig
 import com.example.antimarcipan.data.update.UpdateStatus
 import com.example.antimarcipan.ui.AppViewModelFactory
-import com.example.antimarcipan.ui.ScreenTitle
 import kotlin.math.roundToInt
 
 @Composable
@@ -56,7 +56,7 @@ fun SettingsScreen(
         Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
-        ScreenTitle("Nastavení")
+        Spacer(Modifier.height(4.dp))
 
         // --- Verze / aktualizace ---
         Card(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp)) {
@@ -164,9 +164,11 @@ fun SettingsScreen(
 
         LanguageCard(vm)
 
-        GuideCard()
-
         BackupCard(vm)
+
+        AboutCard(sha = state.currentSha)
+
+        Spacer(Modifier.height(12.dp))
     }
 }
 
@@ -293,16 +295,21 @@ private fun LanguageCard(vm: SettingsViewModel) {
 }
 
 @Composable
-private fun GuideCard() {
+private fun AboutCard(sha: String) {
     var showGuide by remember { mutableStateOf(false) }
     Card(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp)) {
         Column(
             Modifier.fillMaxWidth().padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            Text("Průvodce aplikací", style = MaterialTheme.typography.titleMedium)
+            Text("O aplikaci", style = MaterialTheme.typography.titleMedium)
             Text(
-                "Krátký přehled, jak jednotlivé části aplikace fungují.",
+                "Antimarcipán · verze ${BuildConfig.VERSION_NAME} · build $sha",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+            )
+            Text(
+                "Průvodce aplikací: krátký přehled, jak jednotlivé části fungují.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
             )

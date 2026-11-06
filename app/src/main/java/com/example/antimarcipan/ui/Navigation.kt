@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -19,16 +18,10 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.ui.graphics.Color
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import com.example.antimarcipan.MtgApp
 import com.example.antimarcipan.R
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -62,14 +55,6 @@ private enum class Dest(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AntimarcipanApp() {
-    val context = LocalContext.current
-    val settings = remember { (context.applicationContext as MtgApp).container.appSettings }
-    var showGuide by remember { mutableStateOf(false) }
-    // Průvodce při prvním spuštění
-    LaunchedEffect(Unit) {
-        if (!settings.guideSeen.value) showGuide = true
-    }
-
     val navController = rememberNavController()
     val backStack by navController.currentBackStackEntryAsState()
     val current = backStack?.destination
@@ -110,9 +95,6 @@ fun AntimarcipanApp() {
                 },
                 actions = {
                     if (!isSubScreen) {
-                        IconButton(onClick = { showGuide = true }) {
-                            Icon(Icons.Filled.Info, contentDescription = "Průvodce")
-                        }
                         IconButton(onClick = { navController.navigate(MANUAL_ROUTE) }) {
                             Icon(Icons.Filled.Add, contentDescription = "Přidat ručně")
                         }
@@ -173,12 +155,5 @@ fun AntimarcipanApp() {
             composable(SETTINGS_ROUTE) { SettingsScreen() }
             composable(MANUAL_ROUTE) { ManualAddScreen() }
         }
-    }
-
-    if (showGuide) {
-        GuideOverlay(onClose = {
-            showGuide = false
-            settings.markGuideSeen()
-        })
     }
 }

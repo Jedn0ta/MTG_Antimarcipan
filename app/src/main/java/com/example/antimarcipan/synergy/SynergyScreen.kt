@@ -37,7 +37,6 @@ import com.example.antimarcipan.data.SynergyRecommendation
 import com.example.antimarcipan.data.synergy.CardFit
 import com.example.antimarcipan.ui.AppViewModelFactory
 import com.example.antimarcipan.ui.EmptyState
-import com.example.antimarcipan.ui.ScreenTitle
 
 @Composable
 fun SynergyScreen(
@@ -48,10 +47,9 @@ fun SynergyScreen(
     var selectedDeckId by remember { mutableStateOf<Long?>(null) }
 
     Column(Modifier.fillMaxSize()) {
-        ScreenTitle("Synergie balíku")
-
         Row(
-            Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 12.dp),
+            Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())
+                .padding(horizontal = 12.dp, vertical = 8.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             decks.forEach { deck ->
