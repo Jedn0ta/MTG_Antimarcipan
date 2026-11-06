@@ -58,6 +58,38 @@ class SynergyRepository(
             .toList()
     }
 
+    /**
+     * Návrhy náhrad pro konkrétní kartu: on-color karty stejného hlavního typu
+     * a podobné ceny, laděné na téma balíku, seřazené dle oblíbenosti (EDHREC).
+     */
+    suspend fun replacementsFor(
+        primaryType: String,
+        cmc: Int,
+        colors: Set<String>,
+        themeFragment: String?,
+        exclude: Set<String>,
+    ): Result<List<String>> = runCatching {
+        val colorPart = if (colors.isNotEmpty())
+            "id<=${colors.joinToString("").lowercase()}" else ""
+        val query = listOfNotNull(
+            colorPart.ifBlank { null },
+            if (primaryType.isNotBlank()) "t:${primaryType.lowercase()}" else null,
+            "cmc>=${(cmc - 1).coerceAtLeast(0)}",
+            "cmc<=${cmc + 1}",
+            themeFragment,
+            "-t:basic",
+            "legal:commander",
+        ).joinToString(" ")
+        val exclLower = exclude.map { it.lowercase() }.toSet()
+        scryfall.search(query = query, order = "edhrec").data
+            .asSequence()
+            .map { it.name }
+            .filter { it.lowercase() !in exclLower }
+            .distinct()
+            .take(3)
+            .toList()
+    }
+
     suspend fun recommendationsFor(commanderName: String): Result<List<SynergyRecommendation>> =
         runCatching {
             val slug = Slug.commanderSlug(commanderName)

@@ -148,6 +148,16 @@ object SynergyEngine {
             reasons += "téma: ${themeHits.joinToString(", ")}"
         }
 
+        // Univerzálně užitečné role — dobré skoro v každém balíku.
+        val roles = mutableListOf<String>()
+        if (Regex("add \\{[wubrgc]|search your library for (a|up to).*land").containsMatchIn(o)) roles += "ramp"
+        if (Regex("destroy target|exile target|deals? \\d+ damage to").containsMatchIn(o)) roles += "removal"
+        if (Regex("draw (a|two|three|\\w+) card").containsMatchIn(o)) roles += "draw"
+        if (roles.isNotEmpty() && !card.isLand()) {
+            score += (roles.size * 5).coerceAtMost(12)
+            reasons += "univerzální: ${roles.joinToString(", ")}"
+        }
+
         if (reasons.isEmpty()) reasons += "žádná zřejmá synergie"
 
         return CardFit(

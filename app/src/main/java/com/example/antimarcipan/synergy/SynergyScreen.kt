@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -82,7 +83,7 @@ fun SynergyScreen(
 
                     if (report.misfits.isNotEmpty()) {
                         item { SectionTitle("Zvaž výměnu (${report.misfits.size})") }
-                        items(report.misfits) { FitRow(it) }
+                        items(report.misfits) { FitRow(it, state.replacements[it.card.scryfallId]) }
                     }
 
                     item { SectionTitle("Všechny karty podle vhodnosti") }
@@ -131,34 +132,65 @@ private fun SectionTitle(text: String) {
 }
 
 @Composable
-private fun FitRow(fit: CardFit) {
-    Row(
-        Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        val color = when {
-            fit.offColor -> Color(0xFFD95C5C)
-            fit.score >= 65 -> Color(0xFF2E9E5B)
-            fit.score >= 45 -> Color(0xFFD9A441)
-            else -> Color(0xFFD98324)
-        }
-        Box(
-            Modifier.size(36.dp).clip(CircleShape).background(color.copy(alpha = 0.18f)),
-            contentAlignment = Alignment.Center,
+private fun FitRow(fit: CardFit, replacements: List<String>? = null) {
+    Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
+        Row(
+            Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text("${fit.score}", style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Bold, color = color, textAlign = TextAlign.Center)
+            val color = when {
+                fit.offColor -> Color(0xFFD95C5C)
+                fit.score >= 65 -> Color(0xFF2E9E5B)
+                fit.score >= 45 -> Color(0xFFD9A441)
+                else -> Color(0xFFD98324)
+            }
+            Box(
+                Modifier.size(36.dp).clip(CircleShape).background(color.copy(alpha = 0.18f)),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text("${fit.score}", style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold, color = color, textAlign = TextAlign.Center)
+            }
+            // Náhled + info/celá karta (ťuk = info, podržení = celá karta)
+            com.example.antimarcipan.ui.InteractiveThumb(card = fit.card, width = 40.dp, height = 56.dp)
+            Column(Modifier.weight(1f)) {
+                Text(fit.card.name, style = MaterialTheme.typography.bodyMedium)
+                Text(
+                    fit.reasons.joinToString(" · "),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                )
+            }
         }
-        // Náhled + info/celá karta (ťuk = info, podržení = celá karta)
-        com.example.antimarcipan.ui.InteractiveThumb(card = fit.card, width = 40.dp, height = 56.dp)
-        Column(Modifier.weight(1f)) {
-            Text(fit.card.name, style = MaterialTheme.typography.bodyMedium)
+
+        if (!replacements.isNullOrEmpty()) {
             Text(
-                fit.reasons.joinToString(" · "),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                "Vhodné náhrady:",
+                Modifier.padding(start = 48.dp, top = 6.dp),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.primary,
             )
+            Row(
+                Modifier.fillMaxWidth().padding(start = 48.dp, top = 4.dp),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                replacements.take(3).forEach { name ->
+                    Column(
+                        Modifier.width(64.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
+                        SuggestionImage(name)
+                        Text(
+                            name,
+                            style = MaterialTheme.typography.labelSmall,
+                            maxLines = 2,
+                            textAlign = TextAlign.Center,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
+                        )
+                    }
+                }
+            }
         }
     }
     HorizontalDivider()

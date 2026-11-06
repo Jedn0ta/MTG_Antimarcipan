@@ -25,6 +25,8 @@ data class SynergyUiState(
     val report: DeckSynergyReport? = null,
     val suggestions: List<SynergyRecommendation> = emptyList(),
     val suggestionsSource: String = "",
+    /** Náhrady pro nevhodné karty: scryfallId → názvy navrhovaných karet. */
+    val replacements: Map<String, List<String>> = emptyMap(),
     val error: String? = null,
 )
 
@@ -57,6 +59,14 @@ class SynergyViewModel(
         "equipment" to "t:equipment",
         "auras/enchant" to "t:aura",
     )
+
+    private val mainTypes = listOf(
+        "Creature", "Planeswalker", "Instant", "Sorcery",
+        "Artifact", "Enchantment", "Battle", "Land",
+    )
+
+    private fun primaryType(typeLine: String?): String =
+        mainTypes.firstOrNull { typeLine?.contains(it, ignoreCase = true) == true } ?: ""
 
     fun analyzeDeck(deckId: Long) {
         viewModelScope.launch {
@@ -100,6 +110,28 @@ class SynergyViewModel(
                     suggestions = suggestions.take(40),
                     suggestionsSource = source,
                 )
+
+                // Náhrady pro nevhodné karty — doplní se po zobrazení reportu.
+                try {
+                    val frag = report.topThemes.firstNotNullOfOrNull { themeQuery[it] }
+                    val deckNames = cards.map { it.name }.toSet()
+                    val map = mutableMapOf<String, List<String>>()
+                    for (misfit in report.misfits.take(6)) {
+                        val type = primaryType(misfit.card.typeLine)
+                        val cmc = (misfit.card.cmc ?: 0.0).toInt()
+                        val repl = synergyRepo.replacementsFor(
+                            primaryType = type,
+                            cmc = cmc,
+                            colors = report.colors,
+                            themeFragment = frag,
+                            exclude = deckNames + misfit.card.name,
+                        ).getOrElse { emptyList() }
+                        if (repl.isNotEmpty()) map[misfit.card.scryfallId] = repl
+                    }
+                    if (map.isNotEmpty()) {
+                        _state.value = _state.value.copy(replacements = map)
+                    }
+                } catch (_: Exception) { /* náhrady jsou volitelné */ }
             } catch (e: Exception) {
                 _state.value = SynergyUiState(
                     error = "Analýza selhala: ${e.message ?: e.javaClass.simpleName}",
