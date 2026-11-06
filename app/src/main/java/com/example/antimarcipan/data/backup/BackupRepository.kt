@@ -26,6 +26,7 @@ class BackupRepository(
             context.contentResolver.openOutputStream(uri)?.use { out ->
                 dbFile.inputStream().use { it.copyTo(out) }
             } ?: error("Nepodařilo se otevřít cílový soubor.")
+            Unit
         }
     }
 
@@ -44,6 +45,7 @@ class BackupRepository(
             context.contentResolver.openInputStream(uri)?.use { input ->
                 dbFile.outputStream().use { input.copyTo(it) }
             } ?: error("Nepodařilo se otevřít zálohu.")
+            Unit
         }
     }
 
