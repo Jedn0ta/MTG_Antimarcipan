@@ -100,8 +100,10 @@ fun CollectionScreen(
     val decks by vm.decks.collectAsStateWithLifecycle()
     val sets by vm.availableSets.collectAsStateWithLifecycle()
 
+    val settings = remember { (context.applicationContext as com.example.antimarcipan.MtgApp).container.appSettings }
+    val gridMode by settings.collectionGrid.collectAsStateWithLifecycle()
+
     var showFilters by remember { mutableStateOf(false) }
-    var gridMode by remember { mutableStateOf(false) }
     var pendingDelete by remember { mutableStateOf<CollectionCard?>(null) }
     var pendingAddDeck by remember { mutableStateOf<CollectionCard?>(null) }
 
@@ -120,7 +122,7 @@ fun CollectionScreen(
                 leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
                 singleLine = true,
             )
-            IconButton(onClick = { gridMode = !gridMode }) {
+            IconButton(onClick = { settings.setCollectionGrid(!gridMode) }) {
                 Icon(
                     if (gridMode) Icons.AutoMirrored.Filled.ViewList else Icons.Filled.GridView,
                     contentDescription = "Zobrazení",

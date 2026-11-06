@@ -31,7 +31,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.CheckBox
+import androidx.compose.material.icons.filled.CheckBoxOutlineBlank
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.FilterList
@@ -242,14 +245,17 @@ private fun DeckDetailView(vm: DeckViewModel, deck: Deck) {
     val deckCards by vm.selectedDeckCards.collectAsStateWithLifecycle()
     val collection by vm.collection.collectAsStateWithLifecycle()
 
+    val settings = remember { (context.applicationContext as com.example.antimarcipan.MtgApp).container.appSettings }
+    val gridMode by settings.deckGrid.collectAsStateWithLifecycle()
+    val sectionSaved by settings.deckSection.collectAsStateWithLifecycle()
+    val sectionMode = runCatching { DeckSectionMode.valueOf(sectionSaved) }.getOrDefault(DeckSectionMode.ALL)
+
     var showRename by remember { mutableStateOf(false) }
     var showFormat by remember { mutableStateOf(false) }
     var showMenu by remember { mutableStateOf(false) }
     var showBasics by remember { mutableStateOf(false) }
     var showTypeFilter by remember { mutableStateOf(false) }
-    var gridMode by remember { mutableStateOf(false) }
-    var sectionMode by remember { mutableStateOf(DeckSectionMode.ALL) }
-    val selectedTypes = remember { androidx.compose.runtime.mutableStateListOf<String>() }
+    val selectedFilters = remember { androidx.compose.runtime.mutableStateListOf<String>() }
     var pendingRemove by remember { mutableStateOf<CollectionCard?>(null) }
 
     val coverPicker = rememberLauncherForActivityResult(
@@ -263,6 +269,15 @@ private fun DeckDetailView(vm: DeckViewModel, deck: Deck) {
     }
     // Rozbalené karty (podle počtu kusů) pro počítání velikosti a legality
     val flatCards = deckCards.flatMap { e -> List(e.deckQuantity) { e.card } }
+
+    // Kontext filtru: karty podle zvolené sekce (Vše / Land / Spell).
+    val sectionBase = when (sectionMode) {
+        DeckSectionMode.ALL -> deckCards
+        DeckSectionMode.LANDS -> deckCards.filter { isLandCard(it.card) }
+        DeckSectionMode.OTHERS -> deckCards.filter { !isLandCard(it.card) }
+    }
+    // Kategorie filtru se odvozují z kontextu — u landů se tribaly neukážou.
+    val filterCats = remember(sectionBase) { buildDeckFilters(sectionBase.map { it.card }) }
 
     Column(Modifier.fillMaxSize()) {
         // Hlavička — název na vlastním řádku (čitelný, snese delší názvy),
@@ -354,20 +369,36 @@ private fun DeckDetailView(vm: DeckViewModel, deck: Deck) {
             DeckSectionMode.entries.forEach { mode ->
                 androidx.compose.material3.FilterChip(
                     selected = sectionMode == mode,
-                    onClick = { sectionMode = mode },
+                    onClick = { settings.setDeckSection(mode.name) },
                     label = { Text(mode.label) },
                 )
             }
             Spacer(Modifier.weight(1f))
-            IconButton(onClick = { showTypeFilter = !showTypeFilter }) {
-                Icon(
-                    Icons.Filled.FilterList,
-                    contentDescription = "Filtr typů",
-                    tint = if (selectedTypes.isEmpty()) MaterialTheme.colorScheme.onSurface
-                    else MaterialTheme.colorScheme.primary,
+            Box {
+                IconButton(
+                    onClick = { showTypeFilter = true },
+                    enabled = filterCats.isNotEmpty(),
+                ) {
+                    Icon(
+                        Icons.Filled.FilterList,
+                        contentDescription = "Filtr",
+                        tint = if (selectedFilters.isEmpty()) MaterialTheme.colorScheme.onSurface
+                        else MaterialTheme.colorScheme.primary,
+                    )
+                }
+                DeckFilterMenu(
+                    expanded = showTypeFilter,
+                    categories = filterCats,
+                    selected = selectedFilters,
+                    onToggle = { v ->
+                        if (selectedFilters.contains(v)) selectedFilters.remove(v)
+                        else selectedFilters.add(v)
+                    },
+                    onClear = { selectedFilters.clear() },
+                    onDismiss = { showTypeFilter = false },
                 )
             }
-            IconButton(onClick = { gridMode = !gridMode }) {
+            IconButton(onClick = { settings.setDeckGrid(!gridMode) }) {
                 Icon(
                     if (gridMode) Icons.AutoMirrored.Filled.ViewList else Icons.Filled.GridView,
                     contentDescription = if (gridMode) "Seznam" else "Mřížka",
@@ -375,48 +406,11 @@ private fun DeckDetailView(vm: DeckViewModel, deck: Deck) {
             }
         }
 
-        // Typy a tribaly odvozené přímo z balíku (hlavní typy + podtypy stvoření)
-        val typeTokens = remember(deckCards) { deckTypeTokens(deckCards.map { it.card }) }
-
-        // Systematický filtr: oddělené řádky Typ / Tribal, vodorovně rolovatelné.
-        if (showTypeFilter) {
-            val mains = typeTokens.filter { it in MAIN_TYPES }
-            val tribes = typeTokens.filterNot { it in MAIN_TYPES }
-            Column(
-                Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 2.dp),
-                verticalArrangement = Arrangement.spacedBy(2.dp),
-            ) {
-                if (typeTokens.isEmpty()) {
-                    Text(
-                        "Zatím není co filtrovat.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                    )
-                }
-                if (mains.isNotEmpty()) {
-                    FilterTokenRow("Typ", mains, selectedTypes) { toggleType(selectedTypes, it) }
-                }
-                if (tribes.isNotEmpty()) {
-                    FilterTokenRow("Tribal", tribes, selectedTypes) { toggleType(selectedTypes, it) }
-                }
-                if (selectedTypes.isNotEmpty()) {
-                    androidx.compose.material3.TextButton(
-                        onClick = { selectedTypes.clear() },
-                        contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 8.dp, vertical = 0.dp),
-                    ) { Text("Zrušit filtr") }
-                }
-            }
-        }
-
-        val visible = deckCards.filter { entry ->
-            selectedTypes.isEmpty() || selectedTypes.any { token ->
-                entry.card.typeLine?.contains(token, ignoreCase = true) == true
-            }
-        }
+        val visible = sectionBase.filter { matchesDeckFilters(it.card, selectedFilters) }
         val allLands = visible.filter { isLandCard(it.card) }
         val allOthers = visible.filter { !isLandCard(it.card) }
-        val lands = if (sectionMode != DeckSectionMode.OTHERS) allLands else emptyList()
-        val others = if (sectionMode != DeckSectionMode.LANDS) allOthers else emptyList()
+        val lands = allLands
+        val others = allOthers
 
         if (gridMode) {
             DeckGrid(
@@ -490,10 +484,10 @@ private fun DeckDetailView(vm: DeckViewModel, deck: Deck) {
                 }
             }
 
-            if (selectedTypes.isNotEmpty() && allLands.isEmpty() && allOthers.isEmpty() && deckCards.isNotEmpty()) {
+            if (selectedFilters.isNotEmpty() && allLands.isEmpty() && allOthers.isEmpty() && deckCards.isNotEmpty()) {
                 item {
                     Text(
-                        "Filtru „${selectedTypes.joinToString(", ")}“ neodpovídá žádná karta.",
+                        "Filtru neodpovídá žádná karta.",
                         Modifier.padding(16.dp),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
@@ -601,43 +595,111 @@ private fun formatIcon(format: DeckFormat): androidx.compose.ui.graphics.vector.
 private fun deckCountLabel(count: Int, min: Int): String =
     if (min > 0) "$count/$min karet" else "$count karet"
 
-private fun toggleType(
-    list: androidx.compose.runtime.snapshots.SnapshotStateList<String>,
-    token: String,
-) {
-    if (list.contains(token)) list.remove(token) else list.add(token)
+// ---- Kontextový filtr balíku (select-list) ----
+
+private val COLOR_LABELS = linkedMapOf(
+    "W" to "Bílá", "U" to "Modrá", "B" to "Černá", "R" to "Červená", "G" to "Zelená", "C" to "Bezbarvá",
+)
+private val MANA_BUCKETS = listOf("0–1", "2–3", "4–5", "6+")
+
+private fun creatureSubtypesOf(card: CollectionCard): List<String> {
+    val line = card.typeLine ?: return emptyList()
+    if (!line.contains("Creature", ignoreCase = true)) return emptyList()
+    return line.substringAfter("—", "").trim().split(" ")
+        .map { it.trim() }.filter { it.length > 2 }
+}
+
+private fun manaBucketOf(cmc: Double?): String {
+    val v = (cmc ?: 0.0)
+    return when {
+        v <= 1 -> "0–1"
+        v <= 3 -> "2–3"
+        v <= 5 -> "4–5"
+        else -> "6+"
+    }
+}
+
+/**
+ * Sestaví kategorie filtru z kontextu karet. Kategorie se ukáže jen když má
+ * aspoň 2 hodnoty — u landů tak odpadnou tribaly i (jednotná) mana.
+ * Klíč hodnoty je "Kategorie:hodnota", popisek se bere z value.
+ */
+private fun buildDeckFilters(cards: List<CollectionCard>): LinkedHashMap<String, List<Pair<String, String>>> {
+    val types = linkedSetOf<String>()
+    val tribes = sortedSetOf<String>()
+    val colors = linkedSetOf<String>()
+    val buckets = linkedSetOf<String>()
+    cards.forEach { c ->
+        val line = c.typeLine
+        MAIN_TYPES.forEach { if (line?.contains(it, ignoreCase = true) == true) types.add(it) }
+        creatureSubtypesOf(c).forEach { tribes.add(it) }
+        c.colorIdentityList().forEach { colors.add(it) }
+        if (!(line?.contains("Land", ignoreCase = true) == true)) buckets.add(manaBucketOf(c.cmc))
+    }
+    val out = LinkedHashMap<String, List<Pair<String, String>>>()
+    if (types.size >= 2) out["Typ"] = types.map { "Typ:$it" to it }
+    if (tribes.size >= 2) out["Tribal"] = tribes.map { "Tribal:$it" to it }
+    if (colors.size >= 2) out["Barva"] = COLOR_LABELS.keys
+        .filter { it in colors }.map { "Barva:$it" to (COLOR_LABELS[it] ?: it) }
+    if (buckets.size >= 2) out["Mana"] = MANA_BUCKETS
+        .filter { it in buckets }.map { "Mana:$it" to it }
+    return out
+}
+
+private fun matchesDeckFilters(card: CollectionCard, selected: List<String>): Boolean {
+    if (selected.isEmpty()) return true
+    val byCat = selected.groupBy({ it.substringBefore(':') }, { it.substringAfter(':') })
+    return byCat.all { (cat, values) -> values.any { matchDeckValue(card, cat, it) } }
+}
+
+private fun matchDeckValue(card: CollectionCard, cat: String, value: String): Boolean = when (cat) {
+    "Typ" -> card.typeLine?.contains(value, ignoreCase = true) == true
+    "Tribal" -> creatureSubtypesOf(card).any { it.equals(value, ignoreCase = true) }
+    "Barva" -> card.colorIdentityList().contains(value)
+    "Mana" -> manaBucketOf(card.cmc) == value
+    else -> true
 }
 
 @Composable
-private fun FilterTokenRow(
-    title: String,
-    tokens: List<String>,
+private fun DeckFilterMenu(
+    expanded: Boolean,
+    categories: LinkedHashMap<String, List<Pair<String, String>>>,
     selected: List<String>,
     onToggle: (String) -> Unit,
+    onClear: () -> Unit,
+    onDismiss: () -> Unit,
 ) {
-    Row(
-        Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
-    ) {
-        Text(
-            title,
-            Modifier.width(52.dp),
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-        )
-        Row(
-            Modifier.weight(1f)
-                .horizontalScroll(androidx.compose.foundation.rememberScrollState()),
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-        ) {
-            tokens.forEach { token ->
-                androidx.compose.material3.FilterChip(
-                    selected = selected.contains(token),
-                    onClick = { onToggle(token) },
-                    label = { Text(token) },
+    androidx.compose.material3.DropdownMenu(expanded = expanded, onDismissRequest = onDismiss) {
+        categories.forEach { (title, values) ->
+            Text(
+                title,
+                Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.primary,
+            )
+            values.forEach { (key, label) ->
+                val isSel = selected.contains(key)
+                androidx.compose.material3.DropdownMenuItem(
+                    text = { Text(label) },
+                    onClick = { onToggle(key) },
+                    leadingIcon = {
+                        Icon(
+                            if (isSel) Icons.Filled.CheckBox else Icons.Filled.CheckBoxOutlineBlank,
+                            contentDescription = null,
+                            tint = if (isSel) MaterialTheme.colorScheme.primary
+                            else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                        )
+                    },
                 )
             }
+        }
+        if (selected.isNotEmpty()) {
+            HorizontalDivider()
+            androidx.compose.material3.DropdownMenuItem(
+                text = { Text("Zrušit filtr") },
+                onClick = onClear,
+                leadingIcon = { Icon(Icons.Filled.Close, contentDescription = null) },
+            )
         }
     }
 }

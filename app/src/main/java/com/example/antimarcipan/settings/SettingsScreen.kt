@@ -272,10 +272,10 @@ private fun LanguageCard(vm: SettingsViewModel) {
             Modifier.fillMaxWidth().padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            Text("Jazyk překladu karet", style = MaterialTheme.typography.titleMedium)
+            Text("Jazyk aplikace", style = MaterialTheme.typography.titleMedium)
             Text(
-                "Do tohoto jazyka přeloží překladač ve skenu textaci karty " +
-                    "(jméno, typ a schopnosti), pokud v něm karta vyšla.",
+                "Výchozí je čeština. Překladač ve skenu překládá textaci karet " +
+                    "do zvoleného jazyka (čeština = originál, protože karty v ní nevyšly).",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
             )

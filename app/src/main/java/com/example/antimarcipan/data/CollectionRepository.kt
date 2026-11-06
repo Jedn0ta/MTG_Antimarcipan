@@ -67,7 +67,8 @@ class CollectionRepository(
      * v daném jazyce nevyšla, vrátí anglický originál s příznakem fallbacku.
      */
     suspend fun translate(card: ScryfallCard, lang: String): Result<CardTranslation> = runCatching {
-        if (lang == "en") {
+        // Čeština: Scryfall karty v češtině nemá → ukážeme originál (anglicky).
+        if (lang == "en" || lang == "cs") {
             return@runCatching CardTranslation(
                 name = card.name,
                 typeLine = card.typeLine,
