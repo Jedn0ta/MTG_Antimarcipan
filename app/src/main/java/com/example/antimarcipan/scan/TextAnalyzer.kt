@@ -15,6 +15,7 @@ import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 class TextAnalyzer(
     private val minIntervalMs: Long = 700L,
     private val onText: (String) -> Unit,
+    private val onLines: (List<String>) -> Unit = {},
 ) : ImageAnalysis.Analyzer {
 
     private val recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
@@ -43,6 +44,9 @@ class TextAnalyzer(
             .addOnSuccessListener { result ->
                 val text = result.text
                 if (text.isNotBlank()) onText(text)
+                // Jednotlivé řádky bloků — pro multisken (víc karet v záběru).
+                val lines = result.textBlocks.flatMap { b -> b.lines.map { it.text } }
+                if (lines.isNotEmpty()) onLines(lines)
             }
             .addOnCompleteListener { imageProxy.close() }
     }

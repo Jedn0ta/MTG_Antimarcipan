@@ -22,6 +22,7 @@ import java.util.concurrent.Executors
 fun CameraPreview(
     onText: (String) -> Unit,
     modifier: Modifier = Modifier,
+    onLines: (List<String>) -> Unit = {},
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -45,7 +46,7 @@ fun CameraPreview(
                     .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                     .build()
                     .also {
-                        it.setAnalyzer(analysisExecutor, TextAnalyzer(onText = onText))
+                        it.setAnalyzer(analysisExecutor, TextAnalyzer(onText = onText, onLines = onLines))
                     }
 
                 try {

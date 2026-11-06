@@ -157,6 +157,7 @@ fun ScanScreen(
             CameraPreview(
                 onText = vm::onTextRecognized,
                 modifier = Modifier.fillMaxSize(),
+                onLines = vm::onFrameLines,
             )
 
             // Horní lišta: přepínač režimu vlevo, Vypnout vpravo
@@ -192,6 +193,7 @@ fun ScanScreen(
                 if (state.multiScan) {
                     MultiScanBar(
                         state = state,
+                        onCapture = vm::captureTable,
                         onReview = { showReview = true },
                         onCancelRescan = vm::cancelRescan,
                     )
@@ -289,18 +291,42 @@ private fun AddedConfirmation(tick: Int, text: String?, modifier: Modifier = Mod
 @Composable
 private fun MultiScanBar(
     state: ScanUiState,
+    onCapture: () -> Unit,
     onReview: () -> Unit,
     onCancelRescan: () -> Unit,
 ) {
     Card {
         Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(state.status, style = MaterialTheme.typography.bodyMedium)
+
+            // Hlavní akce: sejmout rozprostřené karty na stole naráz.
+            Button(
+                onClick = onCapture,
+                enabled = !state.capturing,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                if (state.capturing) {
+                    CircularProgressIndicator(
+                        Modifier.size(20.dp),
+                        strokeWidth = 2.dp,
+                        color = MaterialTheme.colorScheme.onPrimary,
+                    )
+                    Text("  Snímám…")
+                } else {
+                    Icon(Icons.Filled.CameraAlt, contentDescription = null)
+                    Text(
+                        if (state.rescanSlot != null) "  Sejmout správnou kartu"
+                        else "  Sejmout stůl",
+                    )
+                }
+            }
+
             if (state.rescanSlot != null) {
                 OutlinedButton(onClick = onCancelRescan, modifier = Modifier.fillMaxWidth()) {
                     Text("Zrušit přenačtení")
                 }
             } else {
-                Button(
+                OutlinedButton(
                     onClick = onReview,
                     enabled = state.pending.isNotEmpty(),
                     modifier = Modifier.fillMaxWidth(),
