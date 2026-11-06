@@ -19,8 +19,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.background
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.CheckCircle
@@ -185,10 +188,11 @@ fun ScanScreen(
                 }
             }
 
-            // Spodní overlay
+            // Spodní overlay — minimalistický, ať je vidět co fotíš
             Column(
-                Modifier.fillMaxWidth().align(Alignment.BottomCenter).padding(16.dp),
+                Modifier.fillMaxWidth().align(Alignment.BottomCenter).padding(12.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 if (state.multiScan) {
                     MultiScanBar(
@@ -213,11 +217,17 @@ fun ScanScreen(
                             onHideTranslation = vm::hideTranslation,
                         )
                     } else {
-                        Card {
+                        // Jen tenký poloprůhledný proužek se stavem — nezakrývá záběr
+                        Box(
+                            Modifier
+                                .clip(RoundedCornerShape(20.dp))
+                                .background(androidx.compose.ui.graphics.Color(0xCC14102A))
+                                .padding(horizontal = 16.dp, vertical = 8.dp),
+                        ) {
                             Text(
                                 state.status,
-                                Modifier.padding(16.dp),
-                                style = MaterialTheme.typography.bodyMedium,
+                                style = MaterialTheme.typography.labelLarge,
+                                color = androidx.compose.ui.graphics.Color.White,
                             )
                         }
                     }

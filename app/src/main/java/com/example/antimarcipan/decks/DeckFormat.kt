@@ -7,6 +7,13 @@ enum class DeckFormat(val code: String, val label: String) {
     SINGLETON("SINGLETON", "Jednokarťák"),
     FREEFORM("FREEFORM", "Volný");
 
+    /** Minimální počet karet pro formát (0 = bez omezení). */
+    val minCards: Int
+        get() = when (this) {
+            COMMANDER, SINGLETON -> 100
+            FREEFORM -> 0
+        }
+
     companion object {
         fun from(code: String?): DeckFormat =
             entries.firstOrNull { it.code == code } ?: FREEFORM

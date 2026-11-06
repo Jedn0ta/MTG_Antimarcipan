@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -39,6 +40,8 @@ import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.AllInclusive
+import androidx.compose.material.icons.filled.LooksOne
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Style
 import androidx.compose.material.icons.filled.Tune
@@ -319,41 +322,33 @@ private fun DeckDetailView(vm: DeckViewModel, deck: Deck) {
                     }
                 }
             }
+            // Metadata: jeden symbol formátu + počet karet + barvy
             Row(
-                Modifier.fillMaxWidth().padding(start = 4.dp, top = 4.dp),
+                Modifier.fillMaxWidth().padding(start = 4.dp, top = 2.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
+                Icon(
+                    formatIcon(format),
+                    contentDescription = format.label,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(18.dp),
+                )
                 Text(
-                    format.label,
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
+                    deckCountLabel(flatCards.size, format.minCards),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.85f),
                 )
                 ColorIdentityPips(deckColors, symbolSize = 15)
-                DeckNeed(format, flatCards.size)
-                Spacer(Modifier.weight(1f))
-                IconButton(onClick = { showTypeFilter = !showTypeFilter }) {
-                    Icon(
-                        Icons.Filled.FilterList,
-                        contentDescription = "Filtr typů",
-                        tint = if (selectedTypes.isEmpty()) MaterialTheme.colorScheme.onSurface
-                        else MaterialTheme.colorScheme.primary,
-                    )
-                }
-                IconButton(onClick = { gridMode = !gridMode }) {
-                    Icon(
-                        if (gridMode) Icons.AutoMirrored.Filled.ViewList else Icons.Filled.GridView,
-                        contentDescription = if (gridMode) "Seznam" else "Mřížka",
-                    )
-                }
             }
         }
         HorizontalDivider()
 
-        // Přepínač sekcí: Vše / Země / Ostatní
+        // Ovládání na jednom řádku: sekce vlevo, filtr a mřížka vpravo
         Row(
-            Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp),
+            Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp),
             horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             DeckSectionMode.entries.forEach { mode ->
                 androidx.compose.material3.FilterChip(
@@ -362,15 +357,33 @@ private fun DeckDetailView(vm: DeckViewModel, deck: Deck) {
                     label = { Text(mode.label) },
                 )
             }
+            Spacer(Modifier.weight(1f))
+            IconButton(onClick = { showTypeFilter = !showTypeFilter }) {
+                Icon(
+                    Icons.Filled.FilterList,
+                    contentDescription = "Filtr typů",
+                    tint = if (selectedTypes.isEmpty()) MaterialTheme.colorScheme.onSurface
+                    else MaterialTheme.colorScheme.primary,
+                )
+            }
+            IconButton(onClick = { gridMode = !gridMode }) {
+                Icon(
+                    if (gridMode) Icons.AutoMirrored.Filled.ViewList else Icons.Filled.GridView,
+                    contentDescription = if (gridMode) "Seznam" else "Mřížka",
+                )
+            }
         }
 
         // Typy a tribaly odvozené přímo z balíku (hlavní typy + podtypy stvoření)
         val typeTokens = remember(deckCards) { deckTypeTokens(deckCards.map { it.card }) }
 
-        androidx.compose.animation.AnimatedVisibility(visible = showTypeFilter) {
-            androidx.compose.foundation.layout.FlowRow(
-                Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp),
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
+        // Systematický filtr: oddělené řádky Typ / Tribal, vodorovně rolovatelné.
+        if (showTypeFilter) {
+            val mains = typeTokens.filter { it in MAIN_TYPES }
+            val tribes = typeTokens.filterNot { it in MAIN_TYPES }
+            Column(
+                Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 2.dp),
+                verticalArrangement = Arrangement.spacedBy(2.dp),
             ) {
                 if (typeTokens.isEmpty()) {
                     Text(
@@ -379,15 +392,17 @@ private fun DeckDetailView(vm: DeckViewModel, deck: Deck) {
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                     )
                 }
-                typeTokens.forEach { token ->
-                    androidx.compose.material3.FilterChip(
-                        selected = selectedTypes.contains(token),
-                        onClick = {
-                            if (selectedTypes.contains(token)) selectedTypes.remove(token)
-                            else selectedTypes.add(token)
-                        },
-                        label = { Text(token) },
-                    )
+                if (mains.isNotEmpty()) {
+                    FilterTokenRow("Typ", mains, selectedTypes) { toggleType(selectedTypes, it) }
+                }
+                if (tribes.isNotEmpty()) {
+                    FilterTokenRow("Tribal", tribes, selectedTypes) { toggleType(selectedTypes, it) }
+                }
+                if (selectedTypes.isNotEmpty()) {
+                    androidx.compose.material3.TextButton(
+                        onClick = { selectedTypes.clear() },
+                        contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 8.dp, vertical = 0.dp),
+                    ) { Text("Zrušit filtr") }
                 }
             }
         }
@@ -425,7 +440,7 @@ private fun DeckDetailView(vm: DeckViewModel, deck: Deck) {
             if (lands.isNotEmpty()) {
                 // Basicy první, pak ostatní země
                 val orderedLands = lands.sortedBy { if (isBasicLand(it.card)) 0 else 1 }
-                item { SectionHeader("Země (${lands.sumOf { it.deckQuantity }})") }
+                item { SectionHeader("Land (${lands.sumOf { it.deckQuantity }})") }
                 item {
                     Card(
                         Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
@@ -450,7 +465,7 @@ private fun DeckDetailView(vm: DeckViewModel, deck: Deck) {
             }
 
             if (others.isNotEmpty()) {
-                item { SectionHeader("Ostatní karty (${others.sumOf { it.deckQuantity }})") }
+                item { SectionHeader("Spell (${others.sumOf { it.deckQuantity }})") }
                 item {
                     Card(
                         Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
@@ -572,7 +587,58 @@ private val MAIN_TYPES = listOf(
 )
 
 private enum class DeckSectionMode(val label: String) {
-    ALL("Vše"), LANDS("Země"), OTHERS("Ostatní")
+    ALL("Vše"), LANDS("Land"), OTHERS("Spell")
+}
+
+private fun formatIcon(format: DeckFormat): androidx.compose.ui.graphics.vector.ImageVector =
+    when (format) {
+        DeckFormat.COMMANDER -> Icons.Filled.Star
+        DeckFormat.SINGLETON -> Icons.Filled.LooksOne
+        DeckFormat.FREEFORM -> Icons.Filled.AllInclusive
+    }
+
+private fun deckCountLabel(count: Int, min: Int): String =
+    if (min > 0) "$count/$min karet" else "$count karet"
+
+private fun toggleType(
+    list: androidx.compose.runtime.snapshots.SnapshotStateList<String>,
+    token: String,
+) {
+    if (list.contains(token)) list.remove(token) else list.add(token)
+}
+
+@Composable
+private fun FilterTokenRow(
+    title: String,
+    tokens: List<String>,
+    selected: List<String>,
+    onToggle: (String) -> Unit,
+) {
+    Row(
+        Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        Text(
+            title,
+            Modifier.width(52.dp),
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+        )
+        Row(
+            Modifier.weight(1f)
+                .horizontalScroll(androidx.compose.foundation.rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            tokens.forEach { token ->
+                androidx.compose.material3.FilterChip(
+                    selected = selected.contains(token),
+                    onClick = { onToggle(token) },
+                    label = { Text(token) },
+                )
+            }
+        }
+    }
 }
 
 private fun deckTypeTokens(cards: List<CollectionCard>): List<String> {
@@ -618,14 +684,14 @@ private fun DeckGrid(
     ) {
         if (orderedLands.isNotEmpty()) {
             item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(maxLineSpan) }) {
-                SectionHeader("Země (${orderedLands.sumOf { it.deckQuantity }})")
+                SectionHeader("Land (${orderedLands.sumOf { it.deckQuantity }})")
             }
             gridItems(orderedLands, key = { "gl-" + it.card.scryfallId }) { entry ->
                 DeckGridCell(entry)
             }
         }
         item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(maxLineSpan) }) {
-            SectionHeader("Ostatní karty (${others.sumOf { it.deckQuantity }})")
+            SectionHeader("Spell (${others.sumOf { it.deckQuantity }})")
         }
         gridItems(others, key = { "go-" + it.card.scryfallId }) { entry ->
             DeckGridCell(entry)
