@@ -15,6 +15,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -143,7 +146,67 @@ fun SettingsScreen(
             textAlign = TextAlign.Start,
         )
 
+        LanguageCard(vm)
+
+        GuideCard()
+
         BackupCard(vm)
+    }
+}
+
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+@Composable
+private fun LanguageCard(vm: SettingsViewModel) {
+    val current by vm.translationLang.collectAsStateWithLifecycle()
+    Card(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp)) {
+        Column(
+            Modifier.fillMaxWidth().padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Text("Jazyk překladu karet", style = MaterialTheme.typography.titleMedium)
+            Text(
+                "Do tohoto jazyka přeloží překladač ve skenu textaci karty " +
+                    "(jméno, typ a schopnosti), pokud v něm karta vyšla.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+            )
+            androidx.compose.foundation.layout.FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                com.example.antimarcipan.data.settings.TranslationLang.entries.forEach { lang ->
+                    androidx.compose.material3.FilterChip(
+                        selected = current == lang,
+                        onClick = { vm.setTranslationLang(lang) },
+                        label = { Text(lang.label) },
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun GuideCard() {
+    var showGuide by remember { mutableStateOf(false) }
+    Card(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp)) {
+        Column(
+            Modifier.fillMaxWidth().padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Text("Průvodce aplikací", style = MaterialTheme.typography.titleMedium)
+            Text(
+                "Krátký přehled, jak jednotlivé části aplikace fungují.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+            )
+            Button(
+                onClick = { showGuide = true },
+                modifier = Modifier.fillMaxWidth(),
+            ) { Text("Spustit průvodce") }
+        }
+    }
+    if (showGuide) {
+        com.example.antimarcipan.ui.GuideOverlay(onClose = { showGuide = false })
     }
 }
 

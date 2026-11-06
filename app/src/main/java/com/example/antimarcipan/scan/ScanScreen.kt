@@ -79,6 +79,7 @@ fun ScanScreen(
 
     val state by vm.state.collectAsStateWithLifecycle()
     val decks by vm.decks.collectAsStateWithLifecycle()
+    val transLang by vm.translationLang.collectAsStateWithLifecycle()
 
     Box(Modifier.fillMaxSize()) {
         if (!hasPermission) {
@@ -200,11 +201,14 @@ fun ScanScreen(
                         CandidateCard(
                             state = state,
                             decks = decks,
+                            langLabel = transLang.label,
                             onDismiss = vm::dismissCandidate,
                             onAddCollection = vm::addToCollection,
                             onAddDeck = vm::addToDeck,
                             onLoadPrints = vm::loadPrints,
                             onSelectPrint = vm::selectPrint,
+                            onTranslate = vm::translateCandidate,
+                            onHideTranslation = vm::hideTranslation,
                         )
                     } else {
                         Card {
@@ -379,16 +383,19 @@ private fun MultiScanReviewSheet(
 private fun CandidateCard(
     state: ScanUiState,
     decks: List<Deck>,
+    langLabel: String,
     onDismiss: () -> Unit,
     onAddCollection: () -> Unit,
     onAddDeck: (Long) -> Unit,
     onLoadPrints: () -> Unit,
     onSelectPrint: (com.example.antimarcipan.data.scryfall.ScryfallCard) -> Unit,
+    onTranslate: () -> Unit,
+    onHideTranslation: () -> Unit,
 ) {
     val candidate = state.candidate ?: return
     var showDeckPicker by remember { mutableStateOf(false) }
     var showEditions by remember { mutableStateOf(false) }
-    var showEnglish by remember { mutableStateOf(false) }
+    val translation = state.translation
 
     Card {
         Row(
@@ -405,17 +412,24 @@ private fun CandidateCard(
                         Modifier.weight(1f),
                         style = MaterialTheme.typography.titleMedium,
                     )
-                    // Překlad: anglická textace (oracle je vždy anglicky)
-                    androidx.compose.material3.IconButton(
-                        onClick = { showEnglish = !showEnglish },
-                        modifier = Modifier.size(32.dp),
-                    ) {
-                        androidx.compose.material3.Icon(
-                            androidx.compose.material.icons.Icons.Filled.Translate,
-                            contentDescription = "Anglická textace",
-                            tint = if (showEnglish) MaterialTheme.colorScheme.primary
-                            else MaterialTheme.colorScheme.onSurface,
+                    // Překlad textace do zvoleného jazyka
+                    if (state.translating) {
+                        CircularProgressIndicator(
+                            Modifier.size(22.dp),
+                            strokeWidth = 2.dp,
                         )
+                    } else {
+                        androidx.compose.material3.IconButton(
+                            onClick = { if (translation != null) onHideTranslation() else onTranslate() },
+                            modifier = Modifier.size(32.dp),
+                        ) {
+                            androidx.compose.material3.Icon(
+                                androidx.compose.material.icons.Icons.Filled.Translate,
+                                contentDescription = "Přeložit do: $langLabel",
+                                tint = if (translation != null) MaterialTheme.colorScheme.primary
+                                else MaterialTheme.colorScheme.onSurface,
+                            )
+                        }
                     }
                 }
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -427,16 +441,30 @@ private fun CandidateCard(
                     )
                 }
                 Text(candidate.typeLine ?: "", style = MaterialTheme.typography.bodySmall)
-                if (showEnglish) {
+                if (translation != null) {
+                    androidx.compose.material3.HorizontalDivider(Modifier.padding(vertical = 6.dp))
+                    if (translation.fallbackToEnglish) {
+                        Text(
+                            "V jazyce „$langLabel“ karta nevyšla — ukazuji anglicky.",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.error,
+                        )
+                    }
                     Text(
-                        buildString {
-                            append("EN: ${candidate.name}\n")
-                            candidate.typeLine?.let { append("$it\n") }
-                            candidate.oracleText?.let { append(it) }
-                        },
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.85f),
+                        translation.name,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.primary,
                     )
+                    translation.typeLine?.let {
+                        Text(it, style = MaterialTheme.typography.bodySmall)
+                    }
+                    translation.text?.let {
+                        Text(
+                            it,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.85f),
+                        )
+                    }
                 }
             }
         }

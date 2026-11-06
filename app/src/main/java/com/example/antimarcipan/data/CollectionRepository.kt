@@ -14,6 +14,15 @@ import okhttp3.Request
 import java.io.File
 import java.util.Locale
 
+/** Přeložená textace karty (do jazyka zvoleného v nastavení). */
+data class CardTranslation(
+    val name: String,
+    val typeLine: String?,
+    val text: String?,
+    val lang: String,
+    val fallbackToEnglish: Boolean,
+)
+
 /** Resolves scanned text into cards and manages the local collection. */
 class CollectionRepository(
     private val dao: CollectionDao,
@@ -50,6 +59,57 @@ class CollectionRepository(
             }
         }
         byName
+    }
+
+    /**
+     * Přeloží textaci karty do zvoleného jazyka přes lokalizované tisky
+     * Scryfallu (printed_name / printed_type_line / printed_text). Když karta
+     * v daném jazyce nevyšla, vrátí anglický originál s příznakem fallbacku.
+     */
+    suspend fun translate(card: ScryfallCard, lang: String): Result<CardTranslation> = runCatching {
+        if (lang == "en") {
+            return@runCatching CardTranslation(
+                name = card.name,
+                typeLine = card.typeLine,
+                text = card.oracleText,
+                lang = "en",
+                fallbackToEnglish = false,
+            )
+        }
+
+        val set = card.set
+        val number = card.collectorNumber
+        val localized = if (set != null && number != null) {
+            runCatching {
+                scryfall.cardBySetNumberLang(set.lowercase(Locale.ROOT), number, lang)
+            }.getOrNull()
+        } else null
+
+        val found = localized ?: runCatching {
+            scryfall.search(
+                query = "!\"${card.name}\" lang:$lang",
+                order = "released",
+                unique = "prints",
+            ).data.firstOrNull()
+        }.getOrNull()
+
+        if (found != null && (found.printedName != null || found.printedText != null)) {
+            CardTranslation(
+                name = found.printedName ?: found.name,
+                typeLine = found.printedTypeLine ?: found.typeLine,
+                text = found.printedText ?: found.oracleText,
+                lang = lang,
+                fallbackToEnglish = false,
+            )
+        } else {
+            CardTranslation(
+                name = card.name,
+                typeLine = card.typeLine,
+                text = card.oracleText,
+                lang = "en",
+                fallbackToEnglish = true,
+            )
+        }
     }
 
     /** Oficiální rulings ke kartě (ze Scryfallu). */

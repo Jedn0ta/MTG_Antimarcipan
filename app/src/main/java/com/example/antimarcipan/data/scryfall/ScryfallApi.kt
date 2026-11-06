@@ -45,6 +45,17 @@ interface ScryfallApi {
         @Path("number") collectorNumber: String,
     ): ScryfallCard
 
+    /**
+     * Konkrétní tisk v daném jazyce (printed_name / printed_text), např.
+     * cards/neo/123/ja. Vrátí 404, pokud karta v tom jazyce nevyšla.
+     */
+    @GET("cards/{set}/{number}/{lang}")
+    suspend fun cardBySetNumberLang(
+        @Path("set") set: String,
+        @Path("number") collectorNumber: String,
+        @Path("lang") lang: String,
+    ): ScryfallCard
+
     /** Oficiální rulings (výklady pravidel) ke konkrétní kartě. */
     @GET("cards/{id}/rulings")
     suspend fun rulings(@Path("id") id: String): RulingList

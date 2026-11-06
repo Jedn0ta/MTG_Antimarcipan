@@ -2,10 +2,13 @@ package com.example.antimarcipan.scan
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.antimarcipan.data.CardTranslation
 import com.example.antimarcipan.data.CollectionRepository
 import com.example.antimarcipan.data.DeckRepository
 import com.example.antimarcipan.data.local.Deck
 import com.example.antimarcipan.data.scryfall.ScryfallCard
+import com.example.antimarcipan.data.settings.AppSettings
+import com.example.antimarcipan.data.settings.TranslationLang
 import com.example.antimarcipan.data.shop.CernyRytirRepository
 import com.example.antimarcipan.data.shop.ShopResult
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -42,12 +45,16 @@ data class ScanUiState(
     val pending: List<PendingScan> = emptyList(),
     /** Když != null, další naskenovaná karta nahradí tento slot (přenačtení). */
     val rescanSlot: Long? = null,
+    /** Překlad textace aktuálního kandidáta do zvoleného jazyka. */
+    val translation: CardTranslation? = null,
+    val translating: Boolean = false,
 )
 
 class ScanViewModel(
     private val repo: CollectionRepository,
     private val deckRepo: DeckRepository,
     private val shopRepo: CernyRytirRepository,
+    private val settings: AppSettings,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(ScanUiState())
@@ -55,6 +62,9 @@ class ScanViewModel(
 
     val decks: StateFlow<List<Deck>> = deckRepo.decks
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    /** Aktuálně zvolený cílový jazyk překladu (z nastavení). */
+    val translationLang: StateFlow<TranslationLang> = settings.translationLang
 
     private var lastQuery: String = ""
     private var nextSlot: Long = 1
@@ -100,6 +110,8 @@ class ScanViewModel(
                         candidate = card,
                         looking = false,
                         status = editionLabel(card),
+                        translation = null,
+                        translating = false,
                     )
                 }
                 .onFailure {
@@ -110,6 +122,23 @@ class ScanViewModel(
                     )
                 }
         }
+    }
+
+    /** Přeloží textaci kandidáta do jazyka zvoleného v nastavení. */
+    fun translateCandidate() {
+        val card = _state.value.candidate ?: return
+        if (_state.value.translating) return
+        val lang = settings.translationLang.value.code
+        _state.value = _state.value.copy(translating = true)
+        viewModelScope.launch {
+            repo.translate(card, lang)
+                .onSuccess { tr -> _state.value = _state.value.copy(translation = tr, translating = false) }
+                .onFailure { _state.value = _state.value.copy(translating = false) }
+        }
+    }
+
+    fun hideTranslation() {
+        _state.value = _state.value.copy(translation = null)
     }
 
     private fun onMultiScanText(text: String, firstLine: String) {
@@ -233,7 +262,12 @@ class ScanViewModel(
     }
 
     fun selectPrint(card: ScryfallCard) {
-        _state.value = _state.value.copy(candidate = card, status = editionLabel(card))
+        _state.value = _state.value.copy(
+            candidate = card,
+            status = editionLabel(card),
+            translation = null,
+            translating = false,
+        )
     }
 
     private fun loadShopPrice(name: String) {
@@ -250,8 +284,11 @@ class ScanViewModel(
     fun dismissCandidate() {
         _state.value = _state.value.copy(
             candidate = null,
-            status = "Namiř foťák na jméno karty",
+            status = if (_state.value.multiScan) "Multisken: skenuj karty jednu po druhé"
+            else "Namiř foťák na jméno karty",
             prints = emptyList(),
+            translation = null,
+            translating = false,
         )
         lastQuery = ""
     }
@@ -262,6 +299,8 @@ class ScanViewModel(
             lastAdded = card.name,
             status = msg,
             prints = emptyList(),
+            translation = null,
+            translating = false,
             confirmTick = _state.value.confirmTick + 1,
             confirmText = msg,
         )

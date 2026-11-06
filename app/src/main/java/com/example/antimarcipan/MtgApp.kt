@@ -12,12 +12,14 @@ import com.example.antimarcipan.data.DeckRepository
 import com.example.antimarcipan.data.SynergyRepository
 import com.example.antimarcipan.data.backup.BackupRepository
 import com.example.antimarcipan.data.local.AppDatabase
+import com.example.antimarcipan.data.settings.AppSettings
 import com.example.antimarcipan.data.shop.CernyRytirRepository
 import com.example.antimarcipan.data.update.UpdateRepository
 
 /** Hand-rolled dependency container — swap for Hilt/Koin as the app grows. */
 class AppContainer(app: Application) {
     private val db = AppDatabase.get(app)
+    val appSettings = AppSettings(app)
     val collectionRepository = CollectionRepository(db.collectionDao(), app.applicationContext)
     val deckRepository = DeckRepository(db.deckDao())
     val synergyRepository = SynergyRepository(db.collectionDao())

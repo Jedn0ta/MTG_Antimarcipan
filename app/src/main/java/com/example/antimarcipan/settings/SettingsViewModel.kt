@@ -4,6 +4,8 @@ import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.antimarcipan.data.backup.BackupRepository
+import com.example.antimarcipan.data.settings.AppSettings
+import com.example.antimarcipan.data.settings.TranslationLang
 import com.example.antimarcipan.data.update.UpdateRepository
 import com.example.antimarcipan.data.update.UpdateStatus
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -26,10 +28,16 @@ data class SettingsUiState(
 class SettingsViewModel(
     private val updates: UpdateRepository,
     private val backup: BackupRepository,
+    private val settings: AppSettings,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(SettingsUiState(currentSha = updates.currentShortSha))
     val state: StateFlow<SettingsUiState> = _state.asStateFlow()
+
+    /** Cílový jazyk překladu karet ve skenu. */
+    val translationLang: StateFlow<TranslationLang> = settings.translationLang
+
+    fun setTranslationLang(lang: TranslationLang) = settings.setTranslationLang(lang)
 
     fun suggestedBackupName(): String = backup.suggestedFileName()
 
