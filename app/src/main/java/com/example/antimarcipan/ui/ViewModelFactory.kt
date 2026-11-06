@@ -17,8 +17,16 @@ private fun CreationExtras.app(): MtgApp = (this[APPLICATION_KEY] as MtgApp)
 
 /** Central factory wiring repositories into every ViewModel. */
 val AppViewModelFactory: ViewModelProvider.Factory = viewModelFactory {
-    initializer { ScanViewModel(app().container.collectionRepository) }
-    initializer { CollectionViewModel(app().container.collectionRepository) }
+    initializer {
+        ScanViewModel(
+            app().container.collectionRepository,
+            app().container.deckRepository,
+            app().container.shopRepository,
+        )
+    }
+    initializer {
+        CollectionViewModel(app().container.collectionRepository, app().container.deckRepository)
+    }
     initializer {
         DeckViewModel(app().container.deckRepository, app().container.collectionRepository)
     }

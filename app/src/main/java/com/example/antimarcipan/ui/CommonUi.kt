@@ -1,5 +1,6 @@
 package com.example.antimarcipan.ui
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,18 +18,25 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 
 @Composable
-fun CardThumb(url: String?, modifier: Modifier = Modifier) {
+fun CardThumb(
+    url: String?,
+    modifier: Modifier = Modifier,
+    width: Dp = 48.dp,
+    height: Dp = 67.dp,
+) {
     AsyncImage(
         model = url,
         contentDescription = null,
         contentScale = ContentScale.Fit,
         modifier = modifier
-            .size(width = 48.dp, height = 67.dp)
-            .clip(RoundedCornerShape(4.dp)),
+            .size(width = width, height = height)
+            .clip(RoundedCornerShape(6.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant),
     )
 }
 

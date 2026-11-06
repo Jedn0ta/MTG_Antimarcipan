@@ -1,6 +1,7 @@
 package com.example.antimarcipan.data.scryfall
 
 import retrofit2.http.GET
+import retrofit2.http.Path
 import retrofit2.http.Query
 
 /**
@@ -31,5 +32,16 @@ interface ScryfallApi {
     suspend fun search(
         @Query("q") query: String,
         @Query("order") order: String = "edhrec",
+        @Query("unique") unique: String = "cards",
     ): ScryfallList
+
+    /**
+     * Exact printing by set code + collector number, e.g. cards/neo/123.
+     * Umožní rozpoznat konkrétní edici karty z fotky.
+     */
+    @GET("cards/{set}/{number}")
+    suspend fun cardBySetAndNumber(
+        @Path("set") set: String,
+        @Path("number") collectorNumber: String,
+    ): ScryfallCard
 }

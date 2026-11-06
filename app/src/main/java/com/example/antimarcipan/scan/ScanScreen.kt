@@ -7,6 +7,7 @@ import android.net.Uri
 import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,11 +15,15 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -32,8 +37,11 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.antimarcipan.data.local.Deck
+import com.example.antimarcipan.data.shop.ShopResult
 import com.example.antimarcipan.ui.AppViewModelFactory
 import com.example.antimarcipan.ui.CardThumb
+import com.example.antimarcipan.ui.DeckPickerDialog
 
 @Composable
 fun ScanScreen(
@@ -56,6 +64,7 @@ fun ScanScreen(
     }
 
     val state by vm.state.collectAsStateWithLifecycle()
+    val decks by vm.decks.collectAsStateWithLifecycle()
 
     Box(Modifier.fillMaxSize()) {
         if (!hasPermission) {
@@ -113,34 +122,23 @@ fun ScanScreen(
             ) {
                 val candidate = state.candidate
                 if (candidate != null) {
-                    Card {
-                        Row(
-                            Modifier.fillMaxWidth().padding(12.dp),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            CardThumb(candidate.bestImageUrl)
-                            Column(Modifier.weight(1f)) {
-                                Text(candidate.name, style = MaterialTheme.typography.titleMedium)
-                                Text(
-                                    candidate.typeLine ?: "",
-                                    style = MaterialTheme.typography.bodySmall,
+                    CandidateCard(
+                        state = state,
+                        decks = decks,
+                        onDismiss = vm::dismissCandidate,
+                        onAddCollection = vm::addToCollection,
+                        onAddDeck = vm::addToDeck,
+                        onLoadPrints = vm::loadPrints,
+                        onSelectPrint = vm::selectPrint,
+                        onOpenShop = { url ->
+                            runCatching {
+                                context.startActivity(
+                                    Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                                 )
-                                candidate.prices?.usd?.let { Text("$$it", style = MaterialTheme.typography.bodySmall) }
                             }
-                        }
-                        Row(
-                            Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        ) {
-                            OutlinedButton(onClick = vm::dismissCandidate, modifier = Modifier.weight(1f)) {
-                                Text("Zahodit")
-                            }
-                            Button(onClick = vm::addCandidate, modifier = Modifier.weight(1f)) {
-                                Text("Přidat do sbírky")
-                            }
-                        }
-                    }
+                        },
+                    )
                 } else {
                     Card {
                         Text(
@@ -152,5 +150,129 @@ fun ScanScreen(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun CandidateCard(
+    state: ScanUiState,
+    decks: List<Deck>,
+    onDismiss: () -> Unit,
+    onAddCollection: () -> Unit,
+    onAddDeck: (Long) -> Unit,
+    onLoadPrints: () -> Unit,
+    onSelectPrint: (com.example.antimarcipan.data.scryfall.ScryfallCard) -> Unit,
+    onOpenShop: (String) -> Unit,
+) {
+    val candidate = state.candidate ?: return
+    var showDeckPicker by remember { mutableStateOf(false) }
+    var showEditions by remember { mutableStateOf(false) }
+
+    Card {
+        Row(
+            Modifier.fillMaxWidth().padding(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            CardThumb(candidate.bestImageUrl)
+            Column(Modifier.weight(1f)) {
+                Text(candidate.name, style = MaterialTheme.typography.titleMedium)
+                Text(
+                    candidate.setName ?: candidate.set?.uppercase() ?: "",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+                Text(
+                    candidate.typeLine ?: "",
+                    style = MaterialTheme.typography.bodySmall,
+                )
+                candidate.prices?.eur?.let {
+                    Text("Scryfall: €$it", style = MaterialTheme.typography.bodySmall)
+                }
+            }
+        }
+
+        // Cena z Černého rytíře
+        Row(
+            Modifier.fillMaxWidth().padding(horizontal = 12.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            val shopText = when {
+                state.shopLoading -> "Černý rytíř: zjišťuji…"
+                state.shop is ShopResult.Found ->
+                    "Černý rytíř: ${(state.shop as ShopResult.Found).priceText}"
+                state.shop is ShopResult.NotFound -> "Černý rytíř: nenalezeno"
+                state.shop is ShopResult.Error -> "Černý rytíř: nedostupné"
+                else -> "Černý rytíř"
+            }
+            Text(shopText, Modifier.weight(1f), style = MaterialTheme.typography.bodySmall)
+            state.shopUrl?.let { url ->
+                TextButton(onClick = { onOpenShop(url) }) { Text("Otevřít") }
+            }
+        }
+        (state.shop as? ShopResult.Found)?.note?.let {
+            Text(
+                it,
+                Modifier.padding(horizontal = 12.dp),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+            )
+        }
+
+        // Výběr jiné edice
+        TextButton(
+            onClick = {
+                showEditions = !showEditions
+                if (showEditions) onLoadPrints()
+            },
+            modifier = Modifier.padding(horizontal = 4.dp),
+        ) {
+            Text(if (showEditions) "Skrýt edice" else "Jiná edice")
+        }
+        if (showEditions) {
+            if (state.loadingPrints) {
+                Row(Modifier.padding(12.dp)) { CircularProgressIndicator() }
+            } else {
+                Row(
+                    Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())
+                        .padding(horizontal = 12.dp, vertical = 4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    state.prints.forEach { p ->
+                        AssistChip(
+                            onClick = { onSelectPrint(p); showEditions = false },
+                            label = { Text(p.set?.uppercase() ?: (p.setName ?: "?")) },
+                        )
+                    }
+                }
+            }
+        }
+
+        Row(
+            Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            OutlinedButton(onClick = onDismiss, modifier = Modifier.weight(1f)) {
+                Text("Zahodit")
+            }
+            OutlinedButton(onClick = { showDeckPicker = true }, modifier = Modifier.weight(1f)) {
+                Text("Do balíku")
+            }
+            Button(onClick = onAddCollection, modifier = Modifier.weight(1f)) {
+                Text("Do sbírky")
+            }
+        }
+    }
+
+    if (showDeckPicker) {
+        DeckPickerDialog(
+            decks = decks,
+            onDismiss = { showDeckPicker = false },
+            onPick = { deck ->
+                showDeckPicker = false
+                onAddDeck(deck.id)
+            },
+        )
     }
 }

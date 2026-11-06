@@ -4,7 +4,9 @@ import com.example.antimarcipan.data.local.CollectionCard
 import com.example.antimarcipan.data.local.CollectionDao
 import com.example.antimarcipan.data.scryfall.ScryfallApi
 import com.example.antimarcipan.data.scryfall.ScryfallCard
+import com.example.antimarcipan.scan.OcrParse
 import kotlinx.coroutines.flow.Flow
+import java.util.Locale
 
 /** Resolves scanned text into cards and manages the local collection. */
 class CollectionRepository(
@@ -15,13 +17,36 @@ class CollectionRepository(
     val count: Flow<Int> = dao.observeCount()
 
     /**
-     * Looks up a card from raw OCR text using Scryfall's fuzzy matcher.
-     * Returns null if nothing matched (ambiguous or not a card name).
+     * Identifikuje kartu z OCR textu. Nejdřív najde kartu podle jména (fuzzy),
+     * a pokud se z fotky podařilo přečíst edici (set kód + číslo) a sedí na
+     * stejnou kartu, vrátí rovnou ten konkrétní tisk — tedy správnou edici.
      */
     suspend fun lookup(rawText: String): Result<ScryfallCard> = runCatching {
-        val cleaned = cleanOcr(rawText)
-        require(cleaned.length >= 3) { "Text too short to be a card name" }
-        scryfall.cardByFuzzyName(cleaned)
+        val parsed = OcrParse.parse(rawText)
+        require(parsed.nameGuess.length >= 3) { "Text příliš krátký na jméno karty" }
+
+        val byName = scryfall.cardByFuzzyName(parsed.nameGuess)
+
+        // Zkus upřesnit edici podle set kódu + čísla z fotky.
+        val set = parsed.setCode
+        val number = parsed.collectorNumber
+        if (set != null && number != null) {
+            runCatching {
+                scryfall.cardBySetAndNumber(set.lowercase(Locale.ROOT), number)
+            }.getOrNull()?.let { print ->
+                if (sameCard(print.name, byName.name)) return@runCatching print
+            }
+        }
+        byName
+    }
+
+    /** Všechny tisky (edice) dané karty — pro ruční výběr správné edice. */
+    suspend fun printsOf(cardName: String): Result<List<ScryfallCard>> = runCatching {
+        scryfall.search(
+            query = "!\"$cardName\"",
+            order = "released",
+            unique = "prints",
+        ).data
     }
 
     suspend fun addToCollection(card: ScryfallCard) {
@@ -35,20 +60,8 @@ class CollectionRepository(
 
     suspend fun remove(scryfallId: String) = dao.delete(scryfallId)
 
-    /**
-     * Keeps only the first plausible card-name line and strips obvious OCR
-     * junk (mana symbols, set codes, collector numbers). The card title sits
-     * on the top line of a Magic card, so the first non-empty line is usually
-     * the best guess.
-     */
-    private fun cleanOcr(raw: String): String {
-        val firstLine = raw.lineSequence()
-            .map { it.trim() }
-            .firstOrNull { it.length >= 3 && it.any(Char::isLetter) }
-            ?: raw.trim()
-        return firstLine
-            .replace(Regex("[^\\p{L}\\p{N} ,'\\-]"), "")
-            .replace(Regex("\\s+"), " ")
-            .trim()
+    private fun sameCard(a: String, b: String): Boolean {
+        fun norm(s: String) = s.lowercase(Locale.ROOT).substringBefore("//").trim()
+        return norm(a) == norm(b)
     }
 }
