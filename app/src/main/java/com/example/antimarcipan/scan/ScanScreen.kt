@@ -14,17 +14,23 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Translate
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -145,42 +151,69 @@ fun ScanScreen(
                 }
             }
         } else {
+            var showReview by remember { mutableStateOf(false) }
+
             CameraPreview(
                 onText = vm::onTextRecognized,
                 modifier = Modifier.fillMaxSize(),
             )
 
-            // Tlačítko pro vypnutí kamery
-            androidx.compose.material3.FilledTonalButton(
-                onClick = { scanning = false; vm.dismissCandidate() },
-                modifier = Modifier.align(Alignment.TopEnd).padding(12.dp),
+            // Horní lišta: přepínač režimu vlevo, Vypnout vpravo
+            Row(
+                Modifier.fillMaxWidth().align(Alignment.TopCenter).padding(12.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text("Vypnout")
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    androidx.compose.material3.FilterChip(
+                        selected = !state.multiScan,
+                        onClick = { if (state.multiScan) vm.setMultiScan(false) },
+                        label = { Text("Jednotlivě") },
+                    )
+                    androidx.compose.material3.FilterChip(
+                        selected = state.multiScan,
+                        onClick = { if (!state.multiScan) vm.setMultiScan(true) },
+                        label = { Text("Multisken") },
+                    )
+                }
+                androidx.compose.material3.FilledTonalButton(
+                    onClick = { scanning = false; vm.setMultiScan(false); vm.dismissCandidate() },
+                ) {
+                    Text("Vypnout")
+                }
             }
 
-            // Status / candidate overlay
+            // Spodní overlay
             Column(
                 Modifier.fillMaxWidth().align(Alignment.BottomCenter).padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                val candidate = state.candidate
-                if (candidate != null) {
-                    CandidateCard(
+                if (state.multiScan) {
+                    MultiScanBar(
                         state = state,
-                        decks = decks,
-                        onDismiss = vm::dismissCandidate,
-                        onAddCollection = vm::addToCollection,
-                        onAddDeck = vm::addToDeck,
-                        onLoadPrints = vm::loadPrints,
-                        onSelectPrint = vm::selectPrint,
+                        onReview = { showReview = true },
+                        onCancelRescan = vm::cancelRescan,
                     )
                 } else {
-                    Card {
-                        Text(
-                            state.status,
-                            Modifier.padding(16.dp),
-                            style = MaterialTheme.typography.bodyMedium,
+                    val candidate = state.candidate
+                    if (candidate != null) {
+                        CandidateCard(
+                            state = state,
+                            decks = decks,
+                            onDismiss = vm::dismissCandidate,
+                            onAddCollection = vm::addToCollection,
+                            onAddDeck = vm::addToDeck,
+                            onLoadPrints = vm::loadPrints,
+                            onSelectPrint = vm::selectPrint,
                         )
+                    } else {
+                        Card {
+                            Text(
+                                state.status,
+                                Modifier.padding(16.dp),
+                                style = MaterialTheme.typography.bodyMedium,
+                            )
+                        }
                     }
                 }
             }
@@ -191,6 +224,16 @@ fun ScanScreen(
                 text = state.confirmText,
                 modifier = Modifier.align(Alignment.Center),
             )
+
+            if (showReview) {
+                MultiScanReviewSheet(
+                    pending = state.pending,
+                    onDismiss = { showReview = false },
+                    onRemove = vm::removePending,
+                    onRescan = { slot -> vm.rescanPending(slot); showReview = false },
+                    onConfirmAll = { vm.confirmAllToCollection(); showReview = false },
+                )
+            }
         }
     }
 }
@@ -234,6 +277,99 @@ private fun AddedConfirmation(tick: Int, text: String?, modifier: Modifier = Mod
                     color = androidx.compose.ui.graphics.Color.White,
                     style = MaterialTheme.typography.titleMedium,
                 )
+            }
+        }
+    }
+}
+
+@Composable
+private fun MultiScanBar(
+    state: ScanUiState,
+    onReview: () -> Unit,
+    onCancelRescan: () -> Unit,
+) {
+    Card {
+        Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(state.status, style = MaterialTheme.typography.bodyMedium)
+            if (state.rescanSlot != null) {
+                OutlinedButton(onClick = onCancelRescan, modifier = Modifier.fillMaxWidth()) {
+                    Text("Zrušit přenačtení")
+                }
+            } else {
+                Button(
+                    onClick = onReview,
+                    enabled = state.pending.isNotEmpty(),
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Icon(Icons.Filled.CheckCircle, contentDescription = null)
+                    Text("  Zkontrolovat a potvrdit (${state.pending.size})")
+                }
+            }
+        }
+    }
+}
+
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@Composable
+private fun MultiScanReviewSheet(
+    pending: List<PendingScan>,
+    onDismiss: () -> Unit,
+    onRemove: (Long) -> Unit,
+    onRescan: (Long) -> Unit,
+    onConfirmAll: () -> Unit,
+) {
+    androidx.compose.material3.ModalBottomSheet(onDismissRequest = onDismiss) {
+        Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
+            Text(
+                "Zkontroluj karty (${pending.size})",
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(bottom = 4.dp),
+            )
+            Text(
+                "Špatně rozpoznanou kartu přenačti nebo odeber. Pak potvrď vše do sbírky.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                modifier = Modifier.padding(bottom = 8.dp),
+            )
+            LazyColumn(
+                Modifier.fillMaxWidth().heightIn(max = 420.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                items(pending, key = { it.slotId }) { item ->
+                    Row(
+                        Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        CardThumb(item.card.bestImageUrl, width = 46.dp, height = 64.dp)
+                        Column(Modifier.weight(1f)) {
+                            Text(item.card.name, style = MaterialTheme.typography.bodyMedium, maxLines = 1)
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                com.example.antimarcipan.ui.SetSymbol(item.card.set, size = 14.dp)
+                                Text(
+                                    item.card.setName ?: item.card.set?.uppercase() ?: "",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    maxLines = 1,
+                                )
+                            }
+                        }
+                        androidx.compose.material3.IconButton(onClick = { onRescan(item.slotId) }) {
+                            Icon(Icons.Filled.Refresh, contentDescription = "Přenačíst")
+                        }
+                        androidx.compose.material3.IconButton(onClick = { onRemove(item.slotId) }) {
+                            Icon(Icons.Filled.Close, contentDescription = "Odebrat")
+                        }
+                    }
+                    HorizontalDivider()
+                }
+            }
+            Button(
+                onClick = onConfirmAll,
+                enabled = pending.isNotEmpty(),
+                modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
+            ) {
+                Text("Potvrdit vše do sbírky (${pending.size})")
             }
         }
     }
