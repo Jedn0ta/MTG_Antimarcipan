@@ -42,7 +42,7 @@ val AppViewModelFactory: ViewModelProvider.Factory = viewModelFactory {
         AdvisorViewModel(app().container.deckRepository)
     }
     initializer {
-        SettingsViewModel(app().container.updateRepository)
+        SettingsViewModel(app().container.updateRepository, app().container.backupRepository)
     }
     initializer {
         ManualAddViewModel(app().container.collectionRepository, app().container.deckRepository)

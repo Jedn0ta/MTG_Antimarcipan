@@ -253,14 +253,26 @@ private fun CandidateCard(
             Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            OutlinedButton(onClick = onDismiss, modifier = Modifier.weight(1f)) {
-                Text("Zahodit")
+            OutlinedButton(
+                onClick = onDismiss,
+                modifier = Modifier.weight(1f),
+                contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 6.dp),
+            ) {
+                Text("Zahodit", maxLines = 1, softWrap = false, style = MaterialTheme.typography.labelLarge)
             }
-            OutlinedButton(onClick = { showDeckPicker = true }, modifier = Modifier.weight(1f)) {
-                Text("Do balíku")
+            OutlinedButton(
+                onClick = { showDeckPicker = true },
+                modifier = Modifier.weight(1f),
+                contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 6.dp),
+            ) {
+                Text("Do balíku", maxLines = 1, softWrap = false, style = MaterialTheme.typography.labelLarge)
             }
-            Button(onClick = onAddCollection, modifier = Modifier.weight(1f)) {
-                Text("Do sbírky")
+            Button(
+                onClick = onAddCollection,
+                modifier = Modifier.weight(1f),
+                contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 6.dp),
+            ) {
+                Text("Do sbírky", maxLines = 1, softWrap = false, style = MaterialTheme.typography.labelLarge)
             }
         }
     }

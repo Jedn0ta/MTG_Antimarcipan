@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Auto Backup / přenos do nového telefonu (Android 12+). -->
+<data-extraction-rules>
+    <cloud-backup>
+        <include domain="database" path="mtg-scanner.db" />
+        <include domain="database" path="mtg-scanner.db-wal" />
+        <include domain="database" path="mtg-scanner.db-shm" />
+        <include domain="file" path="deck_covers/" />
+    </cloud-backup>
+    <device-transfer>
+        <include domain="database" path="mtg-scanner.db" />
+        <include domain="database" path="mtg-scanner.db-wal" />
+        <include domain="database" path="mtg-scanner.db-shm" />
+        <include domain="file" path="deck_covers/" />
+    </device-transfer>
+</data-extraction-rules>

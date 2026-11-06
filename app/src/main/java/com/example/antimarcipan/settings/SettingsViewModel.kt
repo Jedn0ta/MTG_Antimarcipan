@@ -1,7 +1,9 @@
 package com.example.antimarcipan.settings
 
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.antimarcipan.data.backup.BackupRepository
 import com.example.antimarcipan.data.update.UpdateRepository
 import com.example.antimarcipan.data.update.UpdateStatus
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -23,10 +25,29 @@ data class SettingsUiState(
 
 class SettingsViewModel(
     private val updates: UpdateRepository,
+    private val backup: BackupRepository,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(SettingsUiState(currentSha = updates.currentShortSha))
     val state: StateFlow<SettingsUiState> = _state.asStateFlow()
+
+    fun suggestedBackupName(): String = backup.suggestedFileName()
+
+    fun exportBackup(uri: Uri, onResult: (String) -> Unit) {
+        viewModelScope.launch {
+            backup.exportTo(uri)
+                .onSuccess { onResult("Záloha uložena.") }
+                .onFailure { onResult("Záloha selhala: ${it.message}") }
+        }
+    }
+
+    fun importBackup(uri: Uri, onResult: (String) -> Unit) {
+        viewModelScope.launch {
+            backup.importFrom(uri)
+                .onSuccess { onResult("Obnoveno. Restartuj aplikaci, aby se data načetla.") }
+                .onFailure { onResult("Obnova selhala: ${it.message}") }
+        }
+    }
 
     fun checkForUpdate() {
         viewModelScope.launch {

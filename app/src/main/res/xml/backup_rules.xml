@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Auto Backup (Android 11 a starší). Zálohuje databázi a náhledy balíků. -->
+<full-backup-content>
+    <include domain="database" path="mtg-scanner.db" />
+    <include domain="database" path="mtg-scanner.db-wal" />
+    <include domain="database" path="mtg-scanner.db-shm" />
+    <include domain="file" path="deck_covers/" />
+</full-backup-content>

@@ -142,6 +142,52 @@ fun SettingsScreen(
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
             textAlign = TextAlign.Start,
         )
+
+        BackupCard(vm)
+    }
+}
+
+@Composable
+private fun BackupCard(vm: SettingsViewModel) {
+    val context = LocalContext.current
+
+    val exportLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.CreateDocument("application/octet-stream")
+    ) { uri ->
+        if (uri != null) vm.exportBackup(uri) { msg ->
+            Toast.makeText(context, msg, Toast.LENGTH_LONG).show()
+        }
+    }
+    val importLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        if (uri != null) vm.importBackup(uri) { msg ->
+            Toast.makeText(context, msg, Toast.LENGTH_LONG).show()
+        }
+    }
+
+    Card(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp)) {
+        Column(
+            Modifier.fillMaxWidth().padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Text("Záloha dat", style = MaterialTheme.typography.titleMedium)
+            Text(
+                "Sbírka i balíky se ukládají automaticky a přežijí aktualizaci. " +
+                    "Android je navíc zálohuje do cloudu (obnoví se po přeinstalaci). " +
+                    "Tady si můžeš udělat vlastní zálohu do souboru.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+            )
+            Button(
+                onClick = { exportLauncher.launch(vm.suggestedBackupName()) },
+                modifier = Modifier.fillMaxWidth(),
+            ) { Text("Zálohovat do souboru") }
+            Button(
+                onClick = { importLauncher.launch(arrayOf("application/octet-stream", "*/*")) },
+                modifier = Modifier.fillMaxWidth(),
+            ) { Text("Obnovit ze zálohy") }
+        }
     }
 }
 

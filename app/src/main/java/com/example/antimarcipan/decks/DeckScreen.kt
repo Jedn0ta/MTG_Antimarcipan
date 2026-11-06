@@ -62,6 +62,7 @@ import com.example.antimarcipan.data.local.CollectionCard
 import com.example.antimarcipan.data.local.Deck
 import com.example.antimarcipan.ui.AppViewModelFactory
 import com.example.antimarcipan.ui.CardThumb
+import com.example.antimarcipan.ui.ConfirmDialog
 import java.io.File
 
 @Composable
@@ -83,6 +84,7 @@ fun DeckScreen(
 private fun DeckListView(vm: DeckViewModel) {
     val decks by vm.decks.collectAsStateWithLifecycle()
     var showNewDeck by remember { mutableStateOf(false) }
+    var pendingDeleteDeck by remember { mutableStateOf<Deck?>(null) }
 
     Column(Modifier.fillMaxSize()) {
         Row(
@@ -112,7 +114,7 @@ private fun DeckListView(vm: DeckViewModel) {
                     DeckListRow(
                         deck = deck,
                         onOpen = { vm.select(deck.id) },
-                        onDelete = { vm.deleteDeck(deck.id) },
+                        onDelete = { pendingDeleteDeck = deck },
                     )
                     HorizontalDivider()
                 }
@@ -129,6 +131,16 @@ private fun DeckListView(vm: DeckViewModel) {
                 showNewDeck = false
                 vm.createDeck(name)
             },
+        )
+    }
+
+    pendingDeleteDeck?.let { deck ->
+        ConfirmDialog(
+            title = "Smazat balík?",
+            message = "Opravdu smazat balík „${deck.name}“? Karty zůstanou ve sbírce.",
+            confirmText = "Smazat",
+            onConfirm = { vm.deleteDeck(deck.id); pendingDeleteDeck = null },
+            onDismiss = { pendingDeleteDeck = null },
         )
     }
 }
@@ -189,6 +201,7 @@ private fun DeckDetailView(vm: DeckViewModel, deck: Deck) {
     val collection by vm.collection.collectAsStateWithLifecycle()
 
     var showRename by remember { mutableStateOf(false) }
+    var pendingRemove by remember { mutableStateOf<CollectionCard?>(null) }
 
     val coverPicker = rememberLauncherForActivityResult(
         ActivityResultContracts.PickVisualMedia()
@@ -220,9 +233,13 @@ private fun DeckDetailView(vm: DeckViewModel, deck: Deck) {
             Modifier.fillMaxWidth().padding(horizontal = 12.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            OutlinedButton(onClick = { showRename = true }, modifier = Modifier.weight(1f)) {
-                Icon(Icons.Filled.Edit, contentDescription = null)
-                Text(" Název")
+            OutlinedButton(
+                onClick = { showRename = true },
+                modifier = Modifier.weight(1f),
+                contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 8.dp),
+            ) {
+                Icon(Icons.Filled.Edit, contentDescription = null, modifier = Modifier.size(18.dp))
+                Text(" Název", maxLines = 1, softWrap = false, style = MaterialTheme.typography.labelLarge)
             }
             OutlinedButton(
                 onClick = {
@@ -231,16 +248,18 @@ private fun DeckDetailView(vm: DeckViewModel, deck: Deck) {
                     )
                 },
                 modifier = Modifier.weight(1f),
+                contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 8.dp),
             ) {
-                Icon(Icons.Filled.Image, contentDescription = null)
-                Text(" Náhled")
+                Icon(Icons.Filled.Image, contentDescription = null, modifier = Modifier.size(18.dp))
+                Text(" Náhled", maxLines = 1, softWrap = false, style = MaterialTheme.typography.labelLarge)
             }
             OutlinedButton(
                 onClick = { shareDecklist(context, deck.name, deckCards) },
                 modifier = Modifier.weight(1f),
+                contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 8.dp),
             ) {
-                Icon(Icons.Filled.Share, contentDescription = null)
-                Text(" Export")
+                Icon(Icons.Filled.Share, contentDescription = null, modifier = Modifier.size(18.dp))
+                Text(" Export", maxLines = 1, softWrap = false, style = MaterialTheme.typography.labelLarge)
             }
         }
 
@@ -261,12 +280,12 @@ private fun DeckDetailView(vm: DeckViewModel, deck: Deck) {
                 }
             }
             items(deckCards, key = { "in-" + it.scryfallId }) { card ->
-                SwipeToRemove(onRemove = { vm.removeCard(card) }) {
+                SwipeToRemove(onRequestRemove = { pendingRemove = card }) {
                     DeckCardRow(
                         card = card,
                         isCommander = card.scryfallId == deck.commanderScryfallId,
                         onCommander = { vm.setCommander(card) },
-                        onRemove = { vm.removeCard(card) },
+                        onRemove = { pendingRemove = card },
                     )
                 }
                 HorizontalDivider()
@@ -312,15 +331,26 @@ private fun DeckDetailView(vm: DeckViewModel, deck: Deck) {
             },
         )
     }
+
+    pendingRemove?.let { card ->
+        ConfirmDialog(
+            title = "Odebrat z balíku?",
+            message = "Odebrat „${card.name}“ z balíku? Karta zůstane ve sbírce.",
+            confirmText = "Odebrat",
+            onConfirm = { vm.removeCard(card); pendingRemove = null },
+            onDismiss = { pendingRemove = null },
+        )
+    }
 }
 
 @Composable
-private fun SwipeToRemove(onRemove: () -> Unit, content: @Composable () -> Unit) {
+private fun SwipeToRemove(onRequestRemove: () -> Unit, content: @Composable () -> Unit) {
     val dismissState = rememberSwipeToDismissBoxState(
         confirmValueChange = { value ->
             if (value == SwipeToDismissBoxValue.EndToStart) {
-                onRemove(); true
-            } else false
+                onRequestRemove()
+            }
+            false // čeká na potvrzení
         },
     )
     SwipeToDismissBox(
