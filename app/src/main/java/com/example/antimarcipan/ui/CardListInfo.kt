@@ -3,14 +3,8 @@ package com.example.antimarcipan.ui
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.RowScope
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.RichTooltip
 import androidx.compose.material3.Text
-import androidx.compose.material3.TooltipBox
-import androidx.compose.material3.TooltipDefaults
-import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -18,13 +12,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.antimarcipan.data.local.CollectionCard
-import com.example.antimarcipan.data.thumbModel
 
 /**
- * Jednotné zobrazení informací o kartě (náhled s tooltipem textu, jméno,
- * edice, manacost, rarita) — používá se ve sbírce i v balíku.
+ * Jednotné zobrazení informací o kartě (interaktivní náhled, jméno,
+ * edice, manacost) — používá se ve sbírce i v balíku.
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CardListInfo(
     card: CollectionCard,
@@ -32,35 +24,18 @@ fun CardListInfo(
     deckQuantity: Int? = null,
     thumbWidth: Int = 60,
     thumbHeight: Int = 84,
+    onLongHold: (() -> Unit)? = null,
 ) {
     Row(
         modifier,
         horizontalArrangement = Arrangement.spacedBy(10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        val tooltipState = rememberTooltipState(isPersistent = true)
-        TooltipBox(
-            positionProvider = TooltipDefaults.rememberRichTooltipPositionProvider(),
-            tooltip = {
-                RichTooltip(
-                    title = { Text(card.name) },
-                    text = {
-                        Text(
-                            buildString {
-                                card.manaCost?.takeIf { it.isNotBlank() }?.let { appendLine(it) }
-                                card.typeLine?.let { appendLine(it) }
-                                card.oracleText?.let { append(it) }
-                            }.ifBlank { "Bez textu." }
-                        )
-                    },
-                )
-            },
-            state = tooltipState,
-        ) {
-            CardThumb(card.thumbModel(), width = thumbWidth.dp, height = thumbHeight.dp)
-        }
+        InteractiveThumb(card, width = thumbWidth.dp, height = thumbHeight.dp)
 
-        Column(Modifier.weight(1f)) {
+        val colMod = if (onLongHold != null) Modifier.weight(1f).longHold(2500L, onLongHold)
+        else Modifier.weight(1f)
+        Column(colMod) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 Text(
                     card.name,

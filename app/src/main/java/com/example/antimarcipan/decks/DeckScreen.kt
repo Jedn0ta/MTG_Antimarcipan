@@ -338,7 +338,8 @@ private fun DeckDetailView(vm: DeckViewModel, deck: Deck) {
                     com.example.antimarcipan.ui.CardListInfo(
                         card = card,
                         deckQuantity = entry.deckQuantity,
-                        modifier = Modifier.weight(1f).longHold(2500L) { pendingRemove = card },
+                        modifier = Modifier.weight(1f),
+                        onLongHold = { pendingRemove = card },
                     )
                     if (format == DeckFormat.COMMANDER) {
                         IconButton(onClick = { vm.setCommander(card) }) {

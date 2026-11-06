@@ -23,12 +23,15 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.MenuBook
+import androidx.compose.material.icons.automirrored.filled.ViewList
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.FilterList
+import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
@@ -69,10 +72,12 @@ import com.example.antimarcipan.data.gathererLink
 import com.example.antimarcipan.data.local.CollectionCard
 import com.example.antimarcipan.data.thumbModel
 import com.example.antimarcipan.ui.AppViewModelFactory
+import com.example.antimarcipan.ui.CardListInfo
 import com.example.antimarcipan.ui.CardThumb
 import com.example.antimarcipan.ui.ConfirmDialog
 import com.example.antimarcipan.ui.DeckPickerDialog
 import com.example.antimarcipan.ui.EmptyState
+import com.example.antimarcipan.ui.Holdable
 import com.example.antimarcipan.ui.ManaCost
 import kotlinx.coroutines.withTimeoutOrNull
 
@@ -96,6 +101,7 @@ fun CollectionScreen(
     val sets by vm.availableSets.collectAsStateWithLifecycle()
 
     var showFilters by remember { mutableStateOf(false) }
+    var gridMode by remember { mutableStateOf(false) }
     var pendingDelete by remember { mutableStateOf<CollectionCard?>(null) }
     var pendingAddDeck by remember { mutableStateOf<CollectionCard?>(null) }
 
@@ -114,6 +120,12 @@ fun CollectionScreen(
                 leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
                 singleLine = true,
             )
+            IconButton(onClick = { gridMode = !gridMode }) {
+                Icon(
+                    if (gridMode) Icons.AutoMirrored.Filled.ViewList else Icons.Filled.GridView,
+                    contentDescription = "Zobrazení",
+                )
+            }
             IconButton(onClick = { showFilters = !showFilters }) {
                 Icon(
                     Icons.Filled.FilterList,
@@ -165,6 +177,20 @@ fun CollectionScreen(
                 if (filter.isActive) "Nic nenalezeno" else "Zatím prázdno",
                 if (filter.isActive) "Zkus upravit filtry." else "Naskenuj první kartu v záložce Sken.",
             )
+        } else if (gridMode) {
+            androidx.compose.foundation.lazy.grid.LazyVerticalGrid(
+                columns = androidx.compose.foundation.lazy.grid.GridCells.Adaptive(90.dp),
+                modifier = Modifier.weight(1f),
+                contentPadding = androidx.compose.foundation.layout.PaddingValues(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                items(cards, key = { it.scryfallId }) { card ->
+                    Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                        com.example.antimarcipan.ui.InteractiveThumb(card, width = 88.dp, height = 123.dp)
+                    }
+                }
+            }
         } else {
             LazyColumn(Modifier.weight(1f)) {
                 items(cards, key = { it.scryfallId }) { card ->
@@ -188,12 +214,6 @@ fun CollectionScreen(
                     HorizontalDivider()
                 }
             }
-            Text(
-                "Swipe doprava = do balíku · dlouhé podržení = smazat · ikona = rulings/Gatherer",
-                Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
-            )
         }
     }
 
@@ -354,7 +374,6 @@ private fun Modifier.longHold(durationMs: Long, onHold: () -> Unit): Modifier =
         }
     }
 
-@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
 private fun CollectionRow(
     card: CollectionCard,
@@ -362,108 +381,57 @@ private fun CollectionRow(
     onLongDelete: () -> Unit,
     loadRulings: suspend (String) -> List<String>,
 ) {
-    Row(
-        Modifier.fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surface)
-            .padding(horizontal = 12.dp, vertical = 8.dp),
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
-        verticalAlignment = Alignment.CenterVertically,
+    var ringProgress by remember { androidx.compose.runtime.mutableFloatStateOf(0f) }
+    Box(
+        Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface),
+        contentAlignment = Alignment.Center,
     ) {
-        // Náhled + tooltip s textem karty na podržení
-        val tooltipState = rememberTooltipState(isPersistent = true)
-        TooltipBox(
-            positionProvider = TooltipDefaults.rememberRichTooltipPositionProvider(),
-            tooltip = {
-                RichTooltip(
-                    title = { Text(card.name) },
-                    text = {
-                        Text(
-                            buildString {
-                                card.manaCost?.takeIf { it.isNotBlank() }?.let { appendLine(it) }
-                                card.typeLine?.let { appendLine(it) }
-                                card.oracleText?.let { append(it) }
-                            }.ifBlank { "Bez textu." }
-                        )
-                    },
-                )
-            },
-            state = tooltipState,
+        Row(
+            Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            CardThumb(card.thumbModel(), width = 60.dp, height = 84.dp)
-        }
-
-        Column(Modifier.weight(1f).longHold(2500L, onLongDelete)) {
-            Text(
-                card.name,
-                style = MaterialTheme.typography.titleSmall,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
+            CardListInfo(
+                card = card,
+                modifier = Modifier.weight(1f),
+                onLongHold = onLongDelete,
             )
-            Text(
-                card.setName ?: card.setCode?.uppercase() ?: "",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.primary,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
+            GathererButton(
+                cardName = card.name,
+                loadRulings = { loadRulings(card.scryfallId) },
+                onOpenGatherer = onOpenGatherer,
+                onProgress = { ringProgress = it },
             )
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text(
-                    card.typeLine ?: "",
-                    Modifier.weight(1f, fill = false),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                ManaCost(card.manaCost, symbolSize = 15)
-            }
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                card.rarity?.let {
-                    Text(it.replaceFirstChar { ch -> ch.uppercase() }, style = MaterialTheme.typography.labelSmall)
-                }
-                card.priceUsd?.let { Text("$$it", style = MaterialTheme.typography.labelSmall) }
-                Text("ks: ${card.quantity}", style = MaterialTheme.typography.labelSmall)
-            }
         }
-        GathererButton(
-            cardName = card.name,
-            loadRulings = { loadRulings(card.scryfallId) },
-            onOpenGatherer = onOpenGatherer,
-        )
+        if (ringProgress > 0f && ringProgress < 1f) {
+            androidx.compose.material3.CircularProgressIndicator(
+                progress = { ringProgress },
+                strokeWidth = 3.dp,
+                modifier = Modifier.size(46.dp),
+            )
+        }
     }
 }
 
 /**
  * Ikona Gathereru: ťuknutí zobrazí rulings ve scrollovatelném dialogu,
- * podržení 3 s (s načítacím kolečkem) otevře kartu na Gathereru.
+ * podržení 3 s (s plnícím kolečkem uprostřed řádku) otevře kartu na Gathereru.
  */
 @Composable
 private fun GathererButton(
     cardName: String,
     loadRulings: suspend () -> List<String>,
     onOpenGatherer: () -> Unit,
+    onProgress: (Float) -> Unit,
 ) {
-    var holding by remember { mutableStateOf(false) }
     var showRulings by remember { mutableStateOf(false) }
     var rulings by remember { mutableStateOf<List<String>?>(null) }
 
-    androidx.compose.foundation.layout.Box(
-        contentAlignment = Alignment.Center,
-        modifier = Modifier.pointerInput(cardName) {
-            awaitEachGesture {
-                awaitFirstDown(requireUnconsumed = false)
-                holding = true
-                val outcome = withTimeoutOrNull(3000L) {
-                    if (waitForUpOrCancellation() != null) "tap" else "cancel"
-                }
-                holding = false
-                when (outcome) {
-                    "tap" -> showRulings = true
-                    null -> onOpenGatherer() // drženo 3 s
-                    else -> {}
-                }
-            }
-        },
+    Holdable(
+        holdMs = 3000,
+        onTap = { showRulings = true },
+        onHold = onOpenGatherer,
+        onProgress = onProgress,
     ) {
         Icon(
             Icons.AutoMirrored.Filled.MenuBook,
@@ -471,12 +439,6 @@ private fun GathererButton(
             tint = MaterialTheme.colorScheme.primary,
             modifier = Modifier.padding(12.dp),
         )
-        if (holding) {
-            androidx.compose.material3.CircularProgressIndicator(
-                strokeWidth = 2.dp,
-                modifier = Modifier.size(40.dp),
-            )
-        }
     }
 
     if (showRulings) {
@@ -487,7 +449,7 @@ private fun GathererButton(
             onDismissRequest = { showRulings = false },
             title = { Text("Rulings — $cardName") },
             text = {
-                androidx.compose.foundation.layout.Box(
+                Box(
                     Modifier
                         .heightIn(max = 380.dp)
                         .verticalScroll(androidx.compose.foundation.rememberScrollState())

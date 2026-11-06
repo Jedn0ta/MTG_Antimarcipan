@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Translate
 import androidx.compose.material3.Button
@@ -59,10 +60,13 @@ fun ScanScreen(
     }
     // true = uživatel žádost aspoň jednou odmítl (možná natrvalo)
     var deniedOnce by remember { mutableStateOf(false) }
+    // Fotoaparát se zapne až po stisku tlačítka
+    var scanning by remember { mutableStateOf(false) }
     val launcher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { granted ->
         hasPermission = granted
+        if (granted) scanning = true
         if (!granted) deniedOnce = true
     }
 
@@ -112,11 +116,46 @@ fun ScanScreen(
                     Text("Otevřít nastavení aplikace")
                 }
             }
+        } else if (!scanning) {
+            // Fotoaparát spustíme až po stisku tlačítka
+            Column(
+                Modifier.fillMaxSize().padding(24.dp),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Text(
+                    "Skenování karet",
+                    style = MaterialTheme.typography.titleMedium,
+                    textAlign = TextAlign.Center,
+                )
+                Text(
+                    "Fotoaparát se zapne až po stisknutí tlačítka.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(top = 8.dp, bottom = 20.dp),
+                )
+                Button(
+                    onClick = { scanning = true },
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Icon(Icons.Filled.CameraAlt, contentDescription = null)
+                    Text("  Spustit skenování")
+                }
+            }
         } else {
             CameraPreview(
                 onText = vm::onTextRecognized,
                 modifier = Modifier.fillMaxSize(),
             )
+
+            // Tlačítko pro vypnutí kamery
+            androidx.compose.material3.FilledTonalButton(
+                onClick = { scanning = false; vm.dismissCandidate() },
+                modifier = Modifier.align(Alignment.TopEnd).padding(12.dp),
+            ) {
+                Text("Vypnout")
+            }
 
             // Status / candidate overlay
             Column(
