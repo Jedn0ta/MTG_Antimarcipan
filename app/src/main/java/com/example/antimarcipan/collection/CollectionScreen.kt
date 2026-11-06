@@ -53,11 +53,13 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.antimarcipan.R
 import com.example.antimarcipan.data.local.CollectionCard
+import com.example.antimarcipan.data.thumbModel
 import com.example.antimarcipan.ui.AppViewModelFactory
 import com.example.antimarcipan.ui.CardThumb
 import com.example.antimarcipan.ui.ConfirmDialog
 import com.example.antimarcipan.ui.DeckPickerDialog
 import com.example.antimarcipan.ui.EmptyState
+import com.example.antimarcipan.ui.ManaCost
 
 private fun CardColor.drawableRes(): Int = when (this) {
     CardColor.W -> R.drawable.mana_w
@@ -310,6 +312,7 @@ private fun SwipeToDelete(onRequestDelete: () -> Unit, content: @Composable () -
     )
 }
 
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
 private fun CollectionRow(
     card: CollectionCard,
@@ -323,7 +326,30 @@ private fun CollectionRow(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Checkbox(checked = selected, onCheckedChange = { onToggleSelect() })
-        CardThumb(card.imageUrl, width = 60.dp, height = 84.dp)
+
+        // Náhled + tooltip s textem karty na podržení
+        val tooltipState = androidx.compose.material3.rememberTooltipState(isPersistent = true)
+        androidx.compose.material3.TooltipBox(
+            positionProvider = androidx.compose.material3.TooltipDefaults.rememberRichTooltipPositionProvider(),
+            tooltip = {
+                androidx.compose.material3.RichTooltip(
+                    title = { Text(card.name) },
+                    text = {
+                        Text(
+                            buildString {
+                                card.manaCost?.takeIf { it.isNotBlank() }?.let { appendLine(it) }
+                                card.typeLine?.let { appendLine(it) }
+                                card.oracleText?.let { append(it) }
+                            }.ifBlank { "Bez textu." }
+                        )
+                    },
+                )
+            },
+            state = tooltipState,
+        ) {
+            CardThumb(card.thumbModel(), width = 60.dp, height = 84.dp)
+        }
+
         Column(Modifier.weight(1f)) {
             Text(
                 card.name,
@@ -338,13 +364,17 @@ private fun CollectionRow(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
-            Text(
-                card.typeLine ?: "",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text(
+                    card.typeLine ?: "",
+                    Modifier.weight(1f, fill = false),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                ManaCost(card.manaCost, symbolSize = 15)
+            }
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 card.rarity?.let {
                     Text(it.replaceFirstChar { ch -> ch.uppercase() }, style = MaterialTheme.typography.labelSmall)

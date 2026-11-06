@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
@@ -148,6 +149,57 @@ fun ScanScreen(
                         )
                     }
                 }
+            }
+
+            // Zelené potvrzení po úspěšném přidání
+            AddedConfirmation(
+                tick = state.confirmTick,
+                text = state.confirmText,
+                modifier = Modifier.align(Alignment.Center),
+            )
+        }
+    }
+}
+
+@Composable
+private fun AddedConfirmation(tick: Int, text: String?, modifier: Modifier = Modifier) {
+    var visible by remember { mutableStateOf(false) }
+    androidx.compose.runtime.LaunchedEffect(tick) {
+        if (tick > 0) {
+            visible = true
+            kotlinx.coroutines.delay(1300)
+            visible = false
+        }
+    }
+    androidx.compose.animation.AnimatedVisibility(
+        visible = visible,
+        enter = androidx.compose.animation.scaleIn(
+            androidx.compose.animation.core.spring(dampingRatio = 0.5f)
+        ) + androidx.compose.animation.fadeIn(),
+        exit = androidx.compose.animation.fadeOut(),
+        modifier = modifier,
+    ) {
+        Card(
+            colors = androidx.compose.material3.CardDefaults.cardColors(
+                containerColor = androidx.compose.ui.graphics.Color(0xFF2E9E5B)
+            ),
+        ) {
+            Column(
+                Modifier.padding(horizontal = 28.dp, vertical = 22.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                androidx.compose.material3.Icon(
+                    androidx.compose.material.icons.Icons.Filled.CheckCircle,
+                    contentDescription = null,
+                    tint = androidx.compose.ui.graphics.Color.White,
+                    modifier = Modifier.size(56.dp),
+                )
+                Text(
+                    text ?: "Uloženo do sbírky",
+                    color = androidx.compose.ui.graphics.Color.White,
+                    style = MaterialTheme.typography.titleMedium,
+                )
             }
         }
     }

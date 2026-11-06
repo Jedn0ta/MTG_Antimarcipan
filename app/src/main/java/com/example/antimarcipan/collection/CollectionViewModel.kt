@@ -29,6 +29,11 @@ class CollectionViewModel(
     val decks: StateFlow<List<Deck>> = deckRepo.decks
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    init {
+        // Dostáhne náhledy u karet, které je ještě nemají lokálně uložené.
+        viewModelScope.launch { repo.backfillImages() }
+    }
+
     /** Výsledný, filtrovaný a seřazený seznam. */
     val cards: StateFlow<List<CollectionCard>> =
         combine(repo.cards, _filter) { cards, f ->

@@ -1,20 +1,30 @@
 package com.example.antimarcipan.data
 
+import android.content.Context
 import com.example.antimarcipan.data.local.CollectionCard
 import com.example.antimarcipan.data.local.CollectionDao
 import com.example.antimarcipan.data.scryfall.ScryfallApi
 import com.example.antimarcipan.data.scryfall.ScryfallCard
 import com.example.antimarcipan.scan.OcrParser
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.withContext
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import java.io.File
 import java.util.Locale
 
 /** Resolves scanned text into cards and manages the local collection. */
 class CollectionRepository(
     private val dao: CollectionDao,
+    private val appContext: Context,
     private val scryfall: ScryfallApi = Network.scryfall,
 ) {
     val cards: Flow<List<CollectionCard>> = dao.observeAll()
     val count: Flow<Int> = dao.observeCount()
+
+    // Vlastní klient na stahování obrázků (bez Scryfall rate-limiteru).
+    private val imageClient = OkHttpClient()
 
     /**
      * Identifikuje kartu z OCR textu. Nejdřív najde kartu podle jména (fuzzy),
@@ -62,13 +72,45 @@ class CollectionRepository(
     suspend fun addToCollection(card: ScryfallCard) {
         val existing = dao.findById(card.id)
         if (existing == null) {
-            dao.upsert(card.toCollectionCard())
+            // Stáhni náhled lokálně, ať se zobrazuje spolehlivě i offline.
+            val local = card.bestImageUrl?.let { downloadImage(it, card.id) }
+            dao.upsert(card.toCollectionCard().copy(localImagePath = local))
         } else {
             dao.bumpQuantity(card.id, 1)
         }
     }
 
-    suspend fun remove(scryfallId: String) = dao.delete(scryfallId)
+    suspend fun remove(scryfallId: String) {
+        // Smaž i lokální náhled.
+        File(appContext.filesDir, "card_images/$scryfallId.jpg").delete()
+        dao.delete(scryfallId)
+    }
+
+    /** Dostáhne chybějící náhledy u karet, které je ještě nemají lokálně. */
+    suspend fun backfillImages() {
+        val missing = dao.cardsWithoutLocalImage()
+        for (c in missing) {
+            val url = c.imageUrl ?: continue
+            val path = downloadImage(url, c.scryfallId) ?: continue
+            dao.setLocalImage(c.scryfallId, path)
+        }
+    }
+
+    private suspend fun downloadImage(url: String, id: String): String? =
+        withContext(Dispatchers.IO) {
+            runCatching {
+                val dir = File(appContext.filesDir, "card_images").apply { mkdirs() }
+                val out = File(dir, "$id.jpg")
+                if (out.exists() && out.length() > 0) return@runCatching out.absolutePath
+                val req = Request.Builder().url(url).build()
+                imageClient.newCall(req).execute().use { resp ->
+                    if (!resp.isSuccessful) return@runCatching null
+                    val body = resp.body ?: return@runCatching null
+                    body.byteStream().use { input -> out.outputStream().use { input.copyTo(it) } }
+                }
+                out.absolutePath
+            }.getOrNull()
+        }
 
     private fun sameCard(a: String, b: String): Boolean {
         fun norm(s: String) = s.lowercase(Locale.ROOT).substringBefore("//").trim()

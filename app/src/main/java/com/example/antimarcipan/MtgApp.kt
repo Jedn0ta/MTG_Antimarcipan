@@ -17,7 +17,7 @@ import com.example.antimarcipan.data.update.UpdateRepository
 /** Hand-rolled dependency container — swap for Hilt/Koin as the app grows. */
 class AppContainer(app: Application) {
     private val db = AppDatabase.get(app)
-    val collectionRepository = CollectionRepository(db.collectionDao())
+    val collectionRepository = CollectionRepository(db.collectionDao(), app.applicationContext)
     val deckRepository = DeckRepository(db.deckDao())
     val synergyRepository = SynergyRepository(db.collectionDao())
     val updateRepository = UpdateRepository(app)

@@ -24,13 +24,13 @@ import coil.compose.AsyncImage
 
 @Composable
 fun CardThumb(
-    url: String?,
+    model: Any?,
     modifier: Modifier = Modifier,
     width: Dp = 48.dp,
     height: Dp = 67.dp,
 ) {
     AsyncImage(
-        model = url,
+        model = model,
         contentDescription = null,
         contentScale = ContentScale.Fit,
         modifier = modifier

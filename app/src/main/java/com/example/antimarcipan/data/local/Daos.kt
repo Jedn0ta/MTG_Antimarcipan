@@ -30,6 +30,12 @@ interface CollectionDao {
 
     @Query("SELECT name FROM collection_cards")
     suspend fun allNames(): List<String>
+
+    @Query("UPDATE collection_cards SET localImagePath = :path WHERE scryfallId = :id")
+    suspend fun setLocalImage(id: String, path: String?)
+
+    @Query("SELECT * FROM collection_cards WHERE localImagePath IS NULL AND imageUrl IS NOT NULL")
+    suspend fun cardsWithoutLocalImage(): List<CollectionCard>
 }
 
 @Dao

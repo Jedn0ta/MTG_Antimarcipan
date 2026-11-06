@@ -24,3 +24,7 @@ fun ScryfallCard.toCollectionCard(quantity: Int = 1): CollectionCard =
 
 fun CollectionCard.colorIdentityList(): List<String> =
     colorIdentity.split(",").map { it.trim() }.filter { it.isNotEmpty() }
+
+/** Model pro Coil: přednostně lokální soubor, jinak vzdálená URL. */
+fun CollectionCard.thumbModel(): Any? =
+    localImagePath?.let { java.io.File(it) } ?: imageUrl

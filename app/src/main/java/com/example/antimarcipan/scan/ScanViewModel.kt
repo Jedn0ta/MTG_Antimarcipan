@@ -27,6 +27,9 @@ data class ScanUiState(
     val shop: ShopResult? = null,
     val shopLoading: Boolean = false,
     val shopUrl: String? = null,
+    /** Zvýší se po každém úspěšném přidání — spouští potvrzovací animaci. */
+    val confirmTick: Int = 0,
+    val confirmText: String? = null,
 )
 
 class ScanViewModel(
@@ -145,6 +148,8 @@ class ScanViewModel(
             lastAdded = card.name,
             status = msg,
             prints = emptyList(),
+            confirmTick = _state.value.confirmTick + 1,
+            confirmText = msg,
         )
         lastQuery = ""
     }

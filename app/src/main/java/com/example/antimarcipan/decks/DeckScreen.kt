@@ -59,6 +59,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.example.antimarcipan.data.local.CollectionCard
+import com.example.antimarcipan.data.thumbModel
 import com.example.antimarcipan.data.local.Deck
 import com.example.antimarcipan.ui.AppViewModelFactory
 import com.example.antimarcipan.ui.CardThumb
@@ -309,7 +310,7 @@ private fun DeckDetailView(vm: DeckViewModel, deck: Deck) {
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    CardThumb(card.imageUrl)
+                    CardThumb(card.thumbModel())
                     Text(card.name, Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
                     IconButton(onClick = { vm.addCard(card) }) {
                         Icon(Icons.Filled.Add, contentDescription = "Přidat")
@@ -397,7 +398,7 @@ private fun DeckCardRow(
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        CardThumb(card.imageUrl)
+        CardThumb(card.thumbModel())
         Column(Modifier.weight(1f)) {
             Text(card.name, style = MaterialTheme.typography.bodyMedium)
             Text(
