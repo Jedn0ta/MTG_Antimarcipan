@@ -19,8 +19,10 @@ class DeckRepository(private val dao: DeckDao) {
     suspend fun setDeckCardQuantity(deckId: Long, scryfallId: String, qty: Int) =
         dao.setDeckCardQuantity(deckId, scryfallId, qty)
 
-    suspend fun createDeck(name: String, format: String = "FREEFORM"): Long =
-        dao.insertDeck(Deck(name = name, format = format))
+    suspend fun createDeck(name: String, format: String = "FREEFORM", colors: String? = null): Long =
+        dao.insertDeck(Deck(name = name, format = format, colors = colors))
+
+    suspend fun setColors(deckId: Long, colors: String?) = dao.setColors(deckId, colors)
 
     suspend fun deleteDeck(deckId: Long) = dao.deleteDeck(deckId)
 

@@ -72,6 +72,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
@@ -154,9 +155,9 @@ private fun DeckListView(vm: DeckViewModel) {
     if (showNewDeck) {
         NewDeckDialog(
             onDismiss = { showNewDeck = false },
-            onConfirm = { name, format ->
+            onConfirm = { name, format, colors ->
                 showNewDeck = false
-                vm.createDeck(name, format)
+                vm.createDeck(name, format, colors)
             },
         )
     }
@@ -187,12 +188,12 @@ private fun DeckListRow(
     onOpen: () -> Unit,
     onDelete: () -> Unit,
 ) {
+    val shown = parseDeckColors(deck.colors).ifEmpty { colors }
     Row(
         Modifier.fillMaxWidth().clickable { onOpen() }.padding(horizontal = 16.dp, vertical = 10.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        DeckCover(deck.coverImagePath, size = 56.dp)
         Column(Modifier.weight(1f)) {
             Text(deck.name, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Text(
@@ -203,7 +204,13 @@ private fun DeckListRow(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
-            ColorIdentityPips(colors, symbolSize = 16)
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                ColorIdentityPips(shown, symbolSize = 16)
+                comboName(shown)?.let {
+                    Text(it, style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary)
+                }
+            }
         }
         IconButton(onClick = onDelete) {
             Icon(Icons.Filled.Delete, contentDescription = "Smazat balík")
@@ -258,10 +265,6 @@ private fun DeckDetailView(vm: DeckViewModel, deck: Deck) {
     val selectedFilters = remember { androidx.compose.runtime.mutableStateListOf<String>() }
     var pendingRemove by remember { mutableStateOf<CollectionCard?>(null) }
 
-    val coverPicker = rememberLauncherForActivityResult(
-        ActivityResultContracts.PickVisualMedia()
-    ) { uri -> if (uri != null) vm.setCover(deck.id, uri) }
-
     val format = DeckFormat.from(deck.format)
     // Barvy balíku dle zemí, které produkují manu
     val deckColors by androidx.compose.runtime.produceState(emptySet<String>(), deckCards) {
@@ -291,7 +294,6 @@ private fun DeckDetailView(vm: DeckViewModel, deck: Deck) {
                 IconButton(onClick = vm::closeDeck) {
                     Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Zpět")
                 }
-                DeckCover(deck.coverImagePath, size = 44.dp)
                 Text(
                     deck.name,
                     Modifier.weight(1f),
@@ -308,17 +310,9 @@ private fun DeckDetailView(vm: DeckViewModel, deck: Deck) {
                         onDismissRequest = { showMenu = false },
                     ) {
                         androidx.compose.material3.DropdownMenuItem(
-                            text = { Text("Název") },
+                            text = { Text("Název a barvy") },
                             leadingIcon = { Icon(Icons.Filled.Edit, contentDescription = null) },
                             onClick = { showMenu = false; showRename = true },
-                        )
-                        androidx.compose.material3.DropdownMenuItem(
-                            text = { Text("Náhled") },
-                            leadingIcon = { Icon(Icons.Filled.Image, contentDescription = null) },
-                            onClick = {
-                                showMenu = false
-                                coverPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
-                            },
                         )
                         androidx.compose.material3.DropdownMenuItem(
                             text = { Text("Export decklistu") },
@@ -355,7 +349,12 @@ private fun DeckDetailView(vm: DeckViewModel, deck: Deck) {
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.85f),
                 )
-                ColorIdentityPips(deckColors, symbolSize = 15)
+                val shownColors = parseDeckColors(deck.colors).ifEmpty { deckColors }
+                ColorIdentityPips(shownColors, symbolSize = 15)
+                comboName(shownColors)?.let {
+                    Text(it, style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.primary)
+                }
             }
         }
         HorizontalDivider()
@@ -524,12 +523,14 @@ private fun DeckDetailView(vm: DeckViewModel, deck: Deck) {
 
     if (showRename) {
         DeckNameDialog(
-            title = "Přejmenovat balík",
+            title = "Název a barvy",
             initial = deck.name,
+            initialColors = deck.colors,
             onDismiss = { showRename = false },
-            onConfirm = { name ->
+            onConfirm = { name, colors ->
                 showRename = false
                 vm.renameDeck(deck.id, name)
+                vm.setDeckColors(deck.id, colors)
             },
         )
     }
@@ -583,6 +584,38 @@ private val MAIN_TYPES = listOf(
 
 private enum class DeckSectionMode(val label: String) {
     ALL("Vše"), LANDS("Land"), OTHERS("Spell")
+}
+
+// ---- Barvy balíku a název barevné kombinace ----
+
+private val WUBRG = listOf("W", "U", "B", "R", "G")
+private val COLOR_CZ = mapOf("W" to "bílé", "U" to "modré", "B" to "černé", "R" to "červené", "G" to "zelené")
+private val COMBO_NAMES = mapOf(
+    "W" to "Bílá", "U" to "Modrá", "B" to "Černá", "R" to "Červená", "G" to "Zelená", "C" to "Bezbarvá",
+    "WU" to "Azorius", "WB" to "Orzhov", "WR" to "Boros", "WG" to "Selesnya",
+    "UB" to "Dimir", "UR" to "Izzet", "UG" to "Simic",
+    "BR" to "Rakdos", "BG" to "Golgari", "RG" to "Gruul",
+    "WUB" to "Esper", "WUR" to "Jeskai", "WUG" to "Bant", "WBR" to "Mardu", "WBG" to "Abzan",
+    "WRG" to "Naya", "UBR" to "Grixis", "UBG" to "Sultai", "URG" to "Temur", "BRG" to "Jund",
+    "WUBRG" to "Pětibarevný (WUBRG)",
+)
+
+/** "WUB" → {W,U,B}; filtruje jen platné znaky many. */
+private fun parseDeckColors(colors: String?): Set<String> =
+    colors?.uppercase()?.toCharArray()?.map { it.toString() }
+        ?.filter { it in WUBRG || it == "C" }?.toSet() ?: emptySet()
+
+/** Název barevné kombinace (Azorius, Jeskai…), nebo null když se nehodí. */
+private fun comboName(colors: Set<String>): String? {
+    val cols = WUBRG.filter { it in colors }
+    if (cols.isEmpty()) return if ("C" in colors) "Bezbarvá" else null
+    val key = cols.joinToString("")
+    COMBO_NAMES[key]?.let { return it }
+    if (cols.size == 4) {
+        val missing = WUBRG.first { it !in colors }
+        return "Čtyřbarevný (bez ${COLOR_CZ[missing]})"
+    }
+    return null
 }
 
 private fun formatIcon(format: DeckFormat): androidx.compose.ui.graphics.vector.ImageVector =
@@ -961,10 +994,11 @@ private fun FormatDialog(
 @Composable
 private fun NewDeckDialog(
     onDismiss: () -> Unit,
-    onConfirm: (String, DeckFormat) -> Unit,
+    onConfirm: (String, DeckFormat, String?) -> Unit,
 ) {
     var name by remember { mutableStateOf("") }
     var format by remember { mutableStateOf(DeckFormat.SINGLETON) }
+    val colors = remember { androidx.compose.runtime.mutableStateListOf<String>() }
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Nový balík") },
@@ -990,11 +1024,51 @@ private fun NewDeckDialog(
                         Text(f.label)
                     }
                 }
+                Text("Barvy balíku", style = MaterialTheme.typography.labelMedium)
+                ColorPicker(colors.toSet()) { c ->
+                    if (colors.contains(c)) colors.remove(c) else colors.add(c)
+                }
+                comboName(colors.toSet())?.let {
+                    Text(it, style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary)
+                }
             }
         },
-        confirmButton = { TextButton(onClick = { onConfirm(name, format) }) { Text("Vytvořit") } },
+        confirmButton = {
+            TextButton(onClick = { onConfirm(name, format, serializeColors(colors)) }) { Text("Vytvořit") }
+        },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Zrušit") } },
     )
+}
+
+private fun serializeColors(colors: List<String>): String? =
+    WUBRG.filter { it in colors }.joinToString("").ifEmpty { null }
+
+private fun manaRes(c: String): Int = when (c) {
+    "W" -> com.example.antimarcipan.R.drawable.mana_w
+    "U" -> com.example.antimarcipan.R.drawable.mana_u
+    "B" -> com.example.antimarcipan.R.drawable.mana_b
+    "R" -> com.example.antimarcipan.R.drawable.mana_r
+    "G" -> com.example.antimarcipan.R.drawable.mana_g
+    else -> com.example.antimarcipan.R.drawable.mana_c
+}
+
+@Composable
+private fun ColorPicker(selected: Set<String>, onToggle: (String) -> Unit) {
+    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        WUBRG.forEach { c ->
+            val on = c in selected
+            androidx.compose.foundation.Image(
+                painter = androidx.compose.ui.res.painterResource(manaRes(c)),
+                contentDescription = c,
+                modifier = Modifier
+                    .size(34.dp)
+                    .clip(androidx.compose.foundation.shape.CircleShape)
+                    .alpha(if (on) 1f else 0.3f)
+                    .clickable { onToggle(c) },
+            )
+        }
+    }
 }
 
 @Composable
@@ -1123,22 +1197,34 @@ private fun shareDecklist(context: Context, deckName: String, cards: List<Collec
 private fun DeckNameDialog(
     title: String,
     initial: String,
+    initialColors: String?,
     onDismiss: () -> Unit,
-    onConfirm: (String) -> Unit,
+    onConfirm: (String, String?) -> Unit,
 ) {
     var name by remember { mutableStateOf(initial) }
+    val colors = remember { androidx.compose.runtime.mutableStateListOf<String>().apply { addAll(parseDeckColors(initialColors).filter { it in WUBRG }) } }
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(title) },
         text = {
-            OutlinedTextField(
-                value = name,
-                onValueChange = { name = it },
-                label = { Text("Název balíku") },
-                singleLine = true,
-            )
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text("Název balíku") },
+                    singleLine = true,
+                )
+                Text("Barvy balíku", style = MaterialTheme.typography.labelMedium)
+                ColorPicker(colors.toSet()) { c ->
+                    if (colors.contains(c)) colors.remove(c) else colors.add(c)
+                }
+                comboName(colors.toSet())?.let {
+                    Text(it, style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary)
+                }
+            }
         },
-        confirmButton = { TextButton(onClick = { onConfirm(name) }) { Text("Uložit") } },
+        confirmButton = { TextButton(onClick = { onConfirm(name, serializeColors(colors)) }) { Text("Uložit") } },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Zrušit") } },
     )
 }

@@ -41,6 +41,8 @@ data class Deck(
     val commanderName: String? = null,
     /** Lokální cesta k náhledovému obrázku balíku (např. rub obalu). */
     val coverImagePath: String? = null,
+    /** Ručně zvolené barvy balíku, např. "WUB" (znaky many W/U/B/R/G/C). */
+    val colors: String? = null,
     /** Formát: COMMANDER, SINGLETON (jednokarťák), FREEFORM. */
     val format: String = "FREEFORM",
     val createdAt: Long = System.currentTimeMillis(),

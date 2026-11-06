@@ -69,6 +69,9 @@ interface DeckDao {
     @Query("UPDATE decks SET coverImagePath = :path WHERE id = :deckId")
     suspend fun setCover(deckId: Long, path: String?)
 
+    @Query("UPDATE decks SET colors = :colors WHERE id = :deckId")
+    suspend fun setColors(deckId: Long, colors: String?)
+
     @Query("UPDATE decks SET format = :format WHERE id = :deckId")
     suspend fun setFormat(deckId: Long, format: String)
 
