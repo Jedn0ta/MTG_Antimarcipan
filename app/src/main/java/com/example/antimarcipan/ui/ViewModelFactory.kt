@@ -29,7 +29,11 @@ val AppViewModelFactory: ViewModelProvider.Factory = viewModelFactory {
         CollectionViewModel(app().container.collectionRepository, app().container.deckRepository)
     }
     initializer {
-        DeckViewModel(app().container.deckRepository, app().container.collectionRepository)
+        DeckViewModel(
+            app().container.deckRepository,
+            app().container.collectionRepository,
+            app().applicationContext,
+        )
     }
     initializer {
         SynergyViewModel(app().container.synergyRepository, app().container.deckRepository)

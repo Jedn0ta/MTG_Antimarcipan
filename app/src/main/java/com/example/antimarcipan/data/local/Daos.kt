@@ -50,6 +50,15 @@ interface DeckDao {
     @Query("UPDATE decks SET commanderScryfallId = :cardId, commanderName = :name WHERE id = :deckId")
     suspend fun setCommander(deckId: Long, cardId: String?, name: String?)
 
+    @Query("UPDATE decks SET name = :name WHERE id = :deckId")
+    suspend fun renameDeck(deckId: Long, name: String)
+
+    @Query("UPDATE decks SET coverImagePath = :path WHERE id = :deckId")
+    suspend fun setCover(deckId: Long, path: String?)
+
+    @Query("SELECT COUNT(*) FROM deck_cards WHERE deckId = :deckId")
+    suspend fun deckCardCount(deckId: Long): Int
+
     @Upsert
     suspend fun upsertDeckCard(deckCard: DeckCard)
 

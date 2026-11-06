@@ -1,24 +1,31 @@
 package com.example.antimarcipan.decks
 
+import android.content.Context
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.antimarcipan.data.CollectionRepository
 import com.example.antimarcipan.data.DeckRepository
 import com.example.antimarcipan.data.local.CollectionCard
 import com.example.antimarcipan.data.local.Deck
-import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.io.File
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class DeckViewModel(
     private val deckRepo: DeckRepository,
     collectionRepo: CollectionRepository,
+    private val appContext: Context,
 ) : ViewModel() {
 
     val decks: StateFlow<List<Deck>> = deckRepo.decks
@@ -30,11 +37,11 @@ class DeckViewModel(
 
     private val selectedDeckId = MutableStateFlow<Long?>(null)
 
-    val selectedDeck: StateFlow<Deck?> = selectedDeckId
-        .flatMapLatest { id ->
-            if (id == null) flowOf(null) else flowOf(deckRepo.deck(id))
-        }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+    // Odvozeno ze seznamu balíků → reaguje na přejmenování, náhled i velitele.
+    val selectedDeck: StateFlow<Deck?> =
+        combine(decks, selectedDeckId) { list, id ->
+            list.firstOrNull { it.id == id }
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
     val selectedDeckCards: StateFlow<List<CollectionCard>> = selectedDeckId
         .flatMapLatest { id ->
@@ -44,6 +51,8 @@ class DeckViewModel(
 
     fun select(deckId: Long) { selectedDeckId.value = deckId }
 
+    fun closeDeck() { selectedDeckId.value = null }
+
     fun createDeck(name: String) {
         viewModelScope.launch {
             val id = deckRepo.createDeck(name.ifBlank { "Nový balík" })
@@ -51,11 +60,27 @@ class DeckViewModel(
         }
     }
 
+    fun renameDeck(deckId: Long, name: String) {
+        viewModelScope.launch { deckRepo.rename(deckId, name) }
+    }
+
     fun deleteDeck(deckId: Long) {
         viewModelScope.launch {
             deckRepo.deleteDeck(deckId)
             if (selectedDeckId.value == deckId) selectedDeckId.value = null
         }
+    }
+
+    /** Uloží vybraný obrázek jako náhled balíku (zkopíruje do úložiště appky). */
+    fun setCover(deckId: Long, uri: Uri) {
+        viewModelScope.launch {
+            val path = withContext(Dispatchers.IO) { copyCover(deckId, uri) }
+            if (path != null) deckRepo.setCover(deckId, path)
+        }
+    }
+
+    fun clearCover(deckId: Long) {
+        viewModelScope.launch { deckRepo.setCover(deckId, null) }
     }
 
     fun addCard(card: CollectionCard) {
@@ -72,9 +97,16 @@ class DeckViewModel(
         val deckId = selectedDeckId.value ?: return
         viewModelScope.launch {
             deckRepo.setCommander(deckId, card)
-            // Ensure the commander is also in the deck list.
             deckRepo.addCard(deckId, card.scryfallId)
-            selectedDeckId.value = deckId // refresh
         }
     }
+
+    private fun copyCover(deckId: Long, uri: Uri): String? = runCatching {
+        val dir = File(appContext.filesDir, "deck_covers").apply { mkdirs() }
+        val out = File(dir, "deck_${deckId}.jpg")
+        appContext.contentResolver.openInputStream(uri)?.use { input ->
+            out.outputStream().use { input.copyTo(it) }
+        } ?: return null
+        out.absolutePath
+    }.getOrNull()
 }

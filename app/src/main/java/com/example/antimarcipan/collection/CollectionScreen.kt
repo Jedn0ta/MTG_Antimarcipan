@@ -124,12 +124,14 @@ fun CollectionScreen(
         } else {
             LazyColumn(Modifier.weight(1f)) {
                 items(cards, key = { it.scryfallId }) { card ->
-                    CollectionRow(
-                        card = card,
-                        selected = selection.contains(card.scryfallId),
-                        onToggleSelect = { vm.toggleSelect(card.scryfallId) },
-                        onRemove = { vm.remove(card.scryfallId) },
-                    )
+                    SwipeToDelete(onDelete = { vm.remove(card.scryfallId) }) {
+                        CollectionRow(
+                            card = card,
+                            selected = selection.contains(card.scryfallId),
+                            onToggleSelect = { vm.toggleSelect(card.scryfallId) },
+                            onRemove = { vm.remove(card.scryfallId) },
+                        )
+                    }
                     HorizontalDivider()
                 }
             }
@@ -226,6 +228,40 @@ private fun FilterRow(label: String, content: @Composable () -> Unit) {
             horizontalArrangement = Arrangement.spacedBy(6.dp),
         ) { content() }
     }
+}
+
+@Composable
+private fun SwipeToDelete(onDelete: () -> Unit, content: @Composable () -> Unit) {
+    val dismissState = androidx.compose.material3.rememberSwipeToDismissBoxState(
+        confirmValueChange = { value ->
+            if (value == androidx.compose.material3.SwipeToDismissBoxValue.EndToStart) {
+                onDelete(); true
+            } else false
+        },
+    )
+    androidx.compose.material3.SwipeToDismissBox(
+        state = dismissState,
+        enableDismissFromStartToEnd = false,
+        backgroundContent = {
+            androidx.compose.foundation.layout.Box(
+                Modifier.fillMaxWidth().padding(end = 20.dp),
+                contentAlignment = Alignment.CenterEnd,
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    Icon(
+                        Icons.Filled.Delete,
+                        contentDescription = null,
+                        tint = androidx.compose.ui.graphics.Color(0xFFD95C5C),
+                    )
+                    Text("Smazat", color = androidx.compose.ui.graphics.Color(0xFFD95C5C))
+                }
+            }
+        },
+        content = { content() },
+    )
 }
 
 @Composable

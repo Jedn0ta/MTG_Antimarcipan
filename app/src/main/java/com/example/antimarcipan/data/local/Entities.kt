@@ -33,6 +33,8 @@ data class Deck(
     val name: String,
     val commanderScryfallId: String? = null,
     val commanderName: String? = null,
+    /** Lokální cesta k náhledovému obrázku balíku (např. rub obalu). */
+    val coverImagePath: String? = null,
     val createdAt: Long = System.currentTimeMillis(),
 )
 

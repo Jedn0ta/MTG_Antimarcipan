@@ -26,4 +26,11 @@ class DeckRepository(private val dao: DeckDao) {
 
     suspend fun setCommander(deckId: Long, card: CollectionCard) =
         dao.setCommander(deckId, card.scryfallId, card.name)
+
+    suspend fun rename(deckId: Long, name: String) =
+        dao.renameDeck(deckId, name.ifBlank { "Balík" })
+
+    suspend fun setCover(deckId: Long, path: String?) = dao.setCover(deckId, path)
+
+    suspend fun cardCount(deckId: Long): Int = dao.deckCardCount(deckId)
 }
