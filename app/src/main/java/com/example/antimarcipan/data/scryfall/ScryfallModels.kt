@@ -16,6 +16,7 @@ data class ScryfallCard(
     @SerialName("type_line") val typeLine: String? = null,
     @SerialName("oracle_text") val oracleText: String? = null,
     @SerialName("color_identity") val colorIdentity: List<String> = emptyList(),
+    @SerialName("produced_mana") val producedMana: List<String> = emptyList(),
     val keywords: List<String> = emptyList(),
     val set: String? = null,
     @SerialName("set_name") val setName: String? = null,

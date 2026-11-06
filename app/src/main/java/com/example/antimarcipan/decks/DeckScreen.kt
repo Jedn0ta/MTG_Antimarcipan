@@ -7,6 +7,9 @@ import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,6 +18,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -25,6 +29,8 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Style
@@ -46,6 +52,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -53,6 +60,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
@@ -68,6 +76,7 @@ import com.example.antimarcipan.ui.AppViewModelFactory
 import com.example.antimarcipan.ui.CardThumb
 import com.example.antimarcipan.ui.ColorIdentityPips
 import com.example.antimarcipan.ui.ConfirmDialog
+import kotlinx.coroutines.withTimeoutOrNull
 import java.io.File
 
 @Composable
@@ -223,6 +232,8 @@ private fun DeckDetailView(vm: DeckViewModel, deck: Deck) {
 
     var showRename by remember { mutableStateOf(false) }
     var showFormat by remember { mutableStateOf(false) }
+    var showMenu by remember { mutableStateOf(false) }
+    var showBasics by remember { mutableStateOf(false) }
     var pendingRemove by remember { mutableStateOf<CollectionCard?>(null) }
 
     val coverPicker = rememberLauncherForActivityResult(
@@ -230,115 +241,122 @@ private fun DeckDetailView(vm: DeckViewModel, deck: Deck) {
     ) { uri -> if (uri != null) vm.setCover(deck.id, uri) }
 
     val format = DeckFormat.from(deck.format)
-    val deckColors = deckCards.flatMap { it.colorIdentityList() }.toSet()
+    // Barvy balíku dle zemí, které produkují manu
+    val deckColors by androidx.compose.runtime.produceState(emptySet<String>(), deckCards) {
+        value = vm.deckColors(deck.id)
+    }
+    // Rozbalené karty (podle počtu kusů) pro počítání velikosti a legality
+    val flatCards = deckCards.flatMap { e -> List(e.deckQuantity) { e.card } }
 
     Column(Modifier.fillMaxSize()) {
-        // Hlavička balíku
+        // Hlavička — kompaktní
         Row(
-            Modifier.fillMaxWidth().padding(12.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 6.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             IconButton(onClick = vm::closeDeck) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Zpět na seznam")
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Zpět")
             }
-            DeckCover(deck.coverImagePath, size = 64.dp)
+            DeckCover(deck.coverImagePath, size = 40.dp)
             Column(Modifier.weight(1f)) {
-                Text(deck.name, style = MaterialTheme.typography.titleLarge, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                Text(
+                    deck.name,
+                    style = MaterialTheme.typography.titleMedium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text(
+                        format.label,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                    )
+                    ColorIdentityPips(deckColors, symbolSize = 15)
+                }
+            }
+            // Minimální legalita: kolik doplnit
+            DeckNeed(format, flatCards.size)
+            Box {
+                IconButton(onClick = { showMenu = true }) {
+                    Icon(Icons.Filled.MoreVert, contentDescription = "Akce")
+                }
+                androidx.compose.material3.DropdownMenu(
+                    expanded = showMenu,
+                    onDismissRequest = { showMenu = false },
                 ) {
-                    Text(
-                        "${format.label} · ${deckCards.size} karet",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                    androidx.compose.material3.DropdownMenuItem(
+                        text = { Text("Název") },
+                        leadingIcon = { Icon(Icons.Filled.Edit, contentDescription = null) },
+                        onClick = { showMenu = false; showRename = true },
                     )
-                    ColorIdentityPips(deckColors, symbolSize = 16)
-                }
-                if (format == DeckFormat.COMMANDER) {
-                    Text(
-                        "Velitel: ${deck.commanderName ?: "— nenastaven —"}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                    androidx.compose.material3.DropdownMenuItem(
+                        text = { Text("Náhled") },
+                        leadingIcon = { Icon(Icons.Filled.Image, contentDescription = null) },
+                        onClick = {
+                            showMenu = false
+                            coverPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                        },
+                    )
+                    androidx.compose.material3.DropdownMenuItem(
+                        text = { Text("Export decklistu") },
+                        leadingIcon = { Icon(Icons.Filled.Share, contentDescription = null) },
+                        onClick = { showMenu = false; shareDecklist(context, deck.name, flatCards) },
+                    )
+                    androidx.compose.material3.DropdownMenuItem(
+                        text = { Text("Formát balíku") },
+                        leadingIcon = { Icon(Icons.Filled.Tune, contentDescription = null) },
+                        onClick = { showMenu = false; showFormat = true },
+                    )
+                    androidx.compose.material3.DropdownMenuItem(
+                        text = { Text("Přidat základní země") },
+                        leadingIcon = { Icon(Icons.Filled.Add, contentDescription = null) },
+                        onClick = { showMenu = false; showBasics = true },
                     )
                 }
-            }
-            IconButton(onClick = { showFormat = true }) {
-                Icon(Icons.Filled.Tune, contentDescription = "Formát balíku")
             }
         }
-
-        // Legalita balíku
-        DeckLegalityPanel(
-            DeckRules.legality(
-                format = format,
-                cards = deckCards,
-                hasCommander = deck.commanderScryfallId != null,
-            )
-        )
-
-        // Akce
-        Row(
-            Modifier.fillMaxWidth().padding(horizontal = 12.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            OutlinedButton(
-                onClick = { showRename = true },
-                modifier = Modifier.weight(1f),
-                contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 8.dp),
-            ) {
-                Icon(Icons.Filled.Edit, contentDescription = null, modifier = Modifier.size(18.dp))
-                Text(" Název", maxLines = 1, softWrap = false, style = MaterialTheme.typography.labelLarge)
-            }
-            OutlinedButton(
-                onClick = {
-                    coverPicker.launch(
-                        PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
-                    )
-                },
-                modifier = Modifier.weight(1f),
-                contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 8.dp),
-            ) {
-                Icon(Icons.Filled.Image, contentDescription = null, modifier = Modifier.size(18.dp))
-                Text(" Náhled", maxLines = 1, softWrap = false, style = MaterialTheme.typography.labelLarge)
-            }
-            OutlinedButton(
-                onClick = { shareDecklist(context, deck.name, deckCards) },
-                modifier = Modifier.weight(1f),
-                contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 8.dp),
-            ) {
-                Icon(Icons.Filled.Share, contentDescription = null, modifier = Modifier.size(18.dp))
-                Text(" Export", maxLines = 1, softWrap = false, style = MaterialTheme.typography.labelLarge)
-            }
-        }
+        HorizontalDivider()
 
         LazyColumn(Modifier.fillMaxSize()) {
-            item { SectionHeader("Karty v balíku — swipe doleva odebere") }
+            item { SectionHeader("Karty v balíku — podržení karty ji odebere") }
             if (deckCards.isEmpty()) {
                 item {
                     Text(
-                        "Zatím prázdný — přidej dole ze sbírky.",
+                        "Zatím prázdný — přidej dole ze sbírky, nebo základní země přes menu.",
                         Modifier.padding(16.dp),
                         style = MaterialTheme.typography.bodySmall,
                     )
                 }
             }
-            items(deckCards, key = { "in-" + it.scryfallId }) { card ->
-                SwipeToRemove(onRequestRemove = { pendingRemove = card }) {
-                    DeckCardRow(
+            items(deckCards, key = { "in-" + it.card.scryfallId }) { entry ->
+                val card = entry.card
+                Row(
+                    Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    com.example.antimarcipan.ui.CardListInfo(
                         card = card,
-                        isCommander = card.scryfallId == deck.commanderScryfallId,
-                        showCommander = format == DeckFormat.COMMANDER,
-                        onCommander = { vm.setCommander(card) },
-                        onRemove = { pendingRemove = card },
+                        deckQuantity = entry.deckQuantity,
+                        modifier = Modifier.weight(1f).longHold(2500L) { pendingRemove = card },
                     )
+                    if (format == DeckFormat.COMMANDER) {
+                        IconButton(onClick = { vm.setCommander(card) }) {
+                            Icon(
+                                Icons.Filled.Star,
+                                contentDescription = "Velitel",
+                                tint = if (card.scryfallId == deck.commanderScryfallId)
+                                    MaterialTheme.colorScheme.primary
+                                else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+                            )
+                        }
+                    }
                 }
                 HorizontalDivider()
             }
 
             item { SectionHeader("Přidat ze sbírky") }
-            val inDeckIds = deckCards.map { it.scryfallId }.toSet()
+            val inDeckIds = deckCards.map { it.card.scryfallId }.toSet()
             val addable = collection.filter { it.scryfallId !in inDeckIds }
             if (addable.isEmpty()) {
                 item {
@@ -351,12 +369,10 @@ private fun DeckDetailView(vm: DeckViewModel, deck: Deck) {
             }
             items(addable, key = { "add-" + it.scryfallId }) { card ->
                 Row(
-                    Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    CardThumb(card.thumbModel())
-                    Text(card.name, Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
+                    com.example.antimarcipan.ui.CardListInfo(card = card, modifier = Modifier.weight(1f))
                     IconButton(onClick = { vm.addCard(card) }) {
                         Icon(Icons.Filled.Add, contentDescription = "Přidat")
                     }
@@ -395,53 +411,104 @@ private fun DeckDetailView(vm: DeckViewModel, deck: Deck) {
             onPick = { f -> showFormat = false; vm.setFormat(deck.id, f) },
         )
     }
+
+    if (showBasics) {
+        BasicLandsDialog(
+            onDismiss = { showBasics = false },
+            onConfirm = { counts ->
+                showBasics = false
+                vm.addBasicLands(deck.id, counts)
+            },
+        )
+    }
+}
+
+/** Dlouhé podržení → akce (ignoruje swipe/zrušení). */
+private fun Modifier.longHold(durationMs: Long, onHold: () -> Unit): Modifier =
+    this.pointerInput(Unit) {
+        awaitEachGesture {
+            awaitFirstDown(requireUnconsumed = false)
+            val completed = withTimeoutOrNull(durationMs) {
+                waitForUpOrCancellation(); true
+            }
+            if (completed == null) onHold()
+        }
+    }
+
+/** Minimální info: kolik karet ještě doplnit do minimálního počtu. */
+@Composable
+private fun DeckNeed(format: DeckFormat, total: Int) {
+    val min = when (format) {
+        DeckFormat.COMMANDER, DeckFormat.SINGLETON -> 100
+        DeckFormat.FREEFORM -> 0
+    }
+    if (min == 0) {
+        Text("$total", style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f))
+        return
+    }
+    val need = (min - total).coerceAtLeast(0)
+    val ok = need == 0
+    Text(
+        if (ok) "$total ✓" else "$total · +$need",
+        style = MaterialTheme.typography.labelMedium,
+        color = if (ok) Color(0xFF2E9E5B) else Color(0xFFD98324),
+    )
 }
 
 @Composable
-private fun DeckLegalityPanel(legality: DeckLegality) {
-    if (legality.format == DeckFormat.FREEFORM) return
-    val issues = buildList {
-        if (!legality.sizeOk) add("málo karet: ${legality.totalCards}/${legality.minCards}")
-        if (!legality.singletonOk) add("duplicity: ${legality.duplicates.joinToString(", ")}")
-        if (!legality.commanderOk) add("chybí velitel")
-    }
-    val ok = legality.isLegal
-    Card(
-        Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp),
-        colors = androidx.compose.material3.CardDefaults.cardColors(
-            containerColor = if (ok) Color(0xFF234D34) else Color(0xFF4D3A23)
-        ),
-    ) {
-        Row(
-            Modifier.fillMaxWidth().padding(14.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalAlignment = Alignment.Top,
-        ) {
-            Icon(
-                if (ok) Icons.Filled.CheckCircle else Icons.Filled.Warning,
-                contentDescription = null,
-                tint = if (ok) Color(0xFF7FDBA3) else Color(0xFFE9C46A),
-            )
-            Column {
-                Text(
-                    if (ok) "${legality.format.label}: v pořádku (${legality.totalCards} karet)"
-                    else "${legality.format.label}: ${legality.totalCards} karet",
-                    style = MaterialTheme.typography.titleSmall,
-                    color = Color.White,
-                )
-                val rule = when (legality.format) {
-                    DeckFormat.COMMANDER -> "100 karet, každá nezákladní 1×, velitel."
-                    DeckFormat.SINGLETON -> "min. 100 karet, každá nezákladní právě 1× (kromě základních zemí)."
-                    DeckFormat.FREEFORM -> ""
+private fun BasicLandsDialog(
+    onDismiss: () -> Unit,
+    onConfirm: (Map<String, Int>) -> Unit,
+) {
+    // jméno země → mana ikona res
+    val lands = listOf(
+        "Plains" to com.example.antimarcipan.R.drawable.mana_w,
+        "Island" to com.example.antimarcipan.R.drawable.mana_u,
+        "Swamp" to com.example.antimarcipan.R.drawable.mana_b,
+        "Mountain" to com.example.antimarcipan.R.drawable.mana_r,
+        "Forest" to com.example.antimarcipan.R.drawable.mana_g,
+    )
+    val counts = remember { mutableStateMapOf<String, Int>() }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Přidat základní země") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                lands.forEach { (name, res) ->
+                    val v = counts[name] ?: 0
+                    Row(
+                        Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    ) {
+                        androidx.compose.foundation.Image(
+                            painter = androidx.compose.ui.res.painterResource(res),
+                            contentDescription = name,
+                            modifier = Modifier.size(26.dp),
+                        )
+                        Text(name, Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
+                        IconButton(onClick = { counts[name] = (v - 1).coerceAtLeast(0) }) {
+                            Icon(Icons.Filled.Remove, contentDescription = "−")
+                        }
+                        Text("$v", Modifier.widthIn(min = 24.dp), style = MaterialTheme.typography.titleMedium)
+                        IconButton(onClick = { counts[name] = v + 1 }) {
+                            Icon(Icons.Filled.Add, contentDescription = "+")
+                        }
+                    }
                 }
                 Text(
-                    rule + if (issues.isNotEmpty()) "  Chybí: " + issues.joinToString("; ") else "",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Color.White.copy(alpha = 0.85f),
+                    "Nastavuje celkový počet dané základní země v balíku.",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                 )
             }
-        }
-    }
+        },
+        confirmButton = {
+            TextButton(onClick = { onConfirm(counts.toMap()) }) { Text("Přidat") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Zrušit") } },
+    )
 }
 
 @Composable
@@ -631,7 +698,7 @@ private fun DuplicateWarning(names: List<String>) {
 private fun shareDecklist(context: Context, deckName: String, cards: List<CollectionCard>) {
     val lines = cards
         .groupBy { it.name }
-        .map { (name, group) -> "${group.sumOf { it.quantity }} $name" }
+        .map { (name, group) -> "${group.size} $name" }
         .sorted()
     val text = buildString {
         appendLine("// $deckName")

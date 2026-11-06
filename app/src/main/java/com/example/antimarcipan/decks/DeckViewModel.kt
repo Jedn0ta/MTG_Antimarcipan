@@ -24,7 +24,7 @@ import java.io.File
 @OptIn(ExperimentalCoroutinesApi::class)
 class DeckViewModel(
     private val deckRepo: DeckRepository,
-    collectionRepo: CollectionRepository,
+    private val collectionRepo: CollectionRepository,
     private val appContext: Context,
 ) : ViewModel() {
 
@@ -43,11 +43,24 @@ class DeckViewModel(
             list.firstOrNull { it.id == id }
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
-    val selectedDeckCards: StateFlow<List<CollectionCard>> = selectedDeckId
-        .flatMapLatest { id ->
-            if (id == null) flowOf(emptyList()) else deckRepo.deckCards(id)
+    val selectedDeckCards: StateFlow<List<com.example.antimarcipan.data.local.DeckCardWithQty>> =
+        selectedDeckId
+            .flatMapLatest { id ->
+                if (id == null) flowOf(emptyList()) else deckRepo.deckCardsWithQty(id)
+            }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    /** Přidá základní země hromadně: mapa jméno země → počet. */
+    fun addBasicLands(deckId: Long, counts: Map<String, Int>) {
+        viewModelScope.launch {
+            counts.forEach { (name, count) ->
+                if (count > 0) {
+                    val id = collectionRepo.addBasicLandToCollection(name)
+                    if (id != null) deckRepo.setBasicLandCount(deckId, id, count)
+                }
+            }
         }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    }
 
     fun select(deckId: Long) { selectedDeckId.value = deckId }
 

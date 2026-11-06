@@ -3,6 +3,7 @@ package com.example.antimarcipan.data
 import com.example.antimarcipan.data.local.CollectionCard
 import com.example.antimarcipan.data.local.Deck
 import com.example.antimarcipan.data.local.DeckCard
+import com.example.antimarcipan.data.local.DeckCardWithQty
 import com.example.antimarcipan.data.local.DeckDao
 import kotlinx.coroutines.flow.Flow
 
@@ -11,6 +12,12 @@ class DeckRepository(private val dao: DeckDao) {
     val decks: Flow<List<Deck>> = dao.observeDecks()
 
     fun deckCards(deckId: Long): Flow<List<CollectionCard>> = dao.observeDeckCards(deckId)
+
+    fun deckCardsWithQty(deckId: Long): Flow<List<DeckCardWithQty>> =
+        dao.observeDeckCardsWithQty(deckId)
+
+    suspend fun setDeckCardQuantity(deckId: Long, scryfallId: String, qty: Int) =
+        dao.setDeckCardQuantity(deckId, scryfallId, qty)
 
     suspend fun createDeck(name: String, format: String = "FREEFORM"): Long =
         dao.insertDeck(Deck(name = name, format = format))
@@ -37,11 +44,23 @@ class DeckRepository(private val dao: DeckDao) {
 
     suspend fun cardCount(deckId: Long): Int = dao.deckCardCount(deckId)
 
-    /** Vrátí množinu barev (W/U/B/R/G), které balík hraje. */
+    /**
+     * Barvy balíku odvozené z many, kterou produkují země v balíku
+     * (tj. jaké barvy reálně umíš zahrát). Jen W/U/B/R/G.
+     */
     suspend fun deckColors(deckId: Long): Set<String> =
-        dao.deckColorIdentities(deckId)
+        dao.deckLandProducedMana(deckId)
             .flatMap { it.split(",") }
-            .map { it.trim() }
-            .filter { it.isNotEmpty() }
+            .map { it.trim().uppercase() }
+            .filter { it in setOf("W", "U", "B", "R", "G") }
             .toSet()
+
+    /** Nastaví počet základní země v balíku (karta už musí být přidaná). */
+    suspend fun setBasicLandCount(deckId: Long, scryfallId: String, count: Int) {
+        if (count <= 0) {
+            dao.removeDeckCard(deckId, scryfallId)
+        } else {
+            dao.upsertDeckCard(DeckCard(deckId = deckId, scryfallId = scryfallId, quantity = count))
+        }
+    }
 }

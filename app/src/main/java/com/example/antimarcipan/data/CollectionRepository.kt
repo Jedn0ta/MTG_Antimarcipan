@@ -79,6 +79,17 @@ class CollectionRepository(
         ).data
     }
 
+    /** Stáhne základní zemi podle jména a přidá do sbírky; vrátí její id. */
+    suspend fun addBasicLandToCollection(landName: String): String? = runCatching {
+        val card = scryfall.cardByExactName(landName)
+        val existing = dao.findById(card.id)
+        if (existing == null) {
+            val local = card.bestImageUrl?.let { downloadImage(it, card.id) }
+            dao.upsert(card.toCollectionCard().copy(localImagePath = local))
+        }
+        card.id
+    }.getOrNull()
+
     suspend fun addToCollection(card: ScryfallCard) {
         val existing = dao.findById(card.id)
         if (existing == null) {

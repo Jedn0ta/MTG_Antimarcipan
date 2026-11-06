@@ -19,6 +19,8 @@ data class CollectionCard(
     val oracleText: String?,
     /** WUBRG letters stored as a comma-separated string, e.g. "W,U,B". */
     val colorIdentity: String,
+    /** Barvy many, kterou karta produkuje (hlavně země), oddělené čárkou. */
+    val producedMana: String = "",
     val keywords: String,
     val imageUrl: String?,
     /** Lokálně stažený náhled karty (aby se zobrazoval offline a spolehlivě). */

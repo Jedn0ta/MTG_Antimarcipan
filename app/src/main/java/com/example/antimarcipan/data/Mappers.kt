@@ -16,6 +16,7 @@ fun ScryfallCard.toCollectionCard(quantity: Int = 1): CollectionCard =
         typeLine = typeLine,
         oracleText = oracleText,
         colorIdentity = colorIdentity.joinToString(","),
+        producedMana = producedMana.joinToString(","),
         keywords = keywords.joinToString(","),
         imageUrl = bestImageUrl,
         gathererUrl = relatedUris?.gatherer,

@@ -1,11 +1,18 @@
 package com.example.antimarcipan.data.local
 
 import androidx.room.Dao
+import androidx.room.Embedded
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Upsert
 import kotlinx.coroutines.flow.Flow
+
+/** Karta v balíku i s počtem kusů v tomto balíku. */
+data class DeckCardWithQty(
+    @Embedded val card: CollectionCard,
+    val deckQuantity: Int,
+)
 
 @Dao
 interface CollectionDao {
@@ -94,4 +101,28 @@ interface DeckDao {
         """
     )
     fun observeDeckCards(deckId: Long): Flow<List<CollectionCard>>
+
+    /** Karty v balíku i s počtem kusů v balíku (deck_cards.quantity). */
+    @Query(
+        """
+        SELECT c.*, dc.quantity AS deckQuantity FROM collection_cards c
+        INNER JOIN deck_cards dc ON dc.scryfallId = c.scryfallId
+        WHERE dc.deckId = :deckId
+        ORDER BY c.cmc, c.name
+        """
+    )
+    fun observeDeckCardsWithQty(deckId: Long): Flow<List<DeckCardWithQty>>
+
+    @Query("UPDATE deck_cards SET quantity = :qty WHERE deckId = :deckId AND scryfallId = :scryfallId")
+    suspend fun setDeckCardQuantity(deckId: Long, scryfallId: String, qty: Int)
+
+    /** produkovaná mana zemí v balíku (pro odvození barev podle zemí). */
+    @Query(
+        """
+        SELECT c.producedMana FROM collection_cards c
+        INNER JOIN deck_cards dc ON dc.scryfallId = c.scryfallId
+        WHERE dc.deckId = :deckId AND c.typeLine LIKE '%Land%'
+        """
+    )
+    suspend fun deckLandProducedMana(deckId: Long): List<String>
 }
