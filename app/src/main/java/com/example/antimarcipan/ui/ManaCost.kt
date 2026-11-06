@@ -1,26 +1,30 @@
 package com.example.antimarcipan.ui
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.background
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.material3.Text
 import com.example.antimarcipan.R
 
-/** Vykreslí manacost (např. "{2}{G}{G}") jako řadu ikon many. */
+/** Vykreslí manacost (např. "{2}{G}{G}", "{W/U}") jako řadu ikon many. */
 @Composable
 fun ManaCost(cost: String?, symbolSize: Int = 16) {
     if (cost.isNullOrBlank()) return
@@ -31,28 +35,48 @@ fun ManaCost(cost: String?, symbolSize: Int = 16) {
         tokens.forEach { raw ->
             val sym = raw.uppercase()
             val pip = pipRes(sym)
-            if (pip != null) {
-                Image(
+            when {
+                pip != null -> Image(
                     painter = painterResource(pip),
                     contentDescription = sym,
                     modifier = Modifier.size(symbolSize.dp),
                 )
-            } else {
-                // Generická mana (čísla, X) nebo hybrid → kolečko s textem.
-                Box(
+                // Hybridní / více možností (obsahuje "/") — necháme lomítko
+                raw.contains("/") -> Box(
+                    Modifier
+                        .height(symbolSize.dp)
+                        .clip(RoundedCornerShape(50))
+                        .background(Color(0xFFCDC6BB))
+                        .padding(horizontal = 4.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    GlyphText(sym, symbolSize)
+                }
+                // Generická mana (číslo, X) — vycentrované kolečko
+                else -> Box(
                     Modifier.size(symbolSize.dp).clip(CircleShape).background(Color(0xFFCDC6BB)),
                     contentAlignment = Alignment.Center,
                 ) {
-                    Text(
-                        raw.replace("/", ""),
-                        fontSize = (symbolSize * 0.6).sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF3A3A3A),
-                    )
+                    GlyphText(sym, symbolSize)
                 }
             }
         }
     }
+}
+
+@Composable
+private fun GlyphText(text: String, symbolSize: Int) {
+    Text(
+        text = text,
+        style = TextStyle(
+            fontSize = (symbolSize * 0.62).sp,
+            lineHeight = (symbolSize * 0.62).sp,
+            fontWeight = FontWeight.Bold,
+            color = Color(0xFF2A2A2A),
+            textAlign = TextAlign.Center,
+        ),
+        maxLines = 1,
+    )
 }
 
 private fun pipRes(sym: String): Int? = when (sym) {

@@ -16,8 +16,10 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -92,51 +94,55 @@ fun CollectionScreen(
     val decks by vm.decks.collectAsStateWithLifecycle()
     val sets by vm.availableSets.collectAsStateWithLifecycle()
 
-    var showAdvanced by remember { mutableStateOf(false) }
+    var showFilters by remember { mutableStateOf(false) }
     var pendingDelete by remember { mutableStateOf<CollectionCard?>(null) }
     var pendingAddDeck by remember { mutableStateOf<CollectionCard?>(null) }
 
     Column(Modifier.fillMaxSize()) {
-        // Hledání
-        OutlinedTextField(
-            value = filter.query,
-            onValueChange = vm::setQuery,
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
-            placeholder = { Text("Hledat podle jména nebo textu…") },
-            leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
-            singleLine = true,
-        )
-
-        // Barvy — vždy viditelné, ikony many
+        // Kompaktní řádek: hledání + přepínač filtrů (filtry schované)
         Row(
-            Modifier.fillMaxWidth().padding(horizontal = 12.dp),
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
         ) {
-            CardColor.entries.forEach { c ->
-                ColorPip(
-                    res = c.drawableRes(),
-                    selected = filter.colors.contains(c),
-                    onClick = { vm.toggleColor(c) },
-                )
-            }
-            Box(Modifier.weight(1f))
-            TextButton(onClick = { showAdvanced = !showAdvanced }) {
+            OutlinedTextField(
+                value = filter.query,
+                onValueChange = vm::setQuery,
+                modifier = Modifier.weight(1f),
+                placeholder = { Text("Hledat…") },
+                leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
+                singleLine = true,
+            )
+            IconButton(onClick = { showFilters = !showFilters }) {
                 Icon(
                     Icons.Filled.FilterList,
-                    contentDescription = null,
+                    contentDescription = "Filtry",
                     tint = if (filter.isActive) MaterialTheme.colorScheme.primary
                     else MaterialTheme.colorScheme.onSurface,
                 )
-                Text(if (showAdvanced) " Méně" else " Filtry")
             }
         }
 
-        AnimatedVisibility(visible = showAdvanced) {
-            AdvancedFilters(filter, vm, sets)
+        AnimatedVisibility(visible = showFilters) {
+            Column {
+                // Barvy — ikony many
+                Row(
+                    Modifier.fillMaxWidth().padding(horizontal = 12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    CardColor.entries.forEach { c ->
+                        ColorPip(
+                            res = c.drawableRes(),
+                            selected = filter.colors.contains(c),
+                            onClick = { vm.toggleColor(c) },
+                        )
+                    }
+                }
+                AdvancedFilters(filter, vm, sets)
+                SortRow(filter, vm)
+            }
         }
-
-        SortRow(filter, vm)
 
         val totalQty = cards.sumOf { it.quantity }
         val totalValue = cards.sumOf { (it.priceUsd?.toDoubleOrNull() ?: 0.0) * it.quantity }
@@ -357,7 +363,7 @@ private fun CollectionRow(
 ) {
     Row(
         Modifier.fillMaxWidth()
-            .longHold(2500L, onLongDelete)
+            .background(MaterialTheme.colorScheme.surface)
             .padding(horizontal = 12.dp, vertical = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(10.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -385,7 +391,7 @@ private fun CollectionRow(
             CardThumb(card.thumbModel(), width = 60.dp, height = 84.dp)
         }
 
-        Column(Modifier.weight(1f)) {
+        Column(Modifier.weight(1f).longHold(2500L, onLongDelete)) {
             Text(
                 card.name,
                 style = MaterialTheme.typography.titleSmall,
@@ -418,18 +424,73 @@ private fun CollectionRow(
                 Text("ks: ${card.quantity}", style = MaterialTheme.typography.labelSmall)
             }
         }
-        // Gatherer: ťuknutí otevře kartu, podržení ukáže rulings v tooltipu
-        val rulingsTooltip = rememberTooltipState(isPersistent = true)
-        var rulings by remember(card.scryfallId) { mutableStateOf<List<String>?>(null) }
-        androidx.compose.runtime.LaunchedEffect(rulingsTooltip.isVisible) {
-            if (rulingsTooltip.isVisible && rulings == null) {
-                rulings = loadRulings(card.scryfallId)
+        GathererButton(
+            cardName = card.name,
+            loadRulings = { loadRulings(card.scryfallId) },
+            onOpenGatherer = onOpenGatherer,
+        )
+    }
+}
+
+/**
+ * Ikona Gathereru: ťuknutí zobrazí rulings ve scrollovatelném dialogu,
+ * podržení 3 s (s načítacím kolečkem) otevře kartu na Gathereru.
+ */
+@Composable
+private fun GathererButton(
+    cardName: String,
+    loadRulings: suspend () -> List<String>,
+    onOpenGatherer: () -> Unit,
+) {
+    var holding by remember { mutableStateOf(false) }
+    var showRulings by remember { mutableStateOf(false) }
+    var rulings by remember { mutableStateOf<List<String>?>(null) }
+
+    androidx.compose.foundation.layout.Box(
+        contentAlignment = Alignment.Center,
+        modifier = Modifier.pointerInput(cardName) {
+            awaitEachGesture {
+                awaitFirstDown(requireUnconsumed = false)
+                holding = true
+                val outcome = withTimeoutOrNull(3000L) {
+                    if (waitForUpOrCancellation() != null) "tap" else "cancel"
+                }
+                holding = false
+                when (outcome) {
+                    "tap" -> showRulings = true
+                    null -> onOpenGatherer() // drženo 3 s
+                    else -> {}
+                }
             }
+        },
+    ) {
+        Icon(
+            Icons.AutoMirrored.Filled.MenuBook,
+            contentDescription = "Rulings (ťuk) / Gatherer (podržení)",
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.padding(12.dp),
+        )
+        if (holding) {
+            androidx.compose.material3.CircularProgressIndicator(
+                strokeWidth = 2.dp,
+                modifier = Modifier.size(40.dp),
+            )
         }
-        TooltipBox(
-            positionProvider = TooltipDefaults.rememberRichTooltipPositionProvider(),
-            tooltip = {
-                RichTooltip(title = { Text("Rulings — ${card.name}") }) {
+    }
+
+    if (showRulings) {
+        androidx.compose.runtime.LaunchedEffect(Unit) {
+            if (rulings == null) rulings = loadRulings()
+        }
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { showRulings = false },
+            title = { Text("Rulings — $cardName") },
+            text = {
+                androidx.compose.foundation.layout.Box(
+                    Modifier
+                        .heightIn(max = 380.dp)
+                        .verticalScroll(androidx.compose.foundation.rememberScrollState())
+                ) {
                     Text(
                         when {
                             rulings == null -> "Načítám…"
@@ -439,15 +500,9 @@ private fun CollectionRow(
                     )
                 }
             },
-            state = rulingsTooltip,
-        ) {
-            IconButton(onClick = onOpenGatherer) {
-                Icon(
-                    Icons.AutoMirrored.Filled.MenuBook,
-                    contentDescription = "Rulings / Gatherer",
-                    tint = MaterialTheme.colorScheme.primary,
-                )
-            }
-        }
+            confirmButton = {
+                TextButton(onClick = { showRulings = false }) { Text("Zavřít") }
+            },
+        )
     }
 }
