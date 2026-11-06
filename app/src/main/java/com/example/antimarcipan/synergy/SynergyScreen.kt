@@ -2,14 +2,18 @@ package com.example.antimarcipan.synergy
 
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.background
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
@@ -22,15 +26,18 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.antimarcipan.data.SynergyRecommendation
+import com.example.antimarcipan.data.synergy.CardFit
 import com.example.antimarcipan.ui.AppViewModelFactory
 import com.example.antimarcipan.ui.EmptyState
 import com.example.antimarcipan.ui.ScreenTitle
-import kotlin.math.roundToInt
 
 @Composable
 fun SynergyScreen(
@@ -41,60 +48,119 @@ fun SynergyScreen(
     var selectedDeckId by remember { mutableStateOf<Long?>(null) }
 
     Column(Modifier.fillMaxSize()) {
-        ScreenTitle("Synergie (EDHREC)")
+        ScreenTitle("Synergie balíku")
 
         Row(
-            Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())
-                .padding(horizontal = 12.dp),
+            Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 12.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             decks.forEach { deck ->
                 FilterChip(
                     selected = selectedDeckId == deck.id,
-                    onClick = {
-                        selectedDeckId = deck.id
-                        vm.loadForDeck(deck.id)
-                    },
+                    onClick = { selectedDeckId = deck.id; vm.analyzeDeck(deck.id) },
                     label = { Text(deck.name) },
                 )
             }
         }
-
         HorizontalDivider(Modifier.padding(vertical = 8.dp))
 
         when {
-            decks.isEmpty() -> EmptyState(
-                "Žádné balíky",
-                "Nejdřív si vytvoř balík a nastav velitele v záložce Balíky.",
-            )
+            decks.isEmpty() -> EmptyState("Žádné balíky", "Nejdřív si vytvoř balík v záložce Balíky.")
             selectedDeckId == null -> EmptyState(
                 "Vyber balík",
-                "Pro vybraný balík načtu doporučené karty podle velitele.",
+                "Vyhodnotím, jak se karty hodí do balíku, co nesedí a co doplnit.",
             )
             state.loading -> Row(
                 Modifier.fillMaxWidth().padding(24.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalAlignment = Alignment.CenterVertically,
-            ) {
-                CircularProgressIndicator()
-                Text("Načítám synergie pro ${state.commanderName}…")
-            }
+            ) { CircularProgressIndicator(); Text("Analyzuji „${state.deckName}“…") }
             state.error != null -> EmptyState("Nepovedlo se", state.error!!)
-            else -> {
-                Text(
-                    "Velitel: ${state.commanderName}  ·  seřazeno podle synergie",
-                    Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
-                    style = MaterialTheme.typography.bodySmall,
-                )
+            state.report != null -> {
+                val report = state.report!!
                 LazyColumn(Modifier.fillMaxSize()) {
-                    items(state.recommendations, key = { it.name }) { rec ->
-                        RecRow(rec)
-                        HorizontalDivider()
+                    item { ThemeSummary(report.colors, report.topThemes, report.topTribes, report.topKeywords) }
+
+                    if (report.misfits.isNotEmpty()) {
+                        item { SectionTitle("Zvaž výměnu (${report.misfits.size})") }
+                        items(report.misfits, key = { "m-" + it.card.scryfallId }) { FitRow(it) }
+                    }
+
+                    item { SectionTitle("Všechny karty podle vhodnosti") }
+                    items(report.fits, key = { "f-" + it.card.scryfallId }) { FitRow(it) }
+
+                    if (state.suggestions.isNotEmpty()) {
+                        item { SectionTitle("Návrhy karet · ${state.suggestionsSource}") }
+                        items(state.suggestions, key = { "s-" + it.name }) { RecRow(it) }
                     }
                 }
             }
         }
     }
+}
+
+@Composable
+private fun ThemeSummary(colors: Set<String>, themes: List<String>, tribes: List<String>, keywords: List<String>) {
+    Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
+        val parts = buildList {
+            if (themes.isNotEmpty()) add("Témata: ${themes.joinToString(", ")}")
+            if (tribes.isNotEmpty()) add("Tribaly: ${tribes.joinToString(", ")}")
+            if (keywords.isNotEmpty()) add("Klíčová slova: ${keywords.joinToString(", ")}")
+        }
+        if (parts.isEmpty()) {
+            Text("Balík nemá výrazné téma — návrhy budou spíš podle barev.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f))
+        } else {
+            parts.forEach {
+                Text(it, style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f))
+            }
+        }
+    }
+    HorizontalDivider()
+}
+
+@Composable
+private fun SectionTitle(text: String) {
+    Text(
+        text,
+        Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp),
+        style = MaterialTheme.typography.titleSmall,
+        color = MaterialTheme.colorScheme.primary,
+    )
+}
+
+@Composable
+private fun FitRow(fit: CardFit) {
+    Row(
+        Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        val color = when {
+            fit.offColor -> Color(0xFFD95C5C)
+            fit.score >= 65 -> Color(0xFF2E9E5B)
+            fit.score >= 45 -> Color(0xFFD9A441)
+            else -> Color(0xFFD98324)
+        }
+        Box(
+            Modifier.size(40.dp).clip(CircleShape).background(color.copy(alpha = 0.18f)),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text("${fit.score}", style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold, color = color, textAlign = TextAlign.Center)
+        }
+        Column(Modifier.weight(1f)) {
+            Text(fit.card.name, style = MaterialTheme.typography.bodyMedium)
+            Text(
+                fit.reasons.joinToString(" · "),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+            )
+        }
+    }
+    HorizontalDivider()
 }
 
 @Composable
@@ -104,23 +170,16 @@ private fun RecRow(rec: SynergyRecommendation) {
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        val pct = (rec.synergy * 100).roundToInt()
-        Text(
-            (if (pct >= 0) "+$pct%" else "$pct%"),
-            style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.Bold,
-            color = if (rec.synergy >= 0) MaterialTheme.colorScheme.primary
-            else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
-            modifier = Modifier.padding(end = 4.dp),
-        )
         Column(Modifier.weight(1f)) {
             Text(rec.name, style = MaterialTheme.typography.bodyMedium)
             Text(
-                rec.category + (if (rec.owned) "  ·  máš ve sbírce ✓" else ""),
+                (if (rec.synergy != 0.0) "synergie ${(rec.synergy * 100).toInt()}% · " else "") +
+                    rec.category + (if (rec.owned) "  ·  máš ve sbírce ✓" else ""),
                 style = MaterialTheme.typography.bodySmall,
                 color = if (rec.owned) MaterialTheme.colorScheme.primary
                 else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
             )
         }
     }
+    HorizontalDivider()
 }
