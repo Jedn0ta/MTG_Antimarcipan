@@ -74,6 +74,13 @@ class ManualAddViewModel(
         }
     }
 
+    fun addToWishlist(card: ScryfallCard, onDone: (String) -> Unit) {
+        viewModelScope.launch {
+            repo.addToWishlist(card)
+            onDone("Na wishlist: ${card.name}")
+        }
+    }
+
     fun addToDeck(card: ScryfallCard, deckId: Long, onDone: (String) -> Unit) {
         viewModelScope.launch {
             repo.addToCollection(card)

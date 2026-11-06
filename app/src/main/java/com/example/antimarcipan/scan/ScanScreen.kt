@@ -245,10 +245,13 @@ fun ScanScreen(
             if (showReview) {
                 MultiScanReviewSheet(
                     pending = state.pending,
+                    decks = decks,
                     onDismiss = { showReview = false },
                     onRemove = vm::removePending,
                     onRescan = { slot -> vm.rescanPending(slot); showReview = false },
-                    onConfirmAll = { vm.confirmAllToCollection(); showReview = false },
+                    onToCollection = { vm.confirmAllToCollection(); showReview = false },
+                    onToWishlist = { vm.confirmAllToWishlist(); showReview = false },
+                    onToDeck = { deckId -> vm.confirmAllToDeck(deckId); showReview = false },
                 )
             }
         }
@@ -354,11 +357,15 @@ private fun MultiScanBar(
 @Composable
 private fun MultiScanReviewSheet(
     pending: List<PendingScan>,
+    decks: List<Deck>,
     onDismiss: () -> Unit,
     onRemove: (Long) -> Unit,
     onRescan: (Long) -> Unit,
-    onConfirmAll: () -> Unit,
+    onToCollection: () -> Unit,
+    onToWishlist: () -> Unit,
+    onToDeck: (Long) -> Unit,
 ) {
+    var showDeckPicker by remember { mutableStateOf(false) }
     androidx.compose.material3.ModalBottomSheet(onDismissRequest = onDismiss) {
         Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
             Text(
@@ -367,7 +374,7 @@ private fun MultiScanReviewSheet(
                 modifier = Modifier.padding(bottom = 4.dp),
             )
             Text(
-                "Špatně rozpoznanou kartu přenačti nebo odeber. Pak potvrď vše do sbírky.",
+                "Špatně rozpoznanou kartu přenačti nebo odeber. Pak vyber, kam je uložit.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                 modifier = Modifier.padding(bottom = 8.dp),
@@ -405,14 +412,37 @@ private fun MultiScanReviewSheet(
                     HorizontalDivider()
                 }
             }
-            Button(
-                onClick = onConfirmAll,
-                enabled = pending.isNotEmpty(),
-                modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
+            Column(
+                Modifier.fillMaxWidth().padding(vertical = 12.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                Text("Potvrdit vše do sbírky (${pending.size})")
+                Button(
+                    onClick = onToCollection,
+                    enabled = pending.isNotEmpty(),
+                    modifier = Modifier.fillMaxWidth(),
+                ) { Text("Do sbírky (${pending.size})") }
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedButton(
+                        onClick = { showDeckPicker = true },
+                        enabled = pending.isNotEmpty() && decks.isNotEmpty(),
+                        modifier = Modifier.weight(1f),
+                    ) { Text("Do balíku") }
+                    OutlinedButton(
+                        onClick = onToWishlist,
+                        enabled = pending.isNotEmpty(),
+                        modifier = Modifier.weight(1f),
+                    ) { Text("Na wishlist") }
+                }
             }
         }
+    }
+
+    if (showDeckPicker) {
+        DeckPickerDialog(
+            decks = decks,
+            onDismiss = { showDeckPicker = false },
+            onPick = { deck -> showDeckPicker = false; onToDeck(deck.id) },
+        )
     }
 }
 

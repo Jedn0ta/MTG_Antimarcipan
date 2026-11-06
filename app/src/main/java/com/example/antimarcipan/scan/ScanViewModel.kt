@@ -262,15 +262,43 @@ class ScanViewModel(
         if (items.isEmpty()) return
         viewModelScope.launch {
             items.forEach { repo.addToCollection(it.card) }
-            _state.value = _state.value.copy(
-                pending = emptyList(),
-                rescanSlot = null,
-                status = "Rozlož karty na stůl a sejmi je naráz",
-                confirmTick = _state.value.confirmTick + 1,
-                confirmText = "Uloženo ${items.size} karet do sbírky",
-            )
-            lastQuery = ""
+            finishBatch(items.size, "Uloženo ${items.size} karet do sbírky")
         }
+    }
+
+    /** Hromadně přidá všechny potvrzené karty na wishlist. */
+    fun confirmAllToWishlist() {
+        val items = _state.value.pending
+        if (items.isEmpty()) return
+        viewModelScope.launch {
+            items.forEach { repo.addToWishlist(it.card) }
+            finishBatch(items.size, "Na wishlist: ${items.size} karet")
+        }
+    }
+
+    /** Hromadně přidá všechny potvrzené karty do balíku (i do sbírky). */
+    fun confirmAllToDeck(deckId: Long) {
+        val items = _state.value.pending
+        if (items.isEmpty()) return
+        viewModelScope.launch {
+            items.forEach {
+                repo.addToCollection(it.card)
+                deckRepo.addCard(deckId, it.card.id)
+            }
+            val deckName = deckRepo.deck(deckId)?.name ?: "balíku"
+            finishBatch(items.size, "Do „$deckName“: ${items.size} karet")
+        }
+    }
+
+    private fun finishBatch(count: Int, message: String) {
+        _state.value = _state.value.copy(
+            pending = emptyList(),
+            rescanSlot = null,
+            status = "Rozlož karty na stůl a sejmi je naráz",
+            confirmTick = _state.value.confirmTick + 1,
+            confirmText = message,
+        )
+        lastQuery = ""
     }
 
     fun clearPending() {

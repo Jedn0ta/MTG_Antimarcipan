@@ -104,6 +104,11 @@ fun ManualAddScreen(
                             }
                         }) { Text("Sbírka") }
                         OutlinedButton(onClick = { deckPickerFor = card }) { Text("Balík") }
+                        OutlinedButton(onClick = {
+                            vm.addToWishlist(card) { msg ->
+                                Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                            }
+                        }) { Text("Wishlist") }
                     }
                 }
                 HorizontalDivider()
