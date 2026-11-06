@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
@@ -303,11 +304,18 @@ private fun AboutCard(sha: String) {
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             Text("O aplikaci", style = MaterialTheme.typography.titleMedium)
-            Text(
-                "Antimarcipán · verze ${BuildConfig.VERSION_NAME} · build $sha",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-            )
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Image(
+                    painter = painterResource(R.drawable.splash_icon),
+                    contentDescription = "Ikona aplikace",
+                    modifier = Modifier.size(64.dp).clip(RoundedCornerShape(12.dp)),
+                )
+                Text(
+                    "Antimarcipán · verze ${BuildConfig.VERSION_NAME} · build $sha",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                )
+            }
             Text(
                 "Průvodce aplikací: krátký přehled, jak jednotlivé části fungují.",
                 style = MaterialTheme.typography.bodySmall,

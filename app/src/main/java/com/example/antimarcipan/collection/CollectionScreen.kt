@@ -22,7 +22,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyGridScope
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
@@ -33,6 +36,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
@@ -103,44 +107,62 @@ fun CollectionScreen(
     val settings = remember { (context.applicationContext as com.example.antimarcipan.MtgApp).container.appSettings }
     val gridMode by settings.collectionGrid.collectAsStateWithLifecycle()
 
-    var showFilters by remember { mutableStateOf(false) }
+    var showControls by remember { mutableStateOf(false) }
     var pendingDelete by remember { mutableStateOf<CollectionCard?>(null) }
     var pendingAddDeck by remember { mutableStateOf<CollectionCard?>(null) }
 
+    val totalQty = cards.sumOf { it.quantity }
+    val lands = cards.filter { isLandCard(it) }
+    val spells = cards.filter { !isLandCard(it) }
+
     Column(Modifier.fillMaxSize()) {
-        // Kompaktní řádek: hledání + přepínač filtrů (filtry schované)
+        // Souhrn + jedno tlačítko, pod kterým je hledání, zobrazení i filtry.
         Row(
-            Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp),
+            Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp, top = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
         ) {
-            OutlinedTextField(
-                value = filter.query,
-                onValueChange = vm::setQuery,
-                modifier = Modifier.weight(1f),
-                placeholder = { Text("Hledat…") },
-                leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
-                singleLine = true,
+            Text(
+                buildString {
+                    append("$totalQty karet (${cards.size} unikátních)")
+                    if (filter.isActive || filter.query.isNotBlank()) append(" · filtrováno")
+                },
+                Modifier.weight(1f),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
             )
-            IconButton(onClick = { settings.setCollectionGrid(!gridMode) }) {
+            IconButton(onClick = { showControls = !showControls }) {
                 Icon(
-                    if (gridMode) Icons.AutoMirrored.Filled.ViewList else Icons.Filled.GridView,
-                    contentDescription = "Zobrazení",
-                )
-            }
-            IconButton(onClick = { showFilters = !showFilters }) {
-                Icon(
-                    Icons.Filled.FilterList,
-                    contentDescription = "Filtry",
-                    tint = if (filter.isActive) MaterialTheme.colorScheme.primary
+                    Icons.Filled.Tune,
+                    contentDescription = "Hledání a filtry",
+                    tint = if (filter.isActive || filter.query.isNotBlank() || showControls)
+                        MaterialTheme.colorScheme.primary
                     else MaterialTheme.colorScheme.onSurface,
                 )
             }
         }
 
-        AnimatedVisibility(visible = showFilters) {
-            Column {
-                // Barvy — ikony many
+        AnimatedVisibility(visible = showControls) {
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Row(
+                    Modifier.fillMaxWidth().padding(horizontal = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    OutlinedTextField(
+                        value = filter.query,
+                        onValueChange = vm::setQuery,
+                        modifier = Modifier.weight(1f),
+                        placeholder = { Text("Hledat…") },
+                        leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
+                        singleLine = true,
+                    )
+                    IconButton(onClick = { settings.setCollectionGrid(!gridMode) }) {
+                        Icon(
+                            if (gridMode) Icons.AutoMirrored.Filled.ViewList else Icons.Filled.GridView,
+                            contentDescription = "Zobrazení",
+                        )
+                    }
+                }
                 Row(
                     Modifier.fillMaxWidth().padding(horizontal = 12.dp),
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
@@ -159,19 +181,6 @@ fun CollectionScreen(
             }
         }
 
-        val totalQty = cards.sumOf { it.quantity }
-        val totalValue = cards.sumOf { (it.priceUsd?.toDoubleOrNull() ?: 0.0) * it.quantity }
-        Text(
-            buildString {
-                append("$totalQty karet (${cards.size} unikátních)")
-                if (filter.isActive) append(" · filtrováno")
-                if (totalValue > 0) append(" · ~$%.2f".format(totalValue))
-            },
-            Modifier.padding(horizontal = 16.dp, vertical = 2.dp),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-        )
-
         HorizontalDivider()
 
         if (cards.isEmpty()) {
@@ -187,34 +196,27 @@ fun CollectionScreen(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                items(cards, key = { it.scryfallId }) { card ->
-                    Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                        com.example.antimarcipan.ui.InteractiveThumb(card, width = 88.dp, height = 123.dp)
-                    }
-                }
+                collectionGridSection("Land (${lands.size})", lands)
+                collectionGridSection("Spell (${spells.size})", spells)
             }
         } else {
             LazyColumn(Modifier.weight(1f)) {
-                items(cards, key = { it.scryfallId }) { card ->
-                    SwipeToAddDeck(onRequestAddToDeck = { pendingAddDeck = card }) {
-                        CollectionRow(
-                            card = card,
-                            onLongDelete = { pendingDelete = card },
-                            loadRulings = { vm.rulingsFor(it) },
-                            onOpenGatherer = {
-                                runCatching {
-                                    context.startActivity(
-                                        android.content.Intent(
-                                            android.content.Intent.ACTION_VIEW,
-                                            android.net.Uri.parse(card.gathererLink()),
-                                        ).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
-                                    )
-                                }
-                            },
-                        )
-                    }
-                    HorizontalDivider()
-                }
+                collectionListSection(
+                    title = "Land (${lands.size})",
+                    cards = lands,
+                    context = context,
+                    vm = vm,
+                    onAddDeck = { pendingAddDeck = it },
+                    onDelete = { pendingDelete = it },
+                )
+                collectionListSection(
+                    title = "Spell (${spells.size})",
+                    cards = spells,
+                    context = context,
+                    vm = vm,
+                    onAddDeck = { pendingAddDeck = it },
+                    onDelete = { pendingDelete = it },
+                )
             }
         }
     }
@@ -240,6 +242,61 @@ fun CollectionScreen(
             onConfirm = { vm.remove(card.scryfallId); pendingDelete = null },
             onDismiss = { pendingDelete = null },
         )
+    }
+}
+
+private fun isLandCard(card: CollectionCard): Boolean =
+    card.typeLine?.contains("Land", ignoreCase = true) == true
+
+@Composable
+private fun SectionHeaderC(text: String) {
+    Text(
+        text,
+        Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+        style = MaterialTheme.typography.titleSmall,
+        color = MaterialTheme.colorScheme.primary,
+    )
+}
+
+private fun LazyListScope.collectionListSection(
+    title: String,
+    cards: List<CollectionCard>,
+    context: android.content.Context,
+    vm: CollectionViewModel,
+    onAddDeck: (CollectionCard) -> Unit,
+    onDelete: (CollectionCard) -> Unit,
+) {
+    if (cards.isEmpty()) return
+    item(key = "h-$title") { SectionHeaderC(title) }
+    items(cards, key = { it.scryfallId }) { card ->
+        SwipeToAddDeck(onRequestAddToDeck = { onAddDeck(card) }) {
+            CollectionRow(
+                card = card,
+                onLongDelete = { onDelete(card) },
+                loadRulings = { vm.rulingsFor(it) },
+                onOpenGatherer = {
+                    runCatching {
+                        context.startActivity(
+                            android.content.Intent(
+                                android.content.Intent.ACTION_VIEW,
+                                android.net.Uri.parse(card.gathererLink()),
+                            ).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                        )
+                    }
+                },
+            )
+        }
+        HorizontalDivider()
+    }
+}
+
+private fun LazyGridScope.collectionGridSection(title: String, cards: List<CollectionCard>) {
+    if (cards.isEmpty()) return
+    item(span = { GridItemSpan(maxLineSpan) }, key = "gh-$title") { SectionHeaderC(title) }
+    items(cards, key = { it.scryfallId }) { card ->
+        Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+            com.example.antimarcipan.ui.InteractiveThumb(card, width = 88.dp, height = 123.dp)
+        }
     }
 }
 
