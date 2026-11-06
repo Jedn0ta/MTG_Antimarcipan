@@ -9,6 +9,7 @@ import com.example.antimarcipan.MtgApp
 import com.example.antimarcipan.advisor.AdvisorViewModel
 import com.example.antimarcipan.collection.CollectionViewModel
 import com.example.antimarcipan.decks.DeckViewModel
+import com.example.antimarcipan.manual.ManualAddViewModel
 import com.example.antimarcipan.scan.ScanViewModel
 import com.example.antimarcipan.settings.SettingsViewModel
 import com.example.antimarcipan.synergy.SynergyViewModel
@@ -38,5 +39,8 @@ val AppViewModelFactory: ViewModelProvider.Factory = viewModelFactory {
     }
     initializer {
         SettingsViewModel(app().container.updateRepository)
+    }
+    initializer {
+        ManualAddViewModel(app().container.collectionRepository, app().container.deckRepository)
     }
 }

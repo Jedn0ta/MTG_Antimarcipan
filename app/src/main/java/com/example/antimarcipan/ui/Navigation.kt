@@ -3,6 +3,7 @@ package com.example.antimarcipan.ui
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Hub
@@ -30,11 +31,13 @@ import androidx.navigation.compose.rememberNavController
 import com.example.antimarcipan.advisor.AdvisorScreen
 import com.example.antimarcipan.collection.CollectionScreen
 import com.example.antimarcipan.decks.DeckScreen
+import com.example.antimarcipan.manual.ManualAddScreen
 import com.example.antimarcipan.scan.ScanScreen
 import com.example.antimarcipan.settings.SettingsScreen
 import com.example.antimarcipan.synergy.SynergyScreen
 
 private const val SETTINGS_ROUTE = "settings"
+private const val MANUAL_ROUTE = "manual_add"
 
 private enum class Dest(val route: String, val label: String, val icon: ImageVector) {
     Scan("scan", "Sken", Icons.Filled.CameraAlt),
@@ -52,9 +55,12 @@ fun AntimarcipanApp() {
     val current = backStack?.destination
     val route = current?.route
     val onSettings = route == SETTINGS_ROUTE
+    val onManual = route == MANUAL_ROUTE
+    val isSubScreen = onSettings || onManual
 
     val title = when {
         onSettings -> "Nastavení"
+        onManual -> "Přidat ručně"
         else -> Dest.entries.firstOrNull { d ->
             current?.hierarchy?.any { it.route == d.route } == true
         }?.label ?: "Antimarcipán"
@@ -65,7 +71,7 @@ fun AntimarcipanApp() {
             TopAppBar(
                 title = { Text(title) },
                 navigationIcon = {
-                    if (onSettings) {
+                    if (isSubScreen) {
                         IconButton(onClick = { navController.popBackStack() }) {
                             Icon(
                                 Icons.AutoMirrored.Filled.ArrowBack,
@@ -75,7 +81,10 @@ fun AntimarcipanApp() {
                     }
                 },
                 actions = {
-                    if (!onSettings) {
+                    if (!isSubScreen) {
+                        IconButton(onClick = { navController.navigate(MANUAL_ROUTE) }) {
+                            Icon(Icons.Filled.Add, contentDescription = "Přidat ručně")
+                        }
                         IconButton(onClick = { navController.navigate(SETTINGS_ROUTE) }) {
                             Icon(Icons.Filled.Settings, contentDescription = "Nastavení")
                         }
@@ -84,7 +93,7 @@ fun AntimarcipanApp() {
             )
         },
         bottomBar = {
-            if (!onSettings) {
+            if (!isSubScreen) {
                 NavigationBar {
                     Dest.entries.forEach { dest ->
                         val selected = current?.hierarchy?.any { it.route == dest.route } == true
@@ -118,6 +127,7 @@ fun AntimarcipanApp() {
             composable(Dest.Synergy.route) { SynergyScreen() }
             composable(Dest.Advisor.route) { AdvisorScreen() }
             composable(SETTINGS_ROUTE) { SettingsScreen() }
+            composable(MANUAL_ROUTE) { ManualAddScreen() }
         }
     }
 }

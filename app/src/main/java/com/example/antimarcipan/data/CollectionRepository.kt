@@ -40,6 +40,16 @@ class CollectionRepository(
         byName
     }
 
+    /** Vyhledání karet podle jména (pro ruční přidání). */
+    suspend fun searchByName(query: String): Result<List<ScryfallCard>> = runCatching {
+        require(query.trim().length >= 2) { "Zadej aspoň 2 znaky" }
+        scryfall.search(
+            query = query.trim(),
+            order = "name",
+            unique = "cards",
+        ).data
+    }
+
     /** Všechny tisky (edice) dané karty — pro ruční výběr správné edice. */
     suspend fun printsOf(cardName: String): Result<List<ScryfallCard>> = runCatching {
         scryfall.search(

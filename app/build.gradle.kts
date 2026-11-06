@@ -14,8 +14,10 @@ android {
         applicationId = "com.example.antimarcipan"
         minSdk = 26
         targetSdk = 34
-        versionCode = 1
-        versionName = "0.1.0"
+        // versionCode roste s každým CI buildem (-PversionCode=<run_number>),
+        // aby systém aktualizaci bral jako novější verzi.
+        versionCode = (project.findProperty("versionCode") as String?)?.toIntOrNull() ?: 1
+        versionName = (project.findProperty("versionName") as String?) ?: "0.1.0"
         vectorDrawables { useSupportLibrary = true }
 
         // Commit, ze kterého je build (předáno z CI přes -PgitSha=...).
@@ -26,9 +28,25 @@ android {
         buildConfigField("String", "UPDATE_TAG", "\"latest-debug\"")
     }
 
+    // Stálý podpisový klíč — všechny buildy jsou podepsané stejně, takže
+    // aktualizaci lze nainstalovat přes předchozí verzi (jinak Android odmítne
+    // instalaci kvůli neshodě podpisu).
+    signingConfigs {
+        create("shared") {
+            storeFile = file("antimarcipan.keystore")
+            storePassword = "antimarcipan"
+            keyAlias = "antimarcipan"
+            keyPassword = "antimarcipan"
+        }
+    }
+
     buildTypes {
+        debug {
+            signingConfig = signingConfigs.getByName("shared")
+        }
         release {
             isMinifyEnabled = false
+            signingConfig = signingConfigs.getByName("shared")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"

@@ -49,6 +49,7 @@ data class GithubAsset(
 @Serializable
 data class VersionInfo(
     val sha: String? = null,
+    val versionCode: Int? = null,
     val versionName: String? = null,
     val builtAt: String? = null,
 )

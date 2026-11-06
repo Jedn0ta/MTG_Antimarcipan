@@ -10,13 +10,18 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
+import android.content.Context
+import android.content.Intent
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -45,6 +50,7 @@ import com.example.antimarcipan.ui.ScreenTitle
 fun DeckScreen(
     vm: DeckViewModel = viewModel(factory = AppViewModelFactory),
 ) {
+    val context = androidx.compose.ui.platform.LocalContext.current
     val decks by vm.decks.collectAsStateWithLifecycle()
     val selected by vm.selectedDeck.collectAsStateWithLifecycle()
     val deckCards by vm.selectedDeckCards.collectAsStateWithLifecycle()
@@ -85,16 +91,30 @@ fun DeckScreen(
                 "Pak do něj přidáš karty ze sbírky a nastavíš velitele.",
             )
         } else {
-            Text(
-                "Velitel: ${deck.commanderName ?: "— nenastaven —"}",
-                Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
-                style = MaterialTheme.typography.labelLarge,
-            )
-            Text(
-                "V balíku: ${deckCards.sumOf { it.quantity }} karet",
-                Modifier.padding(horizontal = 16.dp),
-                style = MaterialTheme.typography.bodySmall,
-            )
+            Row(
+                Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        "Velitel: ${deck.commanderName ?: "— nenastaven —"}",
+                        style = MaterialTheme.typography.labelLarge,
+                    )
+                    Text(
+                        "V balíku: ${deckCards.size} karet",
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                }
+                TextButton(onClick = { shareDecklist(context, deck.name, deckCards) }) {
+                    Icon(Icons.Filled.Share, contentDescription = null)
+                    Text(" Export")
+                }
+            }
+
+            val duplicates = DeckDuplicates.duplicateNames(deckCards)
+            if (duplicates.isNotEmpty()) {
+                DuplicateWarning(duplicates)
+            }
 
             LazyColumn(Modifier.fillMaxSize()) {
                 item {
@@ -203,6 +223,55 @@ private fun DeckCardRow(
             Icon(Icons.Filled.Delete, contentDescription = "Odebrat z balíku")
         }
     }
+}
+
+@Composable
+private fun DuplicateWarning(names: List<String>) {
+    Card(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp)) {
+        Row(
+            Modifier.fillMaxWidth().padding(14.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.Top,
+        ) {
+            Icon(
+                Icons.Filled.Warning,
+                contentDescription = null,
+                tint = androidx.compose.ui.graphics.Color(0xFFD98324),
+            )
+            Column {
+                Text(
+                    "Duplicitní karty (${names.size})",
+                    style = MaterialTheme.typography.titleSmall,
+                )
+                Text(
+                    "Tyto karty jsou v balíku víckrát (různé edice). " +
+                        "V Commanderu/singletonu smí být jen jedna kopie: " +
+                        names.joinToString(", "),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
+                )
+            }
+        }
+    }
+}
+
+/** Složí textový decklist a nabídne ho ke sdílení (import do Moxfield/Archidekt). */
+private fun shareDecklist(context: Context, deckName: String, cards: List<CollectionCard>) {
+    val lines = cards
+        .groupBy { it.name }
+        .map { (name, group) -> "${group.sumOf { it.quantity }} $name" }
+        .sorted()
+    val text = buildString {
+        appendLine("// $deckName")
+        lines.forEach { appendLine(it) }
+    }
+    val intent = Intent(Intent.ACTION_SEND).apply {
+        type = "text/plain"
+        putExtra(Intent.EXTRA_TITLE, deckName)
+        putExtra(Intent.EXTRA_SUBJECT, deckName)
+        putExtra(Intent.EXTRA_TEXT, text)
+    }
+    context.startActivity(Intent.createChooser(intent, "Sdílet decklist").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
 }
 
 @Composable

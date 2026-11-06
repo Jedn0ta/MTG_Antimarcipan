@@ -101,9 +101,14 @@ fun CollectionScreen(
             }
         }
 
+        val totalQty = cards.sumOf { it.quantity }
+        val totalValue = cards.sumOf { (it.priceUsd?.toDoubleOrNull() ?: 0.0) * it.quantity }
         Text(
-            "Zobrazeno ${cards.size} karet" +
-                if (filter.isActive) " (filtrováno)" else "",
+            buildString {
+                append("$totalQty karet (${cards.size} unikátních)")
+                if (filter.isActive) append(" · filtrováno")
+                if (totalValue > 0) append(" · ~$%.2f".format(totalValue))
+            },
             Modifier.padding(horizontal = 16.dp, vertical = 2.dp),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),

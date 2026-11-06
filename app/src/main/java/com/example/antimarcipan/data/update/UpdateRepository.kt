@@ -47,14 +47,23 @@ class UpdateRepository(
             val apk = release.apkAsset()
                 ?: return@runCatching UpdateStatus.Error("Release nemá přiložené APK.")
 
-            val latestSha = resolveLatestSha(release)
+            val info = resolveVersion(release)
+            val latestSha = info?.sha ?: release.targetCommitish.orEmpty()
+            val latestCode = info?.versionCode
 
-            if (isSameBuild(latestSha)) {
+            // Novější verzi poznáme buď podle vyššího versionCode, nebo (fallback)
+            // podle odlišného commitu.
+            val newer = when {
+                latestCode != null -> latestCode > BuildConfig.VERSION_CODE
+                else -> !isSameBuild(latestSha)
+            }
+
+            if (!newer) {
                 UpdateStatus.UpToDate(shortSha(currentSha))
             } else {
                 UpdateStatus.Available(
-                    latestSha = shortSha(latestSha),
-                    versionName = release.name ?: release.tagName,
+                    latestSha = info?.versionName ?: shortSha(latestSha),
+                    versionName = info?.versionName ?: release.name ?: release.tagName,
                     notes = release.body?.takeIf { it.isNotBlank() },
                     downloadUrl = apk.browserDownloadUrl.orEmpty(),
                     sizeBytes = apk.size,
@@ -123,19 +132,15 @@ class UpdateRepository(
 
     // --- helpers ---
 
-    private suspend fun resolveLatestSha(release: GithubRelease): String {
-        // Přesnější je version.json asset; jinak padneme na target_commitish.
-        release.versionAsset()?.browserDownloadUrl?.let { url ->
-            runCatching {
-                val request = Request.Builder().url(url).build()
-                Network.httpClient.newCall(request).execute().use { resp ->
-                    val txt = resp.body?.string().orEmpty()
-                    val info = Network.jsonParser.decodeFromString(VersionInfo.serializer(), txt)
-                    info.sha
-                }
-            }.getOrNull()?.let { return it }
-        }
-        return release.targetCommitish.orEmpty()
+    private suspend fun resolveVersion(release: GithubRelease): VersionInfo? {
+        val url = release.versionAsset()?.browserDownloadUrl ?: return null
+        return runCatching {
+            val request = Request.Builder().url(url).build()
+            Network.httpClient.newCall(request).execute().use { resp ->
+                val txt = resp.body?.string().orEmpty()
+                Network.jsonParser.decodeFromString(VersionInfo.serializer(), txt)
+            }
+        }.getOrNull()
     }
 
     private fun isSameBuild(latestSha: String): Boolean {
