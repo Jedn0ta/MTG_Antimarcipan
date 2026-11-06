@@ -22,7 +22,6 @@ val AppViewModelFactory: ViewModelProvider.Factory = viewModelFactory {
         ScanViewModel(
             app().container.collectionRepository,
             app().container.deckRepository,
-            app().container.shopRepository,
             app().container.appSettings,
         )
     }

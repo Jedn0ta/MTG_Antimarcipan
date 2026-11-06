@@ -9,8 +9,6 @@ import com.example.antimarcipan.data.local.Deck
 import com.example.antimarcipan.data.scryfall.ScryfallCard
 import com.example.antimarcipan.data.settings.AppSettings
 import com.example.antimarcipan.data.settings.TranslationLang
-import com.example.antimarcipan.data.shop.CernyRytirRepository
-import com.example.antimarcipan.data.shop.ShopResult
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -29,14 +27,9 @@ data class ScanUiState(
     val candidate: ScryfallCard? = null,
     val status: String = "Namiř foťák na jméno karty",
     val looking: Boolean = false,
-    val lastAdded: String? = null,
     /** Dostupné edice kandidáta (pro ruční přepnutí). */
     val prints: List<ScryfallCard> = emptyList(),
     val loadingPrints: Boolean = false,
-    val shop: ShopResult? = null,
-    val shopLoading: Boolean = false,
-    val shopUrl: String? = null,
-    val najadaUrl: String? = null,
     /** Zvýší se po každém úspěšném přidání — spouští potvrzovací animaci. */
     val confirmTick: Int = 0,
     val confirmText: String? = null,
@@ -53,7 +46,6 @@ data class ScanUiState(
 class ScanViewModel(
     private val repo: CollectionRepository,
     private val deckRepo: DeckRepository,
-    private val shopRepo: CernyRytirRepository,
     private val settings: AppSettings,
 ) : ViewModel() {
 
@@ -230,7 +222,7 @@ class ScanViewModel(
         val card = _state.value.candidate ?: return
         viewModelScope.launch {
             repo.addToCollection(card)
-            flashAdded(card, "Přidáno do sbírky: ${card.name}")
+            flashAdded("Přidáno do sbírky: ${card.name}")
         }
     }
 
@@ -241,7 +233,7 @@ class ScanViewModel(
             repo.addToCollection(card)
             deckRepo.addCard(deckId, card.id)
             val deckName = deckRepo.deck(deckId)?.name ?: "balíku"
-            flashAdded(card, "Přidáno do „$deckName“: ${card.name}")
+            flashAdded("Přidáno do „$deckName“: ${card.name}")
         }
     }
 
@@ -270,17 +262,6 @@ class ScanViewModel(
         )
     }
 
-    private fun loadShopPrice(name: String) {
-        _state.value = _state.value.copy(shopLoading = true)
-        viewModelScope.launch {
-            val result = shopRepo.priceFor(name)
-            // Jen pokud se mezitím nezměnil kandidát.
-            if (_state.value.candidate?.name == name) {
-                _state.value = _state.value.copy(shop = result, shopLoading = false)
-            }
-        }
-    }
-
     fun dismissCandidate() {
         _state.value = _state.value.copy(
             candidate = null,
@@ -293,10 +274,9 @@ class ScanViewModel(
         lastQuery = ""
     }
 
-    private fun flashAdded(card: ScryfallCard, msg: String) {
+    private fun flashAdded(msg: String) {
         _state.value = _state.value.copy(
             candidate = null,
-            lastAdded = card.name,
             status = msg,
             prints = emptyList(),
             translation = null,
