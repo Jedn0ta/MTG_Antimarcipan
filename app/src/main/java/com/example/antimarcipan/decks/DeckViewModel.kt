@@ -50,6 +50,11 @@ class DeckViewModel(
             }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    /** Změní počet konkrétní karty (např. základní země) v balíku. */
+    fun setDeckCardQty(deckId: Long, scryfallId: String, qty: Int) {
+        viewModelScope.launch { deckRepo.setBasicLandCount(deckId, scryfallId, qty) }
+    }
+
     /** Přidá základní země hromadně: mapa jméno země → počet. */
     fun addBasicLands(deckId: Long, counts: Map<String, Int>) {
         viewModelScope.launch {

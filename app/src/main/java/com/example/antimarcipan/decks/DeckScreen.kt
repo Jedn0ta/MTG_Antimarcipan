@@ -28,6 +28,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Remove
@@ -224,6 +225,7 @@ private fun DeckCover(path: String?, size: androidx.compose.ui.unit.Dp) {
 
 // ---------------------------------------------------------------- detail
 
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
 private fun DeckDetailView(vm: DeckViewModel, deck: Deck) {
     val context = LocalContext.current
@@ -234,6 +236,8 @@ private fun DeckDetailView(vm: DeckViewModel, deck: Deck) {
     var showFormat by remember { mutableStateOf(false) }
     var showMenu by remember { mutableStateOf(false) }
     var showBasics by remember { mutableStateOf(false) }
+    var showTypeFilter by remember { mutableStateOf(false) }
+    val selectedTypes = remember { androidx.compose.runtime.mutableStateListOf<com.example.antimarcipan.collection.CardType>() }
     var pendingRemove by remember { mutableStateOf<CollectionCard?>(null) }
 
     val coverPicker = rememberLauncherForActivityResult(
@@ -277,6 +281,14 @@ private fun DeckDetailView(vm: DeckViewModel, deck: Deck) {
             }
             // Minimální legalita: kolik doplnit
             DeckNeed(format, flatCards.size)
+            IconButton(onClick = { showTypeFilter = !showTypeFilter }) {
+                Icon(
+                    Icons.Filled.FilterList,
+                    contentDescription = "Filtr typů",
+                    tint = if (selectedTypes.isEmpty()) MaterialTheme.colorScheme.onSurface
+                    else MaterialTheme.colorScheme.primary,
+                )
+            }
             Box {
                 IconButton(onClick = { showMenu = true }) {
                     Icon(Icons.Filled.MoreVert, contentDescription = "Akce")
@@ -318,8 +330,32 @@ private fun DeckDetailView(vm: DeckViewModel, deck: Deck) {
         }
         HorizontalDivider()
 
+        androidx.compose.animation.AnimatedVisibility(visible = showTypeFilter) {
+            androidx.compose.foundation.layout.FlowRow(
+                Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                com.example.antimarcipan.collection.CardType.entries.forEach { t ->
+                    androidx.compose.material3.FilterChip(
+                        selected = selectedTypes.contains(t),
+                        onClick = {
+                            if (selectedTypes.contains(t)) selectedTypes.remove(t) else selectedTypes.add(t)
+                        },
+                        label = { Text(t.label) },
+                    )
+                }
+            }
+        }
+
+        val visible = deckCards.filter { entry ->
+            selectedTypes.isEmpty() || selectedTypes.any {
+                entry.card.typeLine?.contains(it.needle, ignoreCase = true) == true
+            }
+        }
+        val lands = visible.filter { isLandCard(it.card) }
+        val others = visible.filter { !isLandCard(it.card) }
+
         LazyColumn(Modifier.fillMaxSize()) {
-            item { SectionHeader("Karty v balíku — podržení karty ji odebere") }
             if (deckCards.isEmpty()) {
                 item {
                     Text(
@@ -329,30 +365,34 @@ private fun DeckDetailView(vm: DeckViewModel, deck: Deck) {
                     )
                 }
             }
-            items(deckCards, key = { "in-" + it.card.scryfallId }) { entry ->
-                val card = entry.card
-                Row(
-                    Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    com.example.antimarcipan.ui.CardListInfo(
-                        card = card,
-                        deckQuantity = entry.deckQuantity,
-                        modifier = Modifier.weight(1f),
-                        onLongHold = { pendingRemove = card },
+
+            if (lands.isNotEmpty()) {
+                item { SectionHeader("Země (${lands.sumOf { it.deckQuantity }})") }
+                items(lands, key = { "L-" + it.card.scryfallId }) { entry ->
+                    DeckEntryRow(
+                        entry = entry,
+                        isBasic = isBasicLand(entry.card),
+                        isCommander = entry.card.scryfallId == deck.commanderScryfallId,
+                        showCommander = format == DeckFormat.COMMANDER,
+                        onCommander = { vm.setCommander(entry.card) },
+                        onLongRemove = { pendingRemove = entry.card },
+                        onChangeQty = { q -> vm.setDeckCardQty(deck.id, entry.card.scryfallId, q) },
                     )
-                    if (format == DeckFormat.COMMANDER) {
-                        IconButton(onClick = { vm.setCommander(card) }) {
-                            Icon(
-                                Icons.Filled.Star,
-                                contentDescription = "Velitel",
-                                tint = if (card.scryfallId == deck.commanderScryfallId)
-                                    MaterialTheme.colorScheme.primary
-                                else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
-                            )
-                        }
-                    }
+                    HorizontalDivider()
                 }
+            }
+
+            item { SectionHeader("Ostatní karty (${others.sumOf { it.deckQuantity }})") }
+            items(others, key = { "O-" + it.card.scryfallId }) { entry ->
+                DeckEntryRow(
+                    entry = entry,
+                    isBasic = false,
+                    isCommander = entry.card.scryfallId == deck.commanderScryfallId,
+                    showCommander = format == DeckFormat.COMMANDER,
+                    onCommander = { vm.setCommander(entry.card) },
+                    onLongRemove = { pendingRemove = entry.card },
+                    onChangeQty = {},
+                )
                 HorizontalDivider()
             }
 
@@ -435,6 +475,63 @@ private fun Modifier.longHold(durationMs: Long, onHold: () -> Unit): Modifier =
             if (completed == null) onHold()
         }
     }
+
+private val BASIC_LANDS = setOf(
+    "plains", "island", "swamp", "mountain", "forest", "wastes",
+    "snow-covered plains", "snow-covered island", "snow-covered swamp",
+    "snow-covered mountain", "snow-covered forest",
+)
+
+private fun isLandCard(card: CollectionCard): Boolean =
+    card.typeLine?.contains("Land", ignoreCase = true) == true
+
+private fun isBasicLand(card: CollectionCard): Boolean {
+    val n = card.name.lowercase().substringBefore("//").trim()
+    if (n in BASIC_LANDS) return true
+    return card.typeLine?.contains("Basic", ignoreCase = true) == true &&
+        card.typeLine.contains("Land", ignoreCase = true)
+}
+
+@Composable
+private fun DeckEntryRow(
+    entry: com.example.antimarcipan.data.local.DeckCardWithQty,
+    isBasic: Boolean,
+    isCommander: Boolean,
+    showCommander: Boolean,
+    onCommander: () -> Unit,
+    onLongRemove: () -> Unit,
+    onChangeQty: (Int) -> Unit,
+) {
+    Row(
+        Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        com.example.antimarcipan.ui.CardListInfo(
+            card = entry.card,
+            deckQuantity = entry.deckQuantity,
+            modifier = Modifier.weight(1f),
+            onLongHold = onLongRemove,
+        )
+        if (isBasic) {
+            IconButton(onClick = { onChangeQty(entry.deckQuantity - 1) }, modifier = Modifier.size(36.dp)) {
+                Icon(Icons.Filled.Remove, contentDescription = "−")
+            }
+            Text("${entry.deckQuantity}", style = MaterialTheme.typography.titleMedium)
+            IconButton(onClick = { onChangeQty(entry.deckQuantity + 1) }, modifier = Modifier.size(36.dp)) {
+                Icon(Icons.Filled.Add, contentDescription = "+")
+            }
+        } else if (showCommander) {
+            IconButton(onClick = onCommander) {
+                Icon(
+                    Icons.Filled.Star,
+                    contentDescription = "Velitel",
+                    tint = if (isCommander) MaterialTheme.colorScheme.primary
+                    else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+                )
+            }
+        }
+    }
+}
 
 /** Minimální info: kolik karet ještě doplnit do minimálního počtu. */
 @Composable
