@@ -30,7 +30,7 @@ object SynergyEngine {
 
     // Témata z oracle textu: fráze → zobrazovaný název.
     private val THEMES = linkedMapOf(
-        "+1/+1 counter" to "+1/+1 counters",
+        "\\+1/\\+1 counter" to "+1/+1 counters",
         "counter" to "counters",
         "sacrifice" to "sacrifice",
         "graveyard" to "graveyard",
@@ -50,6 +50,11 @@ object SynergyEngine {
         "cast your .* spell|instant or sorcery" to "spellslinger",
     )
 
+    // Předkompilované regexy (bezpečně — vadný vzor se jen přeskočí).
+    private val THEME_REGEX: Map<String, Regex> = THEMES.keys.mapNotNull { k ->
+        runCatching { k to Regex(k) }.getOrNull()
+    }.toMap()
+
     fun analyze(deck: List<CollectionCard>): DeckSynergyReport {
         val nonLands = deck.filter { !it.isLand() }
 
@@ -66,7 +71,7 @@ object SynergyEngine {
             c.creatureSubtypes().forEach { tribeCount.merge(it, 1, Int::plus) }
             val o = c.oracle()
             THEMES.forEach { (pattern, label) ->
-                if (Regex(pattern).containsMatchIn(o)) themeCount.merge(label, 1, Int::plus)
+                if (THEME_REGEX[pattern]?.containsMatchIn(o) == true) themeCount.merge(label, 1, Int::plus)
             }
         }
 
@@ -136,7 +141,7 @@ object SynergyEngine {
         val o = card.oracle()
         val themeHits = topThemes.filter { label ->
             THEMES.entries.firstOrNull { it.value == label }?.key
-                ?.let { Regex(it).containsMatchIn(o) } == true
+                ?.let { THEME_REGEX[it]?.containsMatchIn(o) } == true
         }
         if (themeHits.isNotEmpty()) {
             score += (themeHits.size * 8).coerceAtMost(24)
