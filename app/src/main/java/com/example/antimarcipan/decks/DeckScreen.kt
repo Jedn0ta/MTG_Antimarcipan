@@ -244,6 +244,7 @@ private fun DeckDetailView(vm: DeckViewModel, deck: Deck) {
     var showBasics by remember { mutableStateOf(false) }
     var showTypeFilter by remember { mutableStateOf(false) }
     var gridMode by remember { mutableStateOf(false) }
+    var sectionMode by remember { mutableStateOf(DeckSectionMode.ALL) }
     val selectedTypes = remember { androidx.compose.runtime.mutableStateListOf<String>() }
     var pendingRemove by remember { mutableStateOf<CollectionCard?>(null) }
 
@@ -349,6 +350,20 @@ private fun DeckDetailView(vm: DeckViewModel, deck: Deck) {
         }
         HorizontalDivider()
 
+        // Přepínač sekcí: Vše / Země / Ostatní
+        Row(
+            Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            DeckSectionMode.entries.forEach { mode ->
+                androidx.compose.material3.FilterChip(
+                    selected = sectionMode == mode,
+                    onClick = { sectionMode = mode },
+                    label = { Text(mode.label) },
+                )
+            }
+        }
+
         // Typy a tribaly odvozené přímo z balíku (hlavní typy + podtypy stvoření)
         val typeTokens = remember(deckCards) { deckTypeTokens(deckCards.map { it.card }) }
 
@@ -382,8 +397,10 @@ private fun DeckDetailView(vm: DeckViewModel, deck: Deck) {
                 entry.card.typeLine?.contains(token, ignoreCase = true) == true
             }
         }
-        val lands = visible.filter { isLandCard(it.card) }
-        val others = visible.filter { !isLandCard(it.card) }
+        val allLands = visible.filter { isLandCard(it.card) }
+        val allOthers = visible.filter { !isLandCard(it.card) }
+        val lands = if (sectionMode != DeckSectionMode.OTHERS) allLands else emptyList()
+        val others = if (sectionMode != DeckSectionMode.LANDS) allOthers else emptyList()
 
         if (gridMode) {
             DeckGrid(
@@ -457,7 +474,7 @@ private fun DeckDetailView(vm: DeckViewModel, deck: Deck) {
                 }
             }
 
-            if (selectedTypes.isNotEmpty() && lands.isEmpty() && others.isEmpty() && deckCards.isNotEmpty()) {
+            if (selectedTypes.isNotEmpty() && allLands.isEmpty() && allOthers.isEmpty() && deckCards.isNotEmpty()) {
                 item {
                     Text(
                         "Filtru „${selectedTypes.joinToString(", ")}“ neodpovídá žádná karta.",
@@ -553,6 +570,10 @@ private val MAIN_TYPES = listOf(
     "Creature", "Instant", "Sorcery", "Artifact", "Enchantment",
     "Planeswalker", "Land", "Battle",
 )
+
+private enum class DeckSectionMode(val label: String) {
+    ALL("Vše"), LANDS("Země"), OTHERS("Ostatní")
+}
 
 private fun deckTypeTokens(cards: List<CollectionCard>): List<String> {
     val mains = linkedSetOf<String>()

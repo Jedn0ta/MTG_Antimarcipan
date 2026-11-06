@@ -1,5 +1,6 @@
 package com.example.antimarcipan.synergy
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -143,12 +144,14 @@ private fun FitRow(fit: CardFit) {
             else -> Color(0xFFD98324)
         }
         Box(
-            Modifier.size(40.dp).clip(CircleShape).background(color.copy(alpha = 0.18f)),
+            Modifier.size(36.dp).clip(CircleShape).background(color.copy(alpha = 0.18f)),
             contentAlignment = Alignment.Center,
         ) {
             Text("${fit.score}", style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.Bold, color = color, textAlign = TextAlign.Center)
         }
+        // Náhled + info/celá karta (ťuk = info, podržení = celá karta)
+        com.example.antimarcipan.ui.InteractiveThumb(card = fit.card, width = 40.dp, height = 56.dp)
         Column(Modifier.weight(1f)) {
             Text(fit.card.name, style = MaterialTheme.typography.bodyMedium)
             Text(
@@ -161,6 +164,37 @@ private fun FitRow(fit: CardFit) {
     HorizontalDivider()
 }
 
+/** Náhled navrhované karty podle jména (obrázek ze Scryfallu), ťuk = zvětšení. */
+@Composable
+private fun SuggestionImage(name: String) {
+    var showFull by remember { mutableStateOf(false) }
+    val thumb = scryfallImageUrl(name, "small")
+    com.example.antimarcipan.ui.CardThumb(
+        model = thumb,
+        width = 40.dp,
+        height = 56.dp,
+        modifier = Modifier.clip(androidx.compose.foundation.shape.RoundedCornerShape(6.dp))
+            .clickable { showFull = true },
+    )
+    if (showFull) {
+        androidx.compose.ui.window.Dialog(onDismissRequest = { showFull = false }) {
+            coil.compose.AsyncImage(
+                model = scryfallImageUrl(name, "normal"),
+                contentDescription = name,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(androidx.compose.foundation.shape.RoundedCornerShape(14.dp))
+                    .clickable { showFull = false },
+            )
+        }
+    }
+}
+
+private fun scryfallImageUrl(name: String, version: String): String {
+    val enc = java.net.URLEncoder.encode(name, "UTF-8")
+    return "https://api.scryfall.com/cards/named?exact=$enc&format=image&version=$version"
+}
+
 @Composable
 private fun RecRow(rec: SynergyRecommendation) {
     Row(
@@ -168,6 +202,7 @@ private fun RecRow(rec: SynergyRecommendation) {
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        SuggestionImage(rec.name)
         Column(Modifier.weight(1f)) {
             Text(rec.name, style = MaterialTheme.typography.bodyMedium)
             Text(
