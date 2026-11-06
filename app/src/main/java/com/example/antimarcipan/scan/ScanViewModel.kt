@@ -27,6 +27,7 @@ data class ScanUiState(
     val shop: ShopResult? = null,
     val shopLoading: Boolean = false,
     val shopUrl: String? = null,
+    val najadaUrl: String? = null,
     /** Zvýší se po každém úspěšném přidání — spouští potvrzovací animaci. */
     val confirmTick: Int = 0,
     val confirmText: String? = null,
@@ -70,6 +71,7 @@ class ScanViewModel(
                         status = editionLabel(card),
                         shop = null,
                         shopUrl = shopRepo.searchUrl(card.name),
+                        najadaUrl = com.example.antimarcipan.data.shop.ShopLinks.najada(card.name),
                     )
                     loadShopPrice(card.name)
                 }

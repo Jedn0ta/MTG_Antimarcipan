@@ -274,6 +274,18 @@ private fun CandidateCard(
             )
         }
 
+        // Najáda (odkaz na vyhledání karty)
+        Row(
+            Modifier.fillMaxWidth().padding(horizontal = 12.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text("Najáda", Modifier.weight(1f), style = MaterialTheme.typography.bodySmall)
+            state.najadaUrl?.let { url ->
+                TextButton(onClick = { onOpenShop(url) }) { Text("Otevřít") }
+            }
+        }
+
         // Výběr jiné edice
         TextButton(
             onClick = {

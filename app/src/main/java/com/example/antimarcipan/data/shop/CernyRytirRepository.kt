@@ -23,10 +23,7 @@ sealed interface ShopResult {
 class CernyRytirRepository {
 
     /** URL vyhledávání jednotlivých MTG karet podle jména (pro prohlížeč). */
-    fun searchUrl(cardName: String): String {
-        val q = URLEncoder.encode(cardName, "UTF-8")
-        return "https://www.cernyrytir.cz/index.php3?akce=3&limit=0&jmenokarty=$q&submit=Vyhledej"
-    }
+    fun searchUrl(cardName: String): String = ShopLinks.cernyRytir(cardName)
 
     suspend fun priceFor(cardName: String): ShopResult = withContext(Dispatchers.IO) {
         runCatching {
