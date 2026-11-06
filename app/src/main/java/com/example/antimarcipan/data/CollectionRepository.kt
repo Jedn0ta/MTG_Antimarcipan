@@ -4,7 +4,7 @@ import com.example.antimarcipan.data.local.CollectionCard
 import com.example.antimarcipan.data.local.CollectionDao
 import com.example.antimarcipan.data.scryfall.ScryfallApi
 import com.example.antimarcipan.data.scryfall.ScryfallCard
-import com.example.antimarcipan.scan.OcrParse
+import com.example.antimarcipan.scan.OcrParser
 import kotlinx.coroutines.flow.Flow
 import java.util.Locale
 
@@ -22,7 +22,7 @@ class CollectionRepository(
      * stejnou kartu, vrátí rovnou ten konkrétní tisk — tedy správnou edici.
      */
     suspend fun lookup(rawText: String): Result<ScryfallCard> = runCatching {
-        val parsed = OcrParse.parse(rawText)
+        val parsed = OcrParser.parse(rawText)
         require(parsed.nameGuess.length >= 3) { "Text příliš krátký na jméno karty" }
 
         val byName = scryfall.cardByFuzzyName(parsed.nameGuess)

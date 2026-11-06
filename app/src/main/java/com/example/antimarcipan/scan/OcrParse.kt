@@ -15,7 +15,7 @@ data class OcrParse(
  *   123/264 C
  *   NEO • EN • Jméno Autora
  */
-object OcrParse {
+object OcrParser {
 
     // Slova, která nejsou kódy edic, i když vypadají jako 3písmenné tokeny.
     private val STOPWORDS = setOf(
