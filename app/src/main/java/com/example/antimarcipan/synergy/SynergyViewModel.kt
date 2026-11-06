@@ -5,6 +5,8 @@ import androidx.lifecycle.viewModelScope
 import com.example.antimarcipan.data.DeckRepository
 import com.example.antimarcipan.data.SynergyRecommendation
 import com.example.antimarcipan.data.SynergyRepository
+import com.example.antimarcipan.data.advisor.AdvisorEngine
+import com.example.antimarcipan.data.advisor.AdvisorTip
 import com.example.antimarcipan.data.local.Deck
 import com.example.antimarcipan.data.synergy.DeckSynergyReport
 import com.example.antimarcipan.data.synergy.SynergyEngine
@@ -27,6 +29,8 @@ data class SynergyUiState(
     val suggestionsSource: String = "",
     /** Náhrady pro nevhodné karty: scryfallId → názvy navrhovaných karet. */
     val replacements: Map<String, List<String>> = emptyMap(),
+    /** Obecné rady k balíku (dříve „Anti Marcipán“). */
+    val tips: List<AdvisorTip> = emptyList(),
     val error: String? = null,
 )
 
@@ -85,6 +89,10 @@ class SynergyViewModel(
                 // Těžší výpočet mimo hlavní vlákno.
                 val report = withContext(Dispatchers.Default) { SynergyEngine.analyze(cards) }
 
+                // Obecné rady k balíku (rules-based rádce).
+                val commanderCard = cards.firstOrNull { it.scryfallId == deck?.commanderScryfallId }
+                val tips = withContext(Dispatchers.Default) { AdvisorEngine.analyze(cards, commanderCard) }
+
                 // Návrhy: velitel → EDHREC, jinak Scryfall podle barev + tématu.
                 // Síť je už uvnitř ošetřená (Result), ale pro jistotu i tady.
                 val commander = deck?.commanderName
@@ -109,6 +117,7 @@ class SynergyViewModel(
                     report = report,
                     suggestions = suggestions.take(40),
                     suggestionsSource = source,
+                    tips = tips,
                 )
 
                 // Náhrady pro nevhodné karty — doplní se po zobrazení reportu.

@@ -68,7 +68,7 @@ fun SynergyScreen(
             decks.isEmpty() -> EmptyState("Žádné balíky", "Nejdřív si vytvoř balík v záložce Balíky.")
             selectedDeckId == null -> EmptyState(
                 "Vyber balík",
-                "Vyhodnotím, jak se karty hodí do balíku, co nesedí a co doplnit.",
+                "Poradím s balíkem: rady, jak karty sedí, co nesedí a co doplnit.",
             )
             state.loading -> Row(
                 Modifier.fillMaxWidth().padding(24.dp),
@@ -80,6 +80,11 @@ fun SynergyScreen(
                 val report = state.report!!
                 LazyColumn(Modifier.fillMaxSize()) {
                     item { ThemeSummary(report.colors, report.topThemes, report.topTribes, report.topKeywords) }
+
+                    if (state.tips.isNotEmpty()) {
+                        item { SectionTitle("Rady k balíku") }
+                        items(state.tips) { TipCard(it) }
+                    }
 
                     if (report.misfits.isNotEmpty()) {
                         item { SectionTitle("Zvaž výměnu (${report.misfits.size})") }
@@ -125,7 +130,13 @@ private fun ThemeSummary(colors: Set<String>, themes: List<String>, tribes: List
 private fun SectionTitle(text: String) {
     Text(
         text,
-        Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp),
+        Modifier.fillMaxWidth()
+            .background(
+                androidx.compose.ui.graphics.Brush.horizontalGradient(
+                    listOf(MaterialTheme.colorScheme.primary.copy(alpha = 0.16f), Color.Transparent)
+                )
+            )
+            .padding(horizontal = 16.dp, vertical = 10.dp),
         style = MaterialTheme.typography.titleSmall,
         color = MaterialTheme.colorScheme.primary,
     )
@@ -225,6 +236,34 @@ private fun SuggestionImage(name: String) {
 private fun scryfallImageUrl(name: String, version: String): String {
     val enc = java.net.URLEncoder.encode(name, "UTF-8")
     return "https://api.scryfall.com/cards/named?exact=$enc&format=image&version=$version"
+}
+
+@Composable
+private fun TipCard(tip: com.example.antimarcipan.data.advisor.AdvisorTip) {
+    val (icon, tint) = when (tip.level) {
+        com.example.antimarcipan.data.advisor.TipLevel.GOOD ->
+            androidx.compose.material.icons.Icons.Filled.CheckCircle to Color(0xFF2E9E5B)
+        com.example.antimarcipan.data.advisor.TipLevel.WARN ->
+            androidx.compose.material.icons.Icons.Filled.Warning to Color(0xFFD98324)
+        com.example.antimarcipan.data.advisor.TipLevel.TIP ->
+            androidx.compose.material.icons.Icons.Filled.Lightbulb to MaterialTheme.colorScheme.primary
+    }
+    Row(
+        Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.Top,
+    ) {
+        androidx.compose.material3.Icon(icon, contentDescription = null, tint = tint)
+        Column(Modifier.weight(1f)) {
+            Text(tip.title, style = MaterialTheme.typography.titleSmall)
+            Text(
+                tip.detail,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
+            )
+        }
+    }
+    HorizontalDivider()
 }
 
 @Composable

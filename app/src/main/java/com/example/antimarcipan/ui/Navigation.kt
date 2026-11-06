@@ -29,7 +29,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import com.example.antimarcipan.advisor.AdvisorScreen
+import androidx.compose.foundation.background
 import com.example.antimarcipan.collection.CollectionScreen
 import com.example.antimarcipan.decks.DeckScreen
 import com.example.antimarcipan.manual.ManualAddScreen
@@ -48,9 +48,14 @@ private enum class Dest(
     Scan("scan", "Sken", R.drawable.ic_nav_scan),
     Collection("collection", "Sbírka", R.drawable.ic_nav_collection),
     Decks("decks", "Balíky", R.drawable.ic_nav_decks),
-    Synergy("synergy", "Synergie", R.drawable.ic_nav_synergy),
-    Advisor("advisor", "Anti Marcipán", R.drawable.ic_nav_advisor),
+    Synergy("synergy", "Rádce", R.drawable.ic_nav_advisor),
+    Settings(SETTINGS_ROUTE, "Nastavení", R.drawable.ic_nav_synergy),
 }
+
+/** Jemný gradient lišt (nahoře mírně světlejší fialová). */
+private val BarGradient = androidx.compose.ui.graphics.Brush.verticalGradient(
+    listOf(Color(0xF22B2252), Color(0xF2140F2A)),
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -59,12 +64,10 @@ fun AntimarcipanApp() {
     val backStack by navController.currentBackStackEntryAsState()
     val current = backStack?.destination
     val route = current?.route
-    val onSettings = route == SETTINGS_ROUTE
     val onManual = route == MANUAL_ROUTE
-    val isSubScreen = onSettings || onManual
+    val isSubScreen = onManual
 
     val title = when {
-        onSettings -> "Nastavení"
         onManual -> "Přidat ručně"
         else -> Dest.entries.firstOrNull { d ->
             current?.hierarchy?.any { it.route == d.route } == true
@@ -78,9 +81,10 @@ fun AntimarcipanApp() {
         contentColor = MaterialTheme.colorScheme.onSurface,
         topBar = {
             TopAppBar(
+                modifier = Modifier.background(BarGradient),
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color(0xCC14102A),
-                    scrolledContainerColor = Color(0xCC14102A),
+                    containerColor = Color.Transparent,
+                    scrolledContainerColor = Color.Transparent,
                 ),
                 title = { Text(title) },
                 navigationIcon = {
@@ -98,16 +102,16 @@ fun AntimarcipanApp() {
                         IconButton(onClick = { navController.navigate(MANUAL_ROUTE) }) {
                             Icon(Icons.Filled.Add, contentDescription = "Přidat ručně")
                         }
-                        IconButton(onClick = { navController.navigate(SETTINGS_ROUTE) }) {
-                            Icon(Icons.Filled.Settings, contentDescription = "Nastavení")
-                        }
                     }
                 },
             )
         },
         bottomBar = {
             if (!isSubScreen) {
-                NavigationBar(containerColor = Color(0xCC14102A)) {
+                NavigationBar(
+                    containerColor = Color.Transparent,
+                    modifier = Modifier.background(BarGradient),
+                ) {
                     Dest.entries.forEach { dest ->
                         val selected = current?.hierarchy?.any { it.route == dest.route } == true
                         NavigationBarItem(
@@ -122,11 +126,19 @@ fun AntimarcipanApp() {
                                 }
                             },
                             icon = {
-                                Icon(
-                                    painter = painterResource(dest.icon),
-                                    contentDescription = dest.label,
-                                    modifier = Modifier.size(24.dp),
-                                )
+                                if (dest == Dest.Settings) {
+                                    Icon(
+                                        Icons.Filled.Settings,
+                                        contentDescription = dest.label,
+                                        modifier = Modifier.size(24.dp),
+                                    )
+                                } else {
+                                    Icon(
+                                        painter = painterResource(dest.icon),
+                                        contentDescription = dest.label,
+                                        modifier = Modifier.size(24.dp),
+                                    )
+                                }
                             },
                             label = { Text(dest.label, maxLines = 1) },
                             colors = androidx.compose.material3.NavigationBarItemDefaults.colors(
@@ -151,8 +163,7 @@ fun AntimarcipanApp() {
             composable(Dest.Collection.route) { CollectionScreen() }
             composable(Dest.Decks.route) { DeckScreen() }
             composable(Dest.Synergy.route) { SynergyScreen() }
-            composable(Dest.Advisor.route) { AdvisorScreen() }
-            composable(SETTINGS_ROUTE) { SettingsScreen() }
+            composable(Dest.Settings.route) { SettingsScreen() }
             composable(MANUAL_ROUTE) { ManualAddScreen() }
         }
     }
