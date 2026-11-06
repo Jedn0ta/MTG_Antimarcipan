@@ -39,6 +39,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             AntimarcipanTheme {
                 Box(Modifier.fillMaxSize()) {
+                    com.example.antimarcipan.ui.ThemedBackground()
                     AntimarcipanApp()
                     StartupSplash()
                 }
@@ -56,7 +57,7 @@ private fun StartupSplash() {
         visible = false
     }
     AnimatedVisibility(visible = visible, exit = fadeOut()) {
-        Surface(color = Color(0xFF241812), modifier = Modifier.fillMaxSize()) {
+        Surface(color = Color(0xFF0E0B1A), modifier = Modifier.fillMaxSize()) {
             Column(
                 Modifier.fillMaxSize(),
                 horizontalAlignment = Alignment.CenterHorizontally,

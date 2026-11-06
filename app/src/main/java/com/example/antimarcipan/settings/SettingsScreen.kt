@@ -1,11 +1,20 @@
 package com.example.antimarcipan.settings
 
 import android.widget.Toast
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -20,9 +29,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.example.antimarcipan.R
+import com.example.antimarcipan.data.settings.AppBackground
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.antimarcipan.BuildConfig
@@ -146,11 +160,104 @@ fun SettingsScreen(
             textAlign = TextAlign.Start,
         )
 
+        AppearanceCard(vm)
+
         LanguageCard(vm)
 
         GuideCard()
 
         BackupCard(vm)
+    }
+}
+
+private fun AppBackground.previewRes(): Int? = when (this) {
+    AppBackground.NONE -> null
+    AppBackground.PLAINS -> R.drawable.bg_plains
+    AppBackground.ISLAND -> R.drawable.bg_island
+    AppBackground.SWAMP -> R.drawable.bg_swamp
+    AppBackground.MOUNTAIN -> R.drawable.bg_mountain
+    AppBackground.FOREST -> R.drawable.bg_forest
+    AppBackground.WASTES -> R.drawable.bg_wastes
+}
+
+@Composable
+private fun AppearanceCard(vm: SettingsViewModel) {
+    val current by vm.background.collectAsStateWithLifecycle()
+    Card(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp)) {
+        Column(
+            Modifier.fillMaxWidth().padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Text("Pozadí aplikace", style = MaterialTheme.typography.titleMedium)
+            Text(
+                "Krajina za celou aplikací. Vyber si podle nálady — nebo žádné.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+            )
+            Row(
+                Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                AppBackground.entries.forEach { bg ->
+                    BackgroundSwatch(
+                        bg = bg,
+                        selected = current == bg,
+                        onClick = { vm.setBackground(bg) },
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun BackgroundSwatch(
+    bg: AppBackground,
+    selected: Boolean,
+    onClick: () -> Unit,
+) {
+    val border = if (selected) MaterialTheme.colorScheme.primary
+    else MaterialTheme.colorScheme.outline
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        Box(
+            Modifier
+                .width(78.dp)
+                .height(108.dp)
+                .clip(RoundedCornerShape(10.dp))
+                .border(if (selected) 3.dp else 1.dp, border, RoundedCornerShape(10.dp))
+                .clickable(onClick = onClick),
+            contentAlignment = Alignment.Center,
+        ) {
+            val res = bg.previewRes()
+            if (res != null) {
+                Image(
+                    painter = painterResource(res),
+                    contentDescription = bg.label,
+                    modifier = Modifier.fillMaxWidth().height(108.dp),
+                    contentScale = ContentScale.Crop,
+                )
+            } else {
+                Box(Modifier.fillMaxWidth().height(108.dp)
+                    .clip(RoundedCornerShape(10.dp))) {
+                    Text(
+                        "Bez\npozadí",
+                        Modifier.align(Alignment.Center),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                        textAlign = TextAlign.Center,
+                    )
+                }
+            }
+        }
+        Text(
+            bg.label,
+            style = MaterialTheme.typography.labelSmall,
+            color = if (selected) MaterialTheme.colorScheme.primary
+            else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
+        )
     }
 }
 

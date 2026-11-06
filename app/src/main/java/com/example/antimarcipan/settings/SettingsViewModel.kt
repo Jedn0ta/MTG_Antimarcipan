@@ -4,6 +4,7 @@ import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.antimarcipan.data.backup.BackupRepository
+import com.example.antimarcipan.data.settings.AppBackground
 import com.example.antimarcipan.data.settings.AppSettings
 import com.example.antimarcipan.data.settings.TranslationLang
 import com.example.antimarcipan.data.update.UpdateRepository
@@ -38,6 +39,11 @@ class SettingsViewModel(
     val translationLang: StateFlow<TranslationLang> = settings.translationLang
 
     fun setTranslationLang(lang: TranslationLang) = settings.setTranslationLang(lang)
+
+    /** Krajinné pozadí aplikace. */
+    val background: StateFlow<AppBackground> = settings.background
+
+    fun setBackground(bg: AppBackground) = settings.setBackground(bg)
 
     fun suggestedBackupName(): String = backup.suggestedFileName()
 

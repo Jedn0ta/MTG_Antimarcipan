@@ -14,11 +14,14 @@ import androidx.compose.material.icons.filled.ViewModule
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.ui.graphics.Color
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -82,8 +85,13 @@ fun AntimarcipanApp() {
     }
 
     Scaffold(
+        containerColor = Color.Transparent,
         topBar = {
             TopAppBar(
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color(0xCC14102A),
+                    scrolledContainerColor = Color(0xCC14102A),
+                ),
                 title = { Text(title) },
                 navigationIcon = {
                     if (isSubScreen) {
@@ -112,7 +120,7 @@ fun AntimarcipanApp() {
         },
         bottomBar = {
             if (!isSubScreen) {
-                NavigationBar {
+                NavigationBar(containerColor = Color(0xCC14102A)) {
                     Dest.entries.forEach { dest ->
                         val selected = current?.hierarchy?.any { it.route == dest.route } == true
                         NavigationBarItem(
@@ -128,6 +136,13 @@ fun AntimarcipanApp() {
                             },
                             icon = { Icon(dest.icon, contentDescription = dest.label) },
                             label = { Text(dest.label, maxLines = 1) },
+                            colors = androidx.compose.material3.NavigationBarItemDefaults.colors(
+                                selectedIconColor = MaterialTheme.colorScheme.onPrimary,
+                                selectedTextColor = MaterialTheme.colorScheme.primary,
+                                indicatorColor = MaterialTheme.colorScheme.primary,
+                                unselectedIconColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                                unselectedTextColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                            ),
                         )
                     }
                 }

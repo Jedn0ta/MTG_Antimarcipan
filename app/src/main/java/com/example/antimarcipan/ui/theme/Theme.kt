@@ -1,40 +1,45 @@
 package com.example.antimarcipan.ui.theme
 
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
+// Paleta inspirovaná noční fantasy krajinou — hluboká indigová, fialová, zlatá.
 private val Gold = Color(0xFFE9C46A)
-private val Night = Color(0xFF1B1B2F)
-private val Plum = Color(0xFF3A2E5C)
+private val Night = Color(0xFF0E0B1A)        // skoro černé indigo (pozadí)
+private val Surface = Color(0xFF1A1630)       // fialově laděný povrch karet
+private val SurfaceHi = Color(0xFF241D44)     // zvýrazněný povrch
+private val Lavender = Color(0xFFB9A7EC)      // světle fialová (akcenty)
+private val Violet = Color(0xFF7C5CD6)
 
 private val DarkColors = darkColorScheme(
     primary = Gold,
     onPrimary = Night,
-    secondary = Color(0xFF9D86D6),
+    primaryContainer = Violet,
+    onPrimaryContainer = Color(0xFFF3EEFF),
+    secondary = Lavender,
+    onSecondary = Night,
+    secondaryContainer = SurfaceHi,
+    onSecondaryContainer = Color(0xFFECE6FF),
+    tertiary = Color(0xFF8FB3FF),
     background = Night,
-    surface = Color(0xFF232343),
+    onBackground = Color(0xFFECECF5),
+    surface = Surface,
     onSurface = Color(0xFFECECF5),
-)
-
-private val LightColors = lightColorScheme(
-    primary = Plum,
-    onPrimary = Color.White,
-    secondary = Color(0xFF7A5C2E),
-    background = Color(0xFFFAF7F0),
-    surface = Color(0xFFFFFFFF),
+    surfaceVariant = SurfaceHi,
+    onSurfaceVariant = Color(0xFFC7BEE6),
+    outline = Color(0xFF4A3F6E),
+    error = Color(0xFFF2777A),
 )
 
 @Composable
 fun AntimarcipanTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit,
 ) {
+    // Appka má jen tmavý režim — odpovídá noční fantasy estetice.
     MaterialTheme(
-        colorScheme = if (darkTheme) DarkColors else LightColors,
+        colorScheme = DarkColors,
         content = content,
     )
 }

@@ -20,6 +20,22 @@ enum class TranslationLang(val code: String, val label: String) {
     }
 }
 
+/** Krajinná pozadí aplikace (5 barev MTG + pustina), volitelná v nastavení. */
+enum class AppBackground(val code: String, val label: String) {
+    NONE("none", "Žádné"),
+    PLAINS("plains", "Pláně"),
+    ISLAND("island", "Ostrov"),
+    SWAMP("swamp", "Bažina"),
+    MOUNTAIN("mountain", "Hory"),
+    FOREST("forest", "Les"),
+    WASTES("wastes", "Pustina");
+
+    companion object {
+        fun fromCode(code: String?): AppBackground =
+            entries.firstOrNull { it.code == code } ?: WASTES
+    }
+}
+
 /**
  * Jednoduché uživatelské předvolby přes SharedPreferences, vystavené jako
  * StateFlow, aby na ně obrazovky reagovaly. Singleton v AppContainer.
@@ -36,9 +52,18 @@ class AppSettings(context: Context) {
     private val _guideSeen = MutableStateFlow(prefs.getBoolean(KEY_GUIDE_SEEN, false))
     val guideSeen: StateFlow<Boolean> = _guideSeen.asStateFlow()
 
+    private val _background =
+        MutableStateFlow(AppBackground.fromCode(prefs.getString(KEY_BACKGROUND, null)))
+    val background: StateFlow<AppBackground> = _background.asStateFlow()
+
     fun setTranslationLang(lang: TranslationLang) {
         prefs.edit().putString(KEY_LANG, lang.code).apply()
         _translationLang.value = lang
+    }
+
+    fun setBackground(bg: AppBackground) {
+        prefs.edit().putString(KEY_BACKGROUND, bg.code).apply()
+        _background.value = bg
     }
 
     fun markGuideSeen() {
@@ -51,5 +76,6 @@ class AppSettings(context: Context) {
         const val PREFS = "antimarcipan_settings"
         const val KEY_LANG = "translation_lang"
         const val KEY_GUIDE_SEEN = "guide_seen"
+        const val KEY_BACKGROUND = "app_background"
     }
 }
