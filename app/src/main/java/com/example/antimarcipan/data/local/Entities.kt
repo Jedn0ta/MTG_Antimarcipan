@@ -29,6 +29,10 @@ data class CollectionCard(
     val gathererUrl: String? = null,
     val priceUsd: String?,
     val quantity: Int = 1,
+    /** Karta je ve sbírce (vlastněná). */
+    val owned: Boolean = true,
+    /** Karta je na wishlistu (chci ji). */
+    val wishlist: Boolean = false,
     val addedAt: Long = System.currentTimeMillis(),
 )
 

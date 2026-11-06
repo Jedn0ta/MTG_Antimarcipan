@@ -210,6 +210,7 @@ fun ScanScreen(
                             langLabel = transLang.label,
                             onDismiss = vm::dismissCandidate,
                             onAddCollection = vm::addToCollection,
+                            onAddWishlist = vm::addToWishlist,
                             onAddDeck = vm::addToDeck,
                             onLoadPrints = vm::loadPrints,
                             onSelectPrint = vm::selectPrint,
@@ -422,6 +423,7 @@ private fun CandidateCard(
     langLabel: String,
     onDismiss: () -> Unit,
     onAddCollection: () -> Unit,
+    onAddWishlist: () -> Unit,
     onAddDeck: (Long) -> Unit,
     onLoadPrints: () -> Unit,
     onSelectPrint: (com.example.antimarcipan.data.scryfall.ScryfallCard) -> Unit,
@@ -542,30 +544,26 @@ private fun CandidateCard(
             }
         }
 
-        Row(
+        Column(
             Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
-            OutlinedButton(
-                onClick = onDismiss,
-                modifier = Modifier.weight(1f),
-                contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 6.dp),
-            ) {
-                Text("Zahodit", maxLines = 1, softWrap = false, style = MaterialTheme.typography.labelLarge)
+            val pad = androidx.compose.foundation.layout.PaddingValues(horizontal = 6.dp)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedButton(onClick = onDismiss, modifier = Modifier.weight(1f), contentPadding = pad) {
+                    Text("Zahodit", maxLines = 1, softWrap = false, style = MaterialTheme.typography.labelLarge)
+                }
+                OutlinedButton(onClick = onAddWishlist, modifier = Modifier.weight(1f), contentPadding = pad) {
+                    Text("Wishlist", maxLines = 1, softWrap = false, style = MaterialTheme.typography.labelLarge)
+                }
             }
-            OutlinedButton(
-                onClick = { showDeckPicker = true },
-                modifier = Modifier.weight(1f),
-                contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 6.dp),
-            ) {
-                Text("Do balíku", maxLines = 1, softWrap = false, style = MaterialTheme.typography.labelLarge)
-            }
-            Button(
-                onClick = onAddCollection,
-                modifier = Modifier.weight(1f),
-                contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 6.dp),
-            ) {
-                Text("Do sbírky", maxLines = 1, softWrap = false, style = MaterialTheme.typography.labelLarge)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedButton(onClick = { showDeckPicker = true }, modifier = Modifier.weight(1f), contentPadding = pad) {
+                    Text("Do balíku", maxLines = 1, softWrap = false, style = MaterialTheme.typography.labelLarge)
+                }
+                Button(onClick = onAddCollection, modifier = Modifier.weight(1f), contentPadding = pad) {
+                    Text("Do sbírky", maxLines = 1, softWrap = false, style = MaterialTheme.typography.labelLarge)
+                }
             }
         }
     }

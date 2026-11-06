@@ -151,21 +151,54 @@ class CollectionRepository(
         card.id
     }.getOrNull()
 
+    /** Karty na wishlistu (chci je). */
+    val wishlist: Flow<List<CollectionCard>> = dao.observeWishlist()
+
     suspend fun addToCollection(card: ScryfallCard) {
         val existing = dao.findById(card.id)
+        when {
+            existing == null -> {
+                // Stáhni náhled lokálně, ať se zobrazuje spolehlivě i offline.
+                val local = card.bestImageUrl?.let { downloadImage(it, card.id) }
+                dao.upsert(card.toCollectionCard().copy(localImagePath = local, owned = true))
+            }
+            !existing.owned -> dao.setOwned(card.id, true)
+            else -> dao.bumpQuantity(card.id, 1)
+        }
+    }
+
+    suspend fun addToWishlist(card: ScryfallCard) {
+        val existing = dao.findById(card.id)
         if (existing == null) {
-            // Stáhni náhled lokálně, ať se zobrazuje spolehlivě i offline.
             val local = card.bestImageUrl?.let { downloadImage(it, card.id) }
-            dao.upsert(card.toCollectionCard().copy(localImagePath = local))
+            dao.upsert(card.toCollectionCard().copy(localImagePath = local, owned = false, wishlist = true))
         } else {
-            dao.bumpQuantity(card.id, 1)
+            dao.setWishlist(card.id, true)
         }
     }
 
     suspend fun remove(scryfallId: String) {
-        // Smaž i lokální náhled.
-        File(appContext.filesDir, "card_images/$scryfallId.jpg").delete()
-        dao.delete(scryfallId)
+        // Odebrání ze sbírky: když je i na wishlistu, jen zrušíme vlastnění.
+        val existing = dao.findById(scryfallId)
+        if (existing?.wishlist == true) {
+            dao.setOwned(scryfallId, false)
+        } else {
+            File(appContext.filesDir, "card_images/$scryfallId.jpg").delete()
+            dao.delete(scryfallId)
+        }
+    }
+
+    /** Označí kartu jako vlastněnou (přesun z wishlistu do sbírky). */
+    suspend fun markOwned(scryfallId: String) = dao.setOwned(scryfallId, true)
+
+    suspend fun removeFromWishlist(scryfallId: String) {
+        val existing = dao.findById(scryfallId)
+        if (existing?.owned == true) {
+            dao.setWishlist(scryfallId, false)
+        } else {
+            File(appContext.filesDir, "card_images/$scryfallId.jpg").delete()
+            dao.delete(scryfallId)
+        }
     }
 
     /** Dostáhne chybějící náhledy u karet, které je ještě nemají lokálně. */

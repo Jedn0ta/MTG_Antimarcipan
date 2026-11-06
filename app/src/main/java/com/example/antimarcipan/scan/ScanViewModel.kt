@@ -296,6 +296,14 @@ class ScanViewModel(
         }
     }
 
+    fun addToWishlist() {
+        val card = _state.value.candidate ?: return
+        viewModelScope.launch {
+            repo.addToWishlist(card)
+            flashAdded("Na wishlist: ${card.name}")
+        }
+    }
+
     /** Načte dostupné edice aktuálního kandidáta. */
     fun loadPrints() {
         val card = _state.value.candidate ?: return

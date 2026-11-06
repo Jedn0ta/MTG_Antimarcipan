@@ -17,11 +17,20 @@ data class DeckCardWithQty(
 @Dao
 interface CollectionDao {
 
-    @Query("SELECT * FROM collection_cards ORDER BY addedAt DESC")
+    @Query("SELECT * FROM collection_cards WHERE owned = 1 ORDER BY addedAt DESC")
     fun observeAll(): Flow<List<CollectionCard>>
+
+    @Query("SELECT * FROM collection_cards WHERE wishlist = 1 ORDER BY addedAt DESC")
+    fun observeWishlist(): Flow<List<CollectionCard>>
 
     @Query("SELECT * FROM collection_cards WHERE scryfallId = :id")
     suspend fun findById(id: String): CollectionCard?
+
+    @Query("UPDATE collection_cards SET owned = :owned WHERE scryfallId = :id")
+    suspend fun setOwned(id: String, owned: Boolean)
+
+    @Query("UPDATE collection_cards SET wishlist = :wish WHERE scryfallId = :id")
+    suspend fun setWishlist(id: String, wish: Boolean)
 
     @Upsert
     suspend fun upsert(card: CollectionCard)
@@ -35,7 +44,7 @@ interface CollectionDao {
     @Query("SELECT COUNT(*) FROM collection_cards")
     fun observeCount(): Flow<Int>
 
-    @Query("SELECT name FROM collection_cards")
+    @Query("SELECT name FROM collection_cards WHERE owned = 1")
     suspend fun allNames(): List<String>
 
     @Query("UPDATE collection_cards SET localImagePath = :path WHERE scryfallId = :id")

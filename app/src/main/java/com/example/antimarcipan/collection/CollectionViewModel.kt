@@ -41,6 +41,12 @@ class CollectionViewModel(
             CollectionFiltering.apply(cards, f)
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    /** Wishlist — po stejném filtru jako sbírka. */
+    val wishlist: StateFlow<List<CollectionCard>> =
+        combine(repo.wishlist, _filter) { cards, f ->
+            CollectionFiltering.apply(cards, f)
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
     /** Edice dostupné ve sbírce (pro filtr podle edice). */
     val availableSets: StateFlow<List<SetOption>> =
         repo.cards.map { list ->
@@ -108,6 +114,18 @@ class CollectionViewModel(
     fun addCardToDeck(deckId: Long, scryfallId: String, onDone: () -> Unit) {
         viewModelScope.launch {
             deckRepo.addCard(deckId, scryfallId)
+            onDone()
+        }
+    }
+
+    fun removeFromWishlist(scryfallId: String) {
+        viewModelScope.launch { repo.removeFromWishlist(scryfallId) }
+    }
+
+    /** Přesune wishlist kartu do sbírky (vlastním ji). */
+    fun wishlistToCollection(scryfallId: String, onDone: () -> Unit = {}) {
+        viewModelScope.launch {
+            repo.markOwned(scryfallId)
             onDone()
         }
     }

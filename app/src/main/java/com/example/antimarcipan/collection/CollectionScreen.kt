@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
@@ -111,22 +112,33 @@ fun CollectionScreen(
     var pendingDelete by remember { mutableStateOf<CollectionCard?>(null) }
     var pendingAddDeck by remember { mutableStateOf<CollectionCard?>(null) }
 
-    val totalQty = cards.sumOf { it.quantity }
-    val lands = cards.filter { isLandCard(it) }
-    val spells = cards.filter { !isLandCard(it) }
+    val wishlist by vm.wishlist.collectAsStateWithLifecycle()
+    var showWishlist by remember { mutableStateOf(false) }
+    val source = if (showWishlist) wishlist else cards
+    val totalQty = source.sumOf { it.quantity }
+    val lands = source.filter { isLandCard(it) }
+    val spells = source.filter { !isLandCard(it) }
 
     Column(Modifier.fillMaxSize()) {
-        // Souhrn + jedno tlačítko, pod kterým je hledání, zobrazení i filtry.
+        // Přepínač Sbírka / Wishlist + tlačítko s hledáním a filtry.
         Row(
-            Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp, top = 4.dp),
+            Modifier.fillMaxWidth().padding(start = 12.dp, end = 8.dp, top = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
         ) {
+            androidx.compose.material3.FilterChip(
+                selected = !showWishlist,
+                onClick = { showWishlist = false },
+                label = { Text("Sbírka") },
+            )
+            androidx.compose.material3.FilterChip(
+                selected = showWishlist,
+                onClick = { showWishlist = true },
+                label = { Text("Wishlist") },
+            )
+            Spacer(Modifier.weight(1f))
             Text(
-                buildString {
-                    append("$totalQty karet (${cards.size} unikátních)")
-                    if (filter.isActive || filter.query.isNotBlank()) append(" · filtrováno")
-                },
-                Modifier.weight(1f),
+                "$totalQty",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
             )
@@ -183,10 +195,26 @@ fun CollectionScreen(
 
         HorizontalDivider()
 
-        if (cards.isEmpty()) {
+        // Akce podle režimu: ve sbírce swipe = do balíku, dlouhé podržení = smazat;
+        // na wishlistu swipe = přesun do sbírky, dlouhé podržení = pryč z wishlistu.
+        val onSwipe: (CollectionCard) -> Unit = if (showWishlist) {
+            { card -> vm.wishlistToCollection(card.scryfallId) {
+                Toast.makeText(context, "„${card.name}“ přesunuto do sbírky", Toast.LENGTH_SHORT).show()
+            } }
+        } else {
+            { card -> pendingAddDeck = card }
+        }
+        val onDelete: (CollectionCard) -> Unit = if (showWishlist) {
+            { card -> vm.removeFromWishlist(card.scryfallId) }
+        } else {
+            { card -> pendingDelete = card }
+        }
+
+        if (source.isEmpty()) {
             EmptyState(
-                if (filter.isActive) "Nic nenalezeno" else "Zatím prázdno",
-                if (filter.isActive) "Zkus upravit filtry." else "Naskenuj první kartu v záložce Sken.",
+                if (showWishlist) "Wishlist je prázdný" else if (filter.isActive) "Nic nenalezeno" else "Zatím prázdno",
+                if (showWishlist) "Přidej karty na wishlist ze skenu nebo ručně."
+                else if (filter.isActive) "Zkus upravit filtry." else "Naskenuj první kartu v záložce Sken.",
             )
         } else if (gridMode) {
             androidx.compose.foundation.lazy.grid.LazyVerticalGrid(
@@ -201,22 +229,8 @@ fun CollectionScreen(
             }
         } else {
             LazyColumn(Modifier.weight(1f)) {
-                collectionListSection(
-                    title = "Land (${lands.size})",
-                    cards = lands,
-                    context = context,
-                    vm = vm,
-                    onAddDeck = { pendingAddDeck = it },
-                    onDelete = { pendingDelete = it },
-                )
-                collectionListSection(
-                    title = "Spell (${spells.size})",
-                    cards = spells,
-                    context = context,
-                    vm = vm,
-                    onAddDeck = { pendingAddDeck = it },
-                    onDelete = { pendingDelete = it },
-                )
+                collectionListSection("Land (${lands.size})", lands, context, vm, onSwipe, onDelete)
+                collectionListSection("Spell (${spells.size})", spells, context, vm, onSwipe, onDelete)
             }
         }
     }
@@ -263,13 +277,13 @@ private fun LazyListScope.collectionListSection(
     cards: List<CollectionCard>,
     context: android.content.Context,
     vm: CollectionViewModel,
-    onAddDeck: (CollectionCard) -> Unit,
+    onSwipe: (CollectionCard) -> Unit,
     onDelete: (CollectionCard) -> Unit,
 ) {
     if (cards.isEmpty()) return
     item(key = "h-$title") { SectionHeaderC(title) }
     items(cards, key = { it.scryfallId }) { card ->
-        SwipeToAddDeck(onRequestAddToDeck = { onAddDeck(card) }) {
+        SwipeToAddDeck(onRequestAddToDeck = { onSwipe(card) }) {
             CollectionRow(
                 card = card,
                 onLongDelete = { onDelete(card) },
