@@ -20,6 +20,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.example.antimarcipan.R
@@ -126,17 +127,22 @@ fun AntimarcipanApp() {
                                 }
                             },
                             icon = {
+                                // Pružné „vyskočení“ aktivní ikony
+                                val scale by androidx.compose.animation.core.animateFloatAsState(
+                                    targetValue = if (selected) 1.18f else 1f,
+                                    animationSpec = androidx.compose.animation.core.spring(
+                                        dampingRatio = 0.45f, stiffness = 380f,
+                                    ),
+                                    label = "navIconScale",
+                                )
+                                val iconMod = Modifier.size(24.dp).scale(scale)
                                 if (dest == Dest.Settings) {
-                                    Icon(
-                                        Icons.Filled.Settings,
-                                        contentDescription = dest.label,
-                                        modifier = Modifier.size(24.dp),
-                                    )
+                                    Icon(Icons.Filled.Settings, contentDescription = dest.label, modifier = iconMod)
                                 } else {
                                     Icon(
                                         painter = painterResource(dest.icon),
                                         contentDescription = dest.label,
-                                        modifier = Modifier.size(24.dp),
+                                        modifier = iconMod,
                                     )
                                 }
                             },
@@ -158,6 +164,16 @@ fun AntimarcipanApp() {
             navController = navController,
             startDestination = Dest.Scan.route,
             modifier = Modifier.padding(padding),
+            // Jemné prolnutí + lehký posun mezi obrazovkami
+            enterTransition = {
+                androidx.compose.animation.fadeIn(androidx.compose.animation.core.tween(260)) +
+                    androidx.compose.animation.scaleIn(
+                        androidx.compose.animation.core.tween(260), initialScale = 0.97f,
+                    )
+            },
+            exitTransition = { androidx.compose.animation.fadeOut(androidx.compose.animation.core.tween(180)) },
+            popEnterTransition = { androidx.compose.animation.fadeIn(androidx.compose.animation.core.tween(260)) },
+            popExitTransition = { androidx.compose.animation.fadeOut(androidx.compose.animation.core.tween(180)) },
         ) {
             composable(Dest.Scan.route) { ScanScreen() }
             composable(Dest.Collection.route) { CollectionScreen() }

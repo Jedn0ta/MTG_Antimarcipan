@@ -44,8 +44,8 @@ data class CollectionFilter(
     val cmcBuckets: Set<Int> = emptySet(),
     /** Vybrané edice (set kódy). Prázdné = všechny. */
     val sets: Set<String> = emptySet(),
-    val sortBy: SortBy = SortBy.ADDED,
-    val sortDesc: Boolean = true,
+    val sortBy: SortBy = SortBy.NAME,
+    val sortDesc: Boolean = false,
 ) {
     val isActive: Boolean
         get() = query.isNotBlank() || colors.isNotEmpty() || types.isNotEmpty() ||

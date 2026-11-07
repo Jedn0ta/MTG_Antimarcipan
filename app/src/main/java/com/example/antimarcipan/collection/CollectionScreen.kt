@@ -38,6 +38,7 @@ import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
@@ -116,8 +117,10 @@ fun CollectionScreen(
     var showWishlist by remember { mutableStateOf(false) }
     val source = if (showWishlist) wishlist else cards
     val totalQty = source.sumOf { it.quantity }
-    val lands = source.filter { isLandCard(it) }
-    val spells = source.filter { !isLandCard(it) }
+    var section by remember { mutableStateOf(0) } // 0 = Vše, 1 = Land, 2 = Spell
+    var showSortMenu by remember { mutableStateOf(false) }
+    val lands = if (section == 2) emptyList() else source.filter { isLandCard(it) }
+    val spells = if (section == 1) emptyList() else source.filter { !isLandCard(it) }
 
     Column(Modifier.fillMaxSize()) {
         // Přepínač Sbírka / Wishlist + tlačítko s hledáním a filtry.
@@ -189,7 +192,46 @@ fun CollectionScreen(
                     }
                 }
                 AdvancedFilters(filter, vm, sets)
-                SortRow(filter, vm)
+            }
+        }
+
+        // Sekce + řazení na jednom řádku
+        Row(
+            Modifier.fillMaxWidth().padding(start = 12.dp, end = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            listOf("Vše", "Land", "Spell").forEachIndexed { i, label ->
+                androidx.compose.material3.FilterChip(
+                    selected = section == i,
+                    onClick = { section = i },
+                    label = { Text(label) },
+                )
+            }
+            Spacer(Modifier.weight(1f))
+            Box {
+                androidx.compose.material3.TextButton(onClick = { showSortMenu = true }) {
+                    Icon(Icons.AutoMirrored.Filled.Sort, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Text(" " + filter.sortBy.label + if (filter.sortDesc) " ↓" else " ↑")
+                }
+                androidx.compose.material3.DropdownMenu(
+                    expanded = showSortMenu,
+                    onDismissRequest = { showSortMenu = false },
+                ) {
+                    SortBy.entries.forEach { s ->
+                        val active = filter.sortBy == s
+                        androidx.compose.material3.DropdownMenuItem(
+                            text = {
+                                Text(
+                                    s.label + if (active) (if (filter.sortDesc) "  ↓" else "  ↑") else "",
+                                    color = if (active) MaterialTheme.colorScheme.primary
+                                    else MaterialTheme.colorScheme.onSurface,
+                                )
+                            },
+                            onClick = { vm.setSort(s); if (!active) showSortMenu = false },
+                        )
+                    }
+                }
             }
         }
 
@@ -289,24 +331,26 @@ private fun LazyListScope.collectionListSection(
     if (cards.isEmpty()) return
     item(key = "h-$title") { SectionHeaderC(title) }
     items(cards, key = { it.scryfallId }) { card ->
-        SwipeToAddDeck(onRequestAddToDeck = { onSwipe(card) }) {
-            CollectionRow(
-                card = card,
-                onLongDelete = { onDelete(card) },
-                loadRulings = { vm.rulingsFor(it) },
-                onOpenGatherer = {
-                    runCatching {
-                        context.startActivity(
-                            android.content.Intent(
-                                android.content.Intent.ACTION_VIEW,
-                                android.net.Uri.parse(card.gathererLink()),
-                            ).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
-                        )
-                    }
-                },
-            )
+        Column(Modifier.animateItem()) {
+            SwipeToAddDeck(onRequestAddToDeck = { onSwipe(card) }) {
+                CollectionRow(
+                    card = card,
+                    onLongDelete = { onDelete(card) },
+                    loadRulings = { vm.rulingsFor(it) },
+                    onOpenGatherer = {
+                        runCatching {
+                            context.startActivity(
+                                android.content.Intent(
+                                    android.content.Intent.ACTION_VIEW,
+                                    android.net.Uri.parse(card.gathererLink()),
+                                ).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                            )
+                        }
+                    },
+                )
+            }
+            HorizontalDivider()
         }
-        HorizontalDivider()
     }
 }
 
@@ -314,7 +358,7 @@ private fun LazyGridScope.collectionGridSection(title: String, cards: List<Colle
     if (cards.isEmpty()) return
     item(span = { GridItemSpan(maxLineSpan) }, key = "gh-$title") { SectionHeaderC(title) }
     items(cards, key = { it.scryfallId }) { card ->
-        Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+        Box(Modifier.fillMaxWidth().animateItem(), contentAlignment = Alignment.Center) {
             com.example.antimarcipan.ui.InteractiveThumb(card, width = 88.dp, height = 123.dp)
         }
     }
@@ -425,16 +469,28 @@ private fun SwipeToAddDeck(
     val dismissState = rememberSwipeToDismissBoxState(
         confirmValueChange = { value ->
             if (value == SwipeToDismissBoxValue.StartToEnd) onRequestAddToDeck()
-            false // nemizí — jen vyvolá výběr balíku
+            false // nemizí — jen vyvolá akci
         },
+        // Akce se spustí až když levý okraj karty přejede přes polovinu displeje.
+        positionalThreshold = { totalDistance -> totalDistance * 0.5f },
     )
     SwipeToDismissBox(
         state = dismissState,
         enableDismissFromEndToStart = false,
         backgroundContent = {
-            Box(Modifier.fillMaxWidth().padding(horizontal = 20.dp), contentAlignment = Alignment.CenterStart) {
-                Icon(Icons.Filled.Add, contentDescription = null, tint = Color(0xFF2E9E5B))
-            }
+            // Jemná zpětná vazba: zlatý přechod sílí s tahem, bez ikon.
+            val p = dismissState.progress.coerceIn(0f, 1f)
+            val armed = dismissState.targetValue == SwipeToDismissBoxValue.StartToEnd
+            Box(
+                Modifier.fillMaxSize().background(
+                    androidx.compose.ui.graphics.Brush.horizontalGradient(
+                        listOf(
+                            MaterialTheme.colorScheme.primary.copy(alpha = if (armed) 0.35f else 0.12f * p),
+                            Color.Transparent,
+                        )
+                    )
+                )
+            )
         },
         content = { content() },
     )
