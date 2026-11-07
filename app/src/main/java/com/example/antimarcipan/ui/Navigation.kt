@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -43,6 +44,7 @@ import com.example.antimarcipan.synergy.SynergyScreen
 
 private const val SETTINGS_ROUTE = "settings"
 private const val MANUAL_ROUTE = "manual_add"
+private const val LIFE_ROUTE = "life_counter"
 
 private enum class Dest(
     val route: String,
@@ -69,10 +71,12 @@ fun AntimarcipanApp() {
     val current = backStack?.destination
     val route = current?.route
     val onManual = route == MANUAL_ROUTE
-    val isSubScreen = onManual
+    val onLife = route == LIFE_ROUTE
+    val isSubScreen = onManual || onLife
 
     val title = when {
         onManual -> "Přidat ručně"
+        onLife -> "Počítadlo životů"
         else -> Dest.entries.firstOrNull { d ->
             current?.hierarchy?.any { it.route == d.route } == true
         }?.label ?: "Antimarcipán"
@@ -113,6 +117,9 @@ fun AntimarcipanApp() {
                 },
                 actions = {
                     if (!isSubScreen) {
+                        IconButton(onClick = { navController.navigate(LIFE_ROUTE) { launchSingleTop = true } }) {
+                            Icon(Icons.Filled.Favorite, contentDescription = "Počítadlo životů")
+                        }
                         IconButton(onClick = { navController.navigate(MANUAL_ROUTE) }) {
                             Icon(Icons.Filled.Add, contentDescription = "Přidat ručně")
                         }
@@ -211,6 +218,7 @@ fun AntimarcipanApp() {
             composable(Dest.Synergy.route) { SynergyScreen() }
             composable(Dest.Settings.route) { SettingsScreen() }
             composable(MANUAL_ROUTE) { ManualAddScreen() }
+            composable(LIFE_ROUTE) { com.example.antimarcipan.life.LifeCounterScreen() }
         }
     }
 }
