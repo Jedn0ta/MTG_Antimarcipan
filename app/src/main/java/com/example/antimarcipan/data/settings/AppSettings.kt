@@ -77,6 +77,15 @@ class AppSettings(context: Context) {
         _background.value = bg
     }
 
+    // API klíč pro kvalitní AI překlad pravidel (Claude). Prázdný = offline překlad.
+    private val _aiKey = MutableStateFlow(prefs.getString(KEY_AI_KEY, "") ?: "")
+    val aiKey: StateFlow<String> = _aiKey.asStateFlow()
+
+    fun setAiKey(key: String) {
+        prefs.edit().putString(KEY_AI_KEY, key.trim()).apply()
+        _aiKey.value = key.trim()
+    }
+
     fun setCollectionGrid(on: Boolean) {
         prefs.edit().putBoolean(KEY_COLLECTION_GRID, on).apply()
         _collectionGrid.value = on
@@ -106,5 +115,6 @@ class AppSettings(context: Context) {
         const val KEY_COLLECTION_GRID = "collection_grid"
         const val KEY_DECK_GRID = "deck_grid"
         const val KEY_DECK_SECTION = "deck_section"
+        const val KEY_AI_KEY = "ai_translate_key"
     }
 }

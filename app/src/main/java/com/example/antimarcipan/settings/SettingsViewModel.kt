@@ -45,6 +45,11 @@ class SettingsViewModel(
 
     fun setBackground(bg: AppBackground) = settings.setBackground(bg)
 
+    /** API klíč pro AI překlad pravidel. */
+    val aiKey: StateFlow<String> = settings.aiKey
+
+    fun setAiKey(key: String) = settings.setAiKey(key)
+
     fun suggestedBackupName(): String = backup.suggestedFileName()
 
     fun exportBackup(uri: Uri, onResult: (String) -> Unit) {
