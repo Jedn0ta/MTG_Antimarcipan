@@ -71,9 +71,13 @@ class DeckViewModel(
 
     fun closeDeck() { selectedDeckId.value = null }
 
-    fun createDeck(name: String, format: DeckFormat = DeckFormat.FREEFORM, colors: String? = null) {
+    fun setPoolSet(deckId: Long, set: String?) {
+        viewModelScope.launch { deckRepo.setPoolSet(deckId, set) }
+    }
+
+    fun createDeck(name: String, format: DeckFormat = DeckFormat.FREEFORM, colors: String? = null, poolSet: String? = null) {
         viewModelScope.launch {
-            val id = deckRepo.createDeck(name.ifBlank { "Nový balík" }, format.code, colors)
+            val id = deckRepo.createDeck(name.ifBlank { "Nový balík" }, format.code, colors, poolSet)
             selectedDeckId.value = id
         }
     }

@@ -5,13 +5,39 @@ import com.example.antimarcipan.data.local.CollectionCard
 enum class DeckFormat(val code: String, val label: String) {
     COMMANDER("COMMANDER", "Commander"),
     SINGLETON("SINGLETON", "Jednokarťák"),
+    STANDARD("STANDARD", "Standard"),
+    DRAFT("DRAFT", "Draft"),
+    SEALED("SEALED", "Sealed deck"),
     FREEFORM("FREEFORM", "Volný");
 
     /** Minimální počet karet pro formát (0 = bez omezení). */
     val minCards: Int
         get() = when (this) {
             COMMANDER, SINGLETON -> 100
+            STANDARD -> 60
+            DRAFT, SEALED -> 40
             FREEFORM -> 0
+        }
+
+    /** Max. kopií jedné nezákladní karty (0 = bez omezení). */
+    val maxCopies: Int
+        get() = when (this) {
+            COMMANDER, SINGLETON -> 1
+            STANDARD -> 4
+            else -> 0 // limited: kolik máš v poolu, tolik smíš
+        }
+
+    /** Limited formát — balík se staví z otevřených boosterů (poolu). */
+    val isLimited: Boolean get() = this == DRAFT || this == SEALED
+
+    val rules: String
+        get() = when (this) {
+            COMMANDER -> "100 karet, singleton, 1 velitel"
+            SINGLETON -> "jednokarťák: 100+ karet, singleton, bez velitele"
+            STANDARD -> "min. 60 karet, max. 4 kopie, jen karty z aktuálních edic Standardu"
+            DRAFT -> "limited: 3 boostery, výběr karet po jedné, balík min. 40 karet"
+            SEALED -> "limited: 6 boosterů do poolu, balík min. 40 karet"
+            FREEFORM -> "bez omezení"
         }
 
     companion object {
@@ -40,19 +66,19 @@ object DeckRules {
         cards: List<CollectionCard>,
         hasCommander: Boolean,
     ): DeckLegality {
-        val total = cards.size
-        val dups = DeckDuplicates.duplicateNames(cards)
-        val minCards = when (format) {
-            DeckFormat.COMMANDER -> 100
-            DeckFormat.SINGLETON -> 100
-            DeckFormat.FREEFORM -> 0
+        val dups = when (format.maxCopies) {
+            0 -> emptyList()
+            1 -> DeckDuplicates.duplicateNames(cards)
+            else -> cards.filter { !LimitedAdvisor.isBasic(it) }
+                .groupBy { it.name.lowercase() }
+                .filter { it.value.size > format.maxCopies }
+                .map { it.value.first().name }
         }
-        val singletonFormat = format == DeckFormat.COMMANDER || format == DeckFormat.SINGLETON
         return DeckLegality(
             format = format,
-            totalCards = total,
-            minCards = minCards,
-            duplicates = if (singletonFormat) dups else emptyList(),
+            totalCards = cards.size,
+            minCards = format.minCards,
+            duplicates = dups,
             needsCommander = format == DeckFormat.COMMANDER,
             hasCommander = hasCommander,
         )

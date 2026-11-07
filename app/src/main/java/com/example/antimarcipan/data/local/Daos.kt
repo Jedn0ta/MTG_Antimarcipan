@@ -91,6 +91,9 @@ interface DeckDao {
     @Query("UPDATE decks SET colors = :colors WHERE id = :deckId")
     suspend fun setColors(deckId: Long, colors: String?)
 
+    @Query("UPDATE decks SET poolSet = :set WHERE id = :deckId")
+    suspend fun setPoolSet(deckId: Long, set: String?)
+
     @Query("UPDATE decks SET format = :format WHERE id = :deckId")
     suspend fun setFormat(deckId: Long, format: String)
 

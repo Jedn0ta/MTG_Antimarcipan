@@ -49,6 +49,8 @@ data class Deck(
     val colors: String? = null,
     /** Formát: COMMANDER, SINGLETON (jednokarťák), FREEFORM. */
     val format: String = "FREEFORM",
+    /** Limited (draft/sealed): kód edice, ze které je pool karet. */
+    val poolSet: String? = null,
     val createdAt: Long = System.currentTimeMillis(),
 )
 

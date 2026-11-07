@@ -51,6 +51,9 @@ import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.AllInclusive
 import androidx.compose.material.icons.filled.LooksOne
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.EmojiEvents
+import androidx.compose.material.icons.filled.SwapHoriz
+import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.Style
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.Warning
@@ -434,7 +437,24 @@ private fun DeckDetailView(vm: DeckViewModel, deck: Deck) {
                 ?.let { vm.setDeckCardQty(deck.id, it.card.scryfallId, it.deckQuantity - 1) }
         }
 
+        val collectionAll = collection
+        val applyLimitedLands: (Map<String, Int>) -> Unit = { split ->
+            // vynulovat basicy, které v rozpisu nejsou, ostatní nastavit
+            deckCards.filter { isBasicLand(it.card) && basicBaseName(it.card.name) !in split.keys }
+                .forEach { vm.setDeckCardQty(deck.id, it.card.scryfallId, 0) }
+            vm.addBasicLands(deck.id, split)
+        }
+
         if (gridMode) {
+            if (format.isLimited) LimitedAdvisorPanel(
+                format = format,
+                deckCards = flatCards,
+                collection = collectionAll,
+                poolSet = deck.poolSet,
+                onPickSet = { vm.setPoolSet(deck.id, it) },
+                onAddCard = { vm.addCard(it) },
+                onApplyLands = applyLimitedLands,
+            )
             if (showBasicPanel) BasicLandPanel(basicCounts, onBasicInc, onBasicDec)
             DeckGrid(
                 lands = lands,
@@ -455,6 +475,17 @@ private fun DeckDetailView(vm: DeckViewModel, deck: Deck) {
                 }
             }
 
+            if (format.isLimited) item {
+                LimitedAdvisorPanel(
+                    format = format,
+                    deckCards = flatCards,
+                    collection = collectionAll,
+                    poolSet = deck.poolSet,
+                    onPickSet = { vm.setPoolSet(deck.id, it) },
+                    onAddCard = { vm.addCard(it) },
+                    onApplyLands = applyLimitedLands,
+                )
+            }
             if (showBasicPanel) {
                 val landTotal = lands.sumOf { it.deckQuantity } + basicCounts.values.sum()
                 item { SectionHeader("Land ($landTotal)") }
@@ -648,6 +679,9 @@ private fun formatIcon(format: DeckFormat): androidx.compose.ui.graphics.vector.
     when (format) {
         DeckFormat.COMMANDER -> Icons.Filled.Star
         DeckFormat.SINGLETON -> Icons.Filled.LooksOne
+        DeckFormat.STANDARD -> Icons.Filled.EmojiEvents
+        DeckFormat.DRAFT -> Icons.Filled.SwapHoriz
+        DeckFormat.SEALED -> Icons.Filled.Inventory2
         DeckFormat.FREEFORM -> Icons.Filled.AllInclusive
     }
 
@@ -1024,10 +1058,7 @@ private fun DeckEntryRow(
 /** Minimální info: kolik karet ještě doplnit do minimálního počtu. */
 @Composable
 private fun DeckNeed(format: DeckFormat, total: Int) {
-    val min = when (format) {
-        DeckFormat.COMMANDER, DeckFormat.SINGLETON -> 100
-        DeckFormat.FREEFORM -> 0
-    }
+    val min = format.minCards
     if (min == 0) {
         Text("$total", style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f))
@@ -1121,11 +1152,7 @@ private fun FormatDialog(
                         Column {
                             Text(f.label, style = MaterialTheme.typography.bodyLarge)
                             Text(
-                                when (f) {
-                                    DeckFormat.COMMANDER -> "100 karet, singleton, 1 velitel"
-                                    DeckFormat.SINGLETON -> "jednokarťák: 100+ karet, singleton, bez velitele"
-                                    DeckFormat.FREEFORM -> "bez omezení"
-                                },
+                                f.rules,
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                             )
@@ -1144,6 +1171,8 @@ private fun NewDeckDialog(
     onDismiss: () -> Unit,
     onConfirm: (String, DeckFormat, String?) -> Unit,
 ) {
+    var guideFor by remember { mutableStateOf<DeckFormat?>(null) }
+    guideFor?.let { LimitedGuideDialog(it) { guideFor = null } }
     var name by remember { mutableStateOf("") }
     var format by remember { mutableStateOf(DeckFormat.SINGLETON) }
     val colors = remember { androidx.compose.runtime.mutableStateListOf<String>() }
@@ -1169,8 +1198,23 @@ private fun NewDeckDialog(
                             selected = f == format,
                             onClick = { format = f },
                         )
-                        Text(f.label)
+                        Column {
+                            Text(f.label)
+                            Text(f.rules, style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
+                        }
                     }
+                }
+                if (format.isLimited) {
+                    Text(
+                        if (format == DeckFormat.SEALED)
+                            "Sealed: otevři 6 boosterů, karty naskenuj do sbírky a v balíku vyber edici poolu. Rádce v balíku pak doporučí barvy, nejlepší karty a rozpis 17 zemí."
+                        else
+                            "Draft: z každého boosteru si vybereš 1 kartu a zbytek posíláš dál. Po draftu karty naskenuj, v balíku vyber edici poolu a rádce pomůže se stavbou.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                    TextButton(onClick = { guideFor = format }) { Text("Jak se ${format.label} hraje a staví") }
                 }
                 Text("Barvy balíku", style = MaterialTheme.typography.labelMedium)
                 ColorPicker(colors.toSet()) { c ->
