@@ -2,6 +2,7 @@ package com.example.antimarcipan.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.rotate
