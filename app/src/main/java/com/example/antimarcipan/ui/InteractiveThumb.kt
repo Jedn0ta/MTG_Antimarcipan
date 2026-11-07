@@ -23,6 +23,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.foundation.border
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
@@ -117,7 +119,10 @@ private fun FullCardDialog(model: Any, onDismiss: () -> Unit) {
             modifier = Modifier
                 .fillMaxWidth()
                 .heightIn(max = 560.dp)
-                .padding(8.dp),
+                .padding(8.dp)
+                .border(2.dp, GoldBorderBrush, androidx.compose.foundation.shape.RoundedCornerShape(18.dp))
+                .padding(4.dp)
+                .clip(androidx.compose.foundation.shape.RoundedCornerShape(14.dp)),
         )
     }
 }
