@@ -41,6 +41,12 @@ class CollectionViewModel(
             CollectionFiltering.apply(cards, f)
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    /** Draft — nezařazené (rozpracované) karty. */
+    val drafts: StateFlow<List<CollectionCard>> =
+        combine(repo.unsorted, _filter) { cards, f ->
+            CollectionFiltering.apply(cards, f)
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
     /** Wishlist — po stejném filtru jako sbírka. */
     val wishlist: StateFlow<List<CollectionCard>> =
         combine(repo.wishlist, _filter) { cards, f ->

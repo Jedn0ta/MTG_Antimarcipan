@@ -259,6 +259,8 @@ private fun DeckDetailView(vm: DeckViewModel, deck: Deck) {
     val deckCards by vm.selectedDeckCards.collectAsStateWithLifecycle()
     val collection by vm.collection.collectAsStateWithLifecycle()
     val poolRows by vm.selectedDeckPool.collectAsStateWithLifecycle()
+    val poolScanStatus by vm.poolScanStatus.collectAsStateWithLifecycle()
+    val poolScanBusy by vm.poolScanBusy.collectAsStateWithLifecycle()
 
     val settings = remember { (context.applicationContext as com.example.antimarcipan.MtgApp).container.appSettings }
     val gridMode by settings.deckGrid.collectAsStateWithLifecycle()
@@ -457,7 +459,9 @@ private fun DeckDetailView(vm: DeckViewModel, deck: Deck) {
                 deckCards = flatCards,
                 pool = poolCards,
                 poolImported = deck.poolImported,
-                onScanPool = { vm.startPoolScan(deck.id, deck.name) },
+                scanStatus = poolScanStatus,
+                scanBusy = poolScanBusy,
+                onPhoto = { vm.scanPoolPhoto(deck.id, context, it) },
                 onImportPool = { vm.importPoolToCollection(deck.id) },
                 onAddCard = addFromPool,
                 onApplyLands = applyLimitedLands,
@@ -488,7 +492,9 @@ private fun DeckDetailView(vm: DeckViewModel, deck: Deck) {
                     deckCards = flatCards,
                     pool = poolCards,
                     poolImported = deck.poolImported,
-                    onScanPool = { vm.startPoolScan(deck.id, deck.name) },
+                    scanStatus = poolScanStatus,
+                    scanBusy = poolScanBusy,
+                    onPhoto = { vm.scanPoolPhoto(deck.id, context, it) },
                     onImportPool = { vm.importPoolToCollection(deck.id) },
                     onAddCard = addFromPool,
                     onApplyLands = applyLimitedLands,
@@ -563,7 +569,7 @@ private fun DeckDetailView(vm: DeckViewModel, deck: Deck) {
                 item { SectionHeader("Pool (${poolRows.sumOf { it.deckQuantity }})") }
                 if (poolRows.isEmpty()) item {
                     Text(
-                        "Pool je prázdný. V rádci ťukni na „Skenovat pool“ a naskenuj karty z boosterů.",
+                        "Pool je prázdný. V rádci nahoře ťukni na „Vyfotit karty“ a vyfoť karty z boosterů.",
                         Modifier.padding(16.dp), style = MaterialTheme.typography.bodySmall,
                     )
                 }
@@ -1243,9 +1249,9 @@ private fun NewDeckDialog(
                 if (format.isLimited) {
                     Text(
                         if (format == DeckFormat.SEALED)
-                            "Sealed: otevři 6 boosterů a v balíku přes „Skenovat pool“ naskenuj karty do poolu (ne do sbírky). Rádce v balíku pak doporučí barvy, nejlepší karty a rozpis 17 zemí."
+                            "Sealed: otevři 6 boosterů a v balíku je přes „Vyfotit karty“ vyfoť do poolu (ne do sbírky). Rádce v balíku pak doporučí barvy, nejlepší karty a rozpis 17 zemí."
                         else
-                            "Draft: z každého boosteru si vybereš 1 kartu a zbytek posíláš dál. Vydraftované karty naskenuj v balíku přes „Skenovat pool“, rádce pomůže se stavbou. Do sbírky je přidáš hromadně až na konci.",
+                            "Draft: z každého boosteru si vybereš 1 kartu a zbytek posíláš dál. Vydraftované karty vyfoť přímo v balíku přes „Vyfotit karty“, rádce pomůže se stavbou. Do sbírky je přidáš hromadně až na konci.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.primary,
                     )

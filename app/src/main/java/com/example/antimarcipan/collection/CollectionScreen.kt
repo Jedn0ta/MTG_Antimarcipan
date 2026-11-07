@@ -117,9 +117,12 @@ fun CollectionScreen(
     var pendingEdition by remember { mutableStateOf<CollectionCard?>(null) }
 
     val wishlist by vm.wishlist.collectAsStateWithLifecycle()
-    var showWishlist by remember { mutableStateOf(false) }
+    val drafts by vm.drafts.collectAsStateWithLifecycle()
+    var tab by remember { mutableStateOf(0) } // 0 sbírka, 1 wishlist, 2 draft
+    val showWishlist = tab == 1
+    val showDraft = tab == 2
     val fstate by vm.cardFilter.collectAsStateWithLifecycle()
-    val base = if (showWishlist) wishlist else cards
+    val base = when (tab) { 1 -> wishlist; 2 -> drafts; else -> cards }
     val filterOptions = remember(base) { com.example.antimarcipan.ui.filter.buildFilterOptions(base) }
     val source = remember(base, fstate) { base.filter { fstate.matches(it) } }
     val totalQty = source.sumOf { it.quantity }
@@ -136,14 +139,19 @@ fun CollectionScreen(
             horizontalArrangement = Arrangement.spacedBy(6.dp),
         ) {
             androidx.compose.material3.FilterChip(
-                selected = !showWishlist,
-                onClick = { showWishlist = false },
+                selected = tab == 0,
+                onClick = { tab = 0 },
                 label = { Text("Sbírka") },
             )
             androidx.compose.material3.FilterChip(
-                selected = showWishlist,
-                onClick = { showWishlist = true },
+                selected = tab == 1,
+                onClick = { tab = 1 },
                 label = { Text("Wishlist") },
+            )
+            androidx.compose.material3.FilterChip(
+                selected = tab == 2,
+                onClick = { tab = 2 },
+                label = { Text("Draft") },
             )
             Spacer(Modifier.weight(1f))
             Text(
@@ -228,14 +236,16 @@ fun CollectionScreen(
 
         // Akce podle režimu: ve sbírce swipe = do balíku, dlouhé podržení = smazat;
         // na wishlistu swipe = přesun do sbírky, dlouhé podržení = pryč z wishlistu.
-        val onSwipe: (CollectionCard) -> Unit = if (showWishlist) {
+        val onSwipe: (CollectionCard) -> Unit = if (showWishlist || showDraft) {
             { card -> vm.wishlistToCollection(card.scryfallId) {
                 Toast.makeText(context, "„${card.name}“ přesunuto do sbírky", Toast.LENGTH_SHORT).show()
             } }
         } else {
             { card -> pendingAddDeck = card }
         }
-        val onDelete: (CollectionCard) -> Unit = if (showWishlist) {
+        val onDelete: (CollectionCard) -> Unit = if (showDraft) {
+            { card -> pendingDelete = card }
+        } else if (showWishlist) {
             { card -> vm.removeFromWishlist(card.scryfallId) }
         } else {
             { card -> pendingDelete = card }
@@ -243,8 +253,10 @@ fun CollectionScreen(
 
         if (source.isEmpty()) {
             EmptyState(
-                if (showWishlist && !fstate.isActive) "Wishlist je prázdný" else if (fstate.isActive) "Nic nenalezeno" else "Zatím prázdno",
-                if (showWishlist) "Přidej karty na wishlist ze skenu nebo ručně."
+                if (showDraft && !fstate.isActive) "Žádné rozpracované karty"
+                else if (showWishlist && !fstate.isActive) "Wishlist je prázdný" else if (fstate.isActive) "Nic nenalezeno" else "Zatím prázdno",
+                if (showDraft) "Sem patří karty naskenované do poolu draftu / sealed balíku, dokud je nepřidáš do sbírky."
+                else if (showWishlist) "Přidej karty na wishlist ze skenu nebo ručně."
                 else if (fstate.isActive) "Zkus upravit filtr." else "Naskenuj první kartu v záložce Sken.",
             )
         } else if (gridMode) {

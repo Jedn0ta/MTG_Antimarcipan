@@ -20,6 +20,9 @@ interface CollectionDao {
     @Query("SELECT * FROM collection_cards WHERE owned = 1 ORDER BY addedAt DESC")
     fun observeAll(): Flow<List<CollectionCard>>
 
+    @Query("SELECT * FROM collection_cards WHERE owned = 0 AND wishlist = 0 ORDER BY addedAt DESC")
+    fun observeUnsorted(): Flow<List<CollectionCard>>
+
     @Query("SELECT * FROM collection_cards WHERE wishlist = 1 ORDER BY addedAt DESC")
     fun observeWishlist(): Flow<List<CollectionCard>>
 

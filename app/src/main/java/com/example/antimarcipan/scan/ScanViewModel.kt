@@ -156,91 +156,33 @@ class ScanViewModel(
         if (_state.value.capturing) return
         _state.value = _state.value.copy(capturing = true, status = "Fotka pořízena · čtu text…")
         viewModelScope.launch {
-            val lines = runCatching { recognizeLines(context, uri) }.getOrElse {
+            val cards = runCatching {
+                PhotoCardRecognizer(repo).recognize(context, uri) { d, t, f ->
+                    _state.value = _state.value.copy(status = "Hledám karty $d/$t… (nalezeno $f)")
+                }
+            }.getOrElse {
                 _state.value = _state.value.copy(capturing = false, status = "Fotku se nepodařilo načíst — zkus to znovu")
                 return@launch
             }
-            val candidates = pickNameLines(lines)
-            if (candidates.isEmpty()) {
+            val rescan = _state.value.rescanSlot
+            if (rescan != null && cards.isNotEmpty()) {
+                val card = cards.first()
                 _state.value = _state.value.copy(
-                    capturing = false,
-                    status = "Na fotce jsem nenašel žádné názvy — přisviť a vyfoť karty zblízka a rovně",
+                    pending = _state.value.pending.map { if (it.slotId == rescan) it.copy(card = card) else it },
+                    rescanSlot = null, capturing = false, status = "Opraveno na „${card.name}“",
                 )
                 return@launch
             }
-            val rescan = _state.value.rescanSlot
-            val existing = _state.value.pending.map { it.card.name.lowercase() }.toMutableSet()
-            var added = 0
-            candidates.forEachIndexed { i, name ->
-                _state.value = _state.value.copy(status = "Hledám karty ${i + 1}/${candidates.size}… (přidáno $added)")
-                val card = repo.lookup(name).getOrNull() ?: return@forEachIndexed
-                if (!similarName(name, card.name)) return@forEachIndexed
-                if (rescan != null) {
-                    _state.value = _state.value.copy(
-                        pending = _state.value.pending.map { if (it.slotId == rescan) it.copy(card = card) else it },
-                        rescanSlot = null, capturing = false, status = "Opraveno na „${card.name}“",
-                    )
-                    return@launch
-                }
-                if (card.name.lowercase() in existing) return@forEachIndexed
-                existing += card.name.lowercase()
-                _state.value = _state.value.copy(pending = _state.value.pending + PendingScan(nextSlot++, card))
-                added++
-            }
+            // Každá nalezená karta jednou (podle tisku); stejné jméno víckrát = víc kusů.
+            val unique = cards
+            unique.forEach { c -> _state.value = _state.value.copy(pending = _state.value.pending + PendingScan(nextSlot++, c)) }
             _state.value = _state.value.copy(
                 capturing = false,
                 rescanSlot = null,
-                status = if (added > 0) "Hotovo: rozpoznáno $added karet · celkem ${_state.value.pending.size} k potvrzení"
+                status = if (unique.isNotEmpty()) "Hotovo: rozpoznáno ${unique.size} karet · celkem ${_state.value.pending.size} k potvrzení"
                 else "Žádnou kartu se nepodařilo rozpoznat — zkus ostřejší fotku",
             )
         }
-    }
-
-    private data class OcrLine(val text: String, val height: Int, val top: Int, val left: Int)
-
-    private suspend fun recognizeLines(context: android.content.Context, uri: android.net.Uri): List<OcrLine> =
-        kotlin.coroutines.suspendCoroutine { cont ->
-            val image = com.google.mlkit.vision.common.InputImage.fromFilePath(context, uri)
-            com.google.mlkit.vision.text.TextRecognition
-                .getClient(com.google.mlkit.vision.text.latin.TextRecognizerOptions.DEFAULT_OPTIONS)
-                .process(image)
-                .addOnSuccessListener { r ->
-                    cont.resumeWith(Result.success(r.textBlocks.flatMap { b ->
-                        b.lines.map { l ->
-                            val box = l.boundingBox
-                            OcrLine(l.text, box?.height() ?: 0, box?.top ?: 0, box?.left ?: 0)
-                        }
-                    }))
-                }
-                .addOnFailureListener { cont.resumeWith(Result.failure(it)) }
-        }
-
-    /** Názvy karet jsou tučné a větší než pravidlový text — bereme vyšší řádky. */
-    private fun pickNameLines(lines: List<OcrLine>): List<String> {
-        val plausible = lines.filter { candidateNames(listOf(it.text)).isNotEmpty() }
-        if (plausible.isEmpty()) return emptyList()
-        val heights = lines.map { it.height }.sorted()
-        val median = heights[heights.size / 2].coerceAtLeast(1)
-        val big = plausible.filter { it.height >= median * 1.05 }.ifEmpty { plausible }
-        return candidateNames(big.sortedWith(compareBy({ it.top / (median * 4) }, { it.left })).map { it.text })
-    }
-
-    private fun similarName(query: String, found: String): Boolean {
-        val q = query.lowercase().filter { it.isLetter() }
-        val f = found.lowercase().substringBefore(" //").filter { it.isLetter() }
-        if (q.isEmpty() || f.isEmpty()) return false
-        if (f.startsWith(q) || q.startsWith(f) || f.contains(q)) return true
-        // Levenshtein
-        val d = IntArray(f.length + 1) { it }
-        for (i in 1..q.length) {
-            var prev = d[0]; d[0] = i
-            for (j in 1..f.length) {
-                val tmp = d[j]
-                d[j] = minOf(d[j] + 1, d[j - 1] + 1, prev + if (q[i - 1] == f[j - 1]) 0 else 1)
-                prev = tmp
-            }
-        }
-        return d[f.length] <= maxOf(2, f.length / 4)
     }
 
     /** Z řádků OCR vybere věrohodné názvy karet (horní řádek každé karty). */

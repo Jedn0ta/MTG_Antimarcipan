@@ -151,6 +151,9 @@ class CollectionRepository(
         card.id
     }.getOrNull()
 
+    /** Nezařazené karty (draft / rozpracované, např. pool limited balíku). */
+    val unsorted: Flow<List<CollectionCard>> = dao.observeUnsorted()
+
     /** Karty na wishlistu (chci je). */
     val wishlist: Flow<List<CollectionCard>> = dao.observeWishlist()
 
@@ -169,9 +172,13 @@ class CollectionRepository(
 
     /** Uloží kartu jako „nezařazenou“ (není ve sbírce ani na wishlistu) — např. pool draftu. */
     suspend fun ensureUnsorted(card: ScryfallCard) {
-        if (dao.findById(card.id) != null) return
+        val e = dao.findById(card.id)
+        if (e != null) {
+            if (!e.owned && !e.wishlist) dao.bumpQuantity(card.id, 1)
+            return
+        }
         val local = card.bestImageUrl?.let { downloadImage(it, card.id) }
-        dao.upsert(card.toCollectionCard().copy(localImagePath = local, owned = false, wishlist = false, quantity = 0))
+        dao.upsert(card.toCollectionCard().copy(localImagePath = local, owned = false, wishlist = false, quantity = 1))
     }
 
     /** Přidá [qty] kusů karty do sbírky (nezařazená → vlastněná). */

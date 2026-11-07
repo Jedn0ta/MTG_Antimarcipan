@@ -57,9 +57,34 @@ class DeckViewModel(
             .flatMapLatest { id -> if (id == null) flowOf(emptyList()) else deckRepo.pool(id) }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    fun startPoolScan(deckId: Long, name: String) {
-        com.example.antimarcipan.scan.PoolScanTarget.target.value =
-            com.example.antimarcipan.scan.PoolTarget(deckId, name)
+    /** Stav skenování poolu přímo v balíku (null = nic neběží). */
+    val poolScanStatus = kotlinx.coroutines.flow.MutableStateFlow<String?>(null)
+    val poolScanBusy = kotlinx.coroutines.flow.MutableStateFlow(false)
+
+    /** Vyfocené karty (jedna i víc) rozpozná a přidá rovnou do poolu balíku. */
+    fun scanPoolPhoto(deckId: Long, context: android.content.Context, uri: android.net.Uri) {
+        if (poolScanBusy.value) return
+        poolScanBusy.value = true
+        poolScanStatus.value = "Fotka pořízena · čtu text…"
+        viewModelScope.launch {
+            val cards = runCatching {
+                com.example.antimarcipan.scan.PhotoCardRecognizer(collectionRepo).recognize(context, uri) { d, t, f ->
+                    poolScanStatus.value = "Hledám karty $d/$t… (nalezeno $f)"
+                }
+            }.getOrElse {
+                poolScanStatus.value = "Fotku se nepodařilo načíst — zkus to znovu"
+                poolScanBusy.value = false
+                return@launch
+            }
+            cards.forEach {
+                collectionRepo.ensureUnsorted(it)
+                deckRepo.addToPool(deckId, it.id)
+            }
+            poolScanStatus.value = if (cards.isEmpty()) "Žádnou kartu se nepodařilo rozpoznat — zkus ostřejší fotku"
+            else "Do poolu přidáno ${cards.size} karet: " + cards.groupingBy { it.name }.eachCount()
+                .entries.joinToString(", ") { if (it.value > 1) "${it.value}× ${it.key}" else it.key }
+            poolScanBusy.value = false
+        }
     }
 
     fun setPoolQty(deckId: Long, scryfallId: String, qty: Int) {

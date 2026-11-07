@@ -131,7 +131,9 @@ fun LimitedAdvisorPanel(
     deckCards: List<CollectionCard>,
     pool: List<CollectionCard>,
     poolImported: Boolean,
-    onScanPool: () -> Unit,
+    scanStatus: String?,
+    scanBusy: Boolean,
+    onPhoto: (android.net.Uri) -> Unit,
     onImportPool: () -> Unit,
     onAddCard: (CollectionCard) -> Unit,
     onApplyLands: (Map<String, Int>) -> Unit,
@@ -173,11 +175,40 @@ fun LimitedAdvisorPanel(
                 "Pool: ${pool.sumOf { it.quantity }} karet" + if (poolImported) " · přidáno do sbírky ✓" else "",
                 style = MaterialTheme.typography.bodySmall,
             )
+            val ctx = androidx.compose.ui.platform.LocalContext.current
+            val photoUri = remember {
+                val dir = java.io.File(ctx.cacheDir, "photos").apply { mkdirs() }
+                androidx.core.content.FileProvider.getUriForFile(
+                    ctx, ctx.packageName + ".fileprovider", java.io.File(dir, "pool.jpg"),
+                )
+            }
+            val takePhoto = androidx.activity.compose.rememberLauncherForActivityResult(
+                androidx.activity.result.contract.ActivityResultContracts.TakePicture()
+            ) { ok -> if (ok) onPhoto(photoUri) }
+            val pickPhoto = androidx.activity.compose.rememberLauncherForActivityResult(
+                androidx.activity.result.contract.ActivityResultContracts.GetContent()
+            ) { uri -> if (uri != null) onPhoto(uri) }
+            Text(
+                "Rozlož karty z boosteru lícem nahoru vedle sebe a vyfoť je — přidají se rovnou do poolu.",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+            )
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                OutlinedButton(onClick = onScanPool) { Text("Skenovat pool") }
-                OutlinedButton(onClick = { confirmImport = true }, enabled = pool.isNotEmpty() && !poolImported) {
-                    Text("Pool do sbírky")
+                androidx.compose.material3.Button(onClick = { takePhoto.launch(photoUri) }, enabled = !scanBusy) {
+                    Text("Vyfotit karty")
                 }
+                OutlinedButton(onClick = { pickPhoto.launch("image/*") }, enabled = !scanBusy) { Text("Z galerie") }
+            }
+            if (scanStatus != null) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (scanBusy) androidx.compose.material3.CircularProgressIndicator(
+                        Modifier.padding(end = 8.dp).width(16.dp), strokeWidth = 2.dp,
+                    )
+                    Text(scanStatus, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
+                }
+            }
+            OutlinedButton(onClick = { confirmImport = true }, enabled = pool.isNotEmpty() && !poolImported) {
+                Text("Pool do sbírky")
             }
             TextButton(onClick = { showGuide = true }) { Text("Jak se ${format.label} hraje") }
 
@@ -288,7 +319,7 @@ Jak probíhá Sealed:
 • Hraje se obvykle na 2 vítězné hry (Bo3), 20 životů.
 
 Postup stavby:
-1. Ťukni na „Skenovat pool“ a naskenuj všechny karty z boosterů (jdou do poolu, ne do sbírky).
+1. V rádci balíku ťukni na „Vyfotit karty“ a vyfoť karty z boosterů (jdou do poolu, ne do sbírky).
 2. Projdi bomby (silné rare/mythic) a removal — ty určují barvy.
 3. Vyber 2 nejsilnější a nejhlubší barvy (rádce je spočítá). Třetí barvu jen „splashni“ pro 1–2 bomby, pokud máš fixing.
 4. Cíl: 17 zemí + 23 kouzel, z toho 15–17 tvorů a co nejvíc removalu.
@@ -312,7 +343,7 @@ Jak vybírat (pick order):
 • Do konce 1. boosteru se snaž ustálit na 2 barvách.
 
 Stavba balíku: 17 zemí + 23 kouzel, 15–17 tvorů, co nejvíc removalu, rozumná křivka.
-Tip: v balíku ťukni na „Skenovat pool“ a naskenuj vydraftované karty — rádce je ohodnotí a doporučí barvy. Po dohrání je můžeš hromadně přidat do sbírky.
+Tip: v balíku ťukni na „Vyfotit karty“ a vyfoť vydraftované karty — rádce je ohodnotí a doporučí barvy. Po dohrání je můžeš hromadně přidat do sbírky.
 """.trimIndent()
     else -> ""
 }

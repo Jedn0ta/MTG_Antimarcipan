@@ -189,14 +189,6 @@ fun AntimarcipanApp() {
             }
         },
     ) { padding ->
-        val poolTarget by com.example.antimarcipan.scan.PoolScanTarget.target.collectAsState()
-        androidx.compose.runtime.LaunchedEffect(poolTarget?.deckId) {
-            if (poolTarget != null) navController.navigate(Dest.Scan.route) {
-                popUpTo(navController.graph.findStartDestination().id) { saveState = true }
-                launchSingleTop = true
-                restoreState = true
-            }
-        }
         NavHost(
             navController = navController,
             startDestination = Dest.Scan.route,
