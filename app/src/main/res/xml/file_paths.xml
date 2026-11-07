@@ -2,5 +2,6 @@
 <paths>
     <!-- Stažené APK aktualizace leží v cache aplikace. -->
     <cache-path name="updates" path="updates/" />
+    <cache-path name="photos" path="photos/" />
     <external-cache-path name="ext_updates" path="updates/" />
 </paths>

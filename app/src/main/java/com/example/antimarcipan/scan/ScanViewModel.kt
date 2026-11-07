@@ -79,7 +79,7 @@ class ScanViewModel(
             candidate = null,
             prints = emptyList(),
             rescanSlot = null,
-            status = if (on) "Rozlož karty na stůl a sejmi je naráz"
+            status = if (on) "Rozlož karty na stůl a vyfoť je"
             else "Namiř foťák na jméno karty",
         )
         lastQuery = ""
@@ -149,66 +149,98 @@ class ScanViewModel(
     }
 
     /**
-     * Sejme aktuální záběr: z rozpoznaných řádků vybere věrohodné názvy karet,
-     * vyhledá je a přidá do seznamu k potvrzení. Při přenačítání nahradí jen
-     * jeden slot nejlepší nalezenou kartou.
+     * Multisken z fotky: rozpozná text na celé fotce (v plném rozlišení),
+     * vybere řádky s názvy karet (velké písmo nahoře karty) a vyhledá je.
      */
-    fun captureTable() {
+    fun processPhoto(context: android.content.Context, uri: android.net.Uri) {
         if (_state.value.capturing) return
-        val lines = latestLines
-        val candidates = candidateNames(lines)
-        if (candidates.isEmpty()) {
-            _state.value = _state.value.copy(
-                status = "Nic nerozpoznáno — přisviť, srovnej karty a zkus znovu",
-            )
-            return
-        }
-
-        _state.value = _state.value.copy(capturing = true, status = "Snímám stůl…")
+        _state.value = _state.value.copy(capturing = true, status = "Fotka pořízena · čtu text…")
         viewModelScope.launch {
-            val rescan = _state.value.rescanSlot
-            if (rescan != null) {
-                // Přenačtení jednoho slotu — vezmeme první, co se najde.
-                val card = candidates.firstNotNullOfOrNull { name ->
-                    repo.lookup(name).getOrNull()
-                }
-                if (card != null) {
-                    val updated = _state.value.pending.map {
-                        if (it.slotId == rescan) it.copy(card = card) else it
-                    }
-                    _state.value = _state.value.copy(
-                        pending = updated, rescanSlot = null, capturing = false,
-                        status = "Opraveno na „${card.name}“",
-                    )
-                } else {
-                    _state.value = _state.value.copy(
-                        capturing = false,
-                        status = "Nenašlo se — namiř na jednu kartu a sejmi znovu",
-                    )
-                }
+            val lines = runCatching { recognizeLines(context, uri) }.getOrElse {
+                _state.value = _state.value.copy(capturing = false, status = "Fotku se nepodařilo načíst — zkus to znovu")
                 return@launch
             }
-
-            // Hromadné sejmutí — vyhledáme všechny věrohodné názvy.
-            val existingNames = _state.value.pending.map { it.card.name.lowercase() }.toMutableSet()
-            var added = 0
-            for (name in candidates) {
-                val card = repo.lookup(name).getOrNull() ?: continue
-                if (card.name.lowercase() in existingNames) continue
-                existingNames += card.name.lowercase()
-                val slot = nextSlot++
+            val candidates = pickNameLines(lines)
+            if (candidates.isEmpty()) {
                 _state.value = _state.value.copy(
-                    pending = _state.value.pending + PendingScan(slot, card),
+                    capturing = false,
+                    status = "Na fotce jsem nenašel žádné názvy — přisviť a vyfoť karty zblízka a rovně",
                 )
+                return@launch
+            }
+            val rescan = _state.value.rescanSlot
+            val existing = _state.value.pending.map { it.card.name.lowercase() }.toMutableSet()
+            var added = 0
+            candidates.forEachIndexed { i, name ->
+                _state.value = _state.value.copy(status = "Hledám karty ${i + 1}/${candidates.size}… (přidáno $added)")
+                val card = repo.lookup(name).getOrNull() ?: return@forEachIndexed
+                if (!similarName(name, card.name)) return@forEachIndexed
+                if (rescan != null) {
+                    _state.value = _state.value.copy(
+                        pending = _state.value.pending.map { if (it.slotId == rescan) it.copy(card = card) else it },
+                        rescanSlot = null, capturing = false, status = "Opraveno na „${card.name}“",
+                    )
+                    return@launch
+                }
+                if (card.name.lowercase() in existing) return@forEachIndexed
+                existing += card.name.lowercase()
+                _state.value = _state.value.copy(pending = _state.value.pending + PendingScan(nextSlot++, card))
                 added++
             }
             _state.value = _state.value.copy(
                 capturing = false,
-                status = if (added > 0)
-                    "Přidáno $added karet · celkem ${_state.value.pending.size} k potvrzení"
-                else "Žádnou kartu se nepodařilo rozpoznat — zkus to znovu",
+                rescanSlot = null,
+                status = if (added > 0) "Hotovo: rozpoznáno $added karet · celkem ${_state.value.pending.size} k potvrzení"
+                else "Žádnou kartu se nepodařilo rozpoznat — zkus ostřejší fotku",
             )
         }
+    }
+
+    private data class OcrLine(val text: String, val height: Int, val top: Int, val left: Int)
+
+    private suspend fun recognizeLines(context: android.content.Context, uri: android.net.Uri): List<OcrLine> =
+        kotlin.coroutines.suspendCoroutine { cont ->
+            val image = com.google.mlkit.vision.common.InputImage.fromFilePath(context, uri)
+            com.google.mlkit.vision.text.TextRecognition
+                .getClient(com.google.mlkit.vision.text.latin.TextRecognizerOptions.DEFAULT_OPTIONS)
+                .process(image)
+                .addOnSuccessListener { r ->
+                    cont.resumeWith(Result.success(r.textBlocks.flatMap { b ->
+                        b.lines.map { l ->
+                            val box = l.boundingBox
+                            OcrLine(l.text, box?.height() ?: 0, box?.top ?: 0, box?.left ?: 0)
+                        }
+                    }))
+                }
+                .addOnFailureListener { cont.resumeWith(Result.failure(it)) }
+        }
+
+    /** Názvy karet jsou tučné a větší než pravidlový text — bereme vyšší řádky. */
+    private fun pickNameLines(lines: List<OcrLine>): List<String> {
+        val plausible = lines.filter { candidateNames(listOf(it.text)).isNotEmpty() }
+        if (plausible.isEmpty()) return emptyList()
+        val heights = lines.map { it.height }.sorted()
+        val median = heights[heights.size / 2].coerceAtLeast(1)
+        val big = plausible.filter { it.height >= median * 1.05 }.ifEmpty { plausible }
+        return candidateNames(big.sortedWith(compareBy({ it.top / (median * 4) }, { it.left })).map { it.text })
+    }
+
+    private fun similarName(query: String, found: String): Boolean {
+        val q = query.lowercase().filter { it.isLetter() }
+        val f = found.lowercase().substringBefore(" //").filter { it.isLetter() }
+        if (q.isEmpty() || f.isEmpty()) return false
+        if (f.startsWith(q) || q.startsWith(f) || f.contains(q)) return true
+        // Levenshtein
+        val d = IntArray(f.length + 1) { it }
+        for (i in 1..q.length) {
+            var prev = d[0]; d[0] = i
+            for (j in 1..f.length) {
+                val tmp = d[j]
+                d[j] = minOf(d[j] + 1, d[j - 1] + 1, prev + if (q[i - 1] == f[j - 1]) 0 else 1)
+                prev = tmp
+            }
+        }
+        return d[f.length] <= maxOf(2, f.length / 4)
     }
 
     /** Z řádků OCR vybere věrohodné názvy karet (horní řádek každé karty). */
@@ -227,7 +259,7 @@ class ScanViewModel(
             val low = name.lowercase()
             if (TYPE_LINE_HINTS.any { low.startsWith(it) }) continue
             seen += name
-            if (seen.size >= 15) break
+            if (seen.size >= 40) break
         }
         return seen.toList()
     }
@@ -243,7 +275,7 @@ class ScanViewModel(
     fun rescanPending(slotId: Long) {
         _state.value = _state.value.copy(
             rescanSlot = slotId,
-            status = "Přenačítám — namiř na správnou kartu",
+            status = "Přenačítám — vyfoť správnou kartu",
         )
         lastQuery = ""
     }
@@ -252,7 +284,7 @@ class ScanViewModel(
         if (_state.value.rescanSlot == null) return
         _state.value = _state.value.copy(
             rescanSlot = null,
-            status = "Rozlož karty na stůl a sejmi je naráz",
+            status = "Rozlož karty na stůl a vyfoť je",
         )
     }
 
@@ -301,7 +333,7 @@ class ScanViewModel(
         _state.value = _state.value.copy(
             pending = emptyList(),
             rescanSlot = null,
-            status = "Rozlož karty na stůl a sejmi je naráz",
+            status = "Rozlož karty na stůl a vyfoť je",
             confirmTick = _state.value.confirmTick + 1,
             confirmText = message,
         )
@@ -375,7 +407,7 @@ class ScanViewModel(
     fun dismissCandidate() {
         _state.value = _state.value.copy(
             candidate = null,
-            status = if (_state.value.multiScan) "Rozlož karty na stůl a sejmi je naráz"
+            status = if (_state.value.multiScan) "Rozlož karty na stůl a vyfoť je"
             else "Namiř foťák na jméno karty",
             prints = emptyList(),
             translation = null,

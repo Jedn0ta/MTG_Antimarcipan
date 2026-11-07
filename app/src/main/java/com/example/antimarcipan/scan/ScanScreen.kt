@@ -174,15 +174,33 @@ fun ScanScreen(
                     Icon(Icons.Filled.CameraAlt, contentDescription = null)
                     Text("  Spustit skenování")
                 }
+                OutlinedButton(
+                    onClick = { vm.setMultiScan(true); scanning = true },
+                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                ) {
+                    Text("Multisken z fotky (víc karet naráz)")
+                }
             }
         } else {
             var showReview by remember { mutableStateOf(false) }
 
-            CameraPreview(
+            if (!state.multiScan) CameraPreview(
                 onText = vm::onTextRecognized,
                 modifier = Modifier.fillMaxSize(),
                 onLines = vm::onFrameLines,
             )
+            val photoUri = remember {
+                val dir = java.io.File(context.cacheDir, "photos").apply { mkdirs() }
+                androidx.core.content.FileProvider.getUriForFile(
+                    context, context.packageName + ".fileprovider", java.io.File(dir, "multiscan.jpg"),
+                )
+            }
+            val takePhoto = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { ok ->
+                if (ok) vm.processPhoto(context, photoUri)
+            }
+            val pickPhoto = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+                if (uri != null) vm.processPhoto(context, uri)
+            }
 
             // Horní lišta: přepínač režimu vlevo, Vypnout vpravo
             Row(
@@ -211,14 +229,15 @@ fun ScanScreen(
 
             // Spodní overlay — minimalistický, ať je vidět co fotíš
             Column(
-                Modifier.fillMaxWidth().align(Alignment.BottomCenter).padding(12.dp),
+                Modifier.fillMaxWidth().align(if (state.multiScan) Alignment.Center else Alignment.BottomCenter).padding(12.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 if (state.multiScan) {
                     MultiScanBar(
                         state = state,
-                        onCapture = vm::captureTable,
+                        onCapture = { takePhoto.launch(photoUri) },
+                        onGallery = { pickPhoto.launch("image/*") },
                         onReview = { showReview = true },
                         onCancelRescan = vm::cancelRescan,
                     )
@@ -328,6 +347,7 @@ private fun AddedConfirmation(tick: Int, text: String?, modifier: Modifier = Mod
 private fun MultiScanBar(
     state: ScanUiState,
     onCapture: () -> Unit,
+    onGallery: () -> Unit,
     onReview: () -> Unit,
     onCancelRescan: () -> Unit,
 ) {
@@ -335,25 +355,23 @@ private fun MultiScanBar(
         Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(state.status, style = MaterialTheme.typography.bodyMedium)
 
-            // Hlavní akce: sejmout rozprostřené karty na stole naráz.
-            Button(
-                onClick = onCapture,
-                enabled = !state.capturing,
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                if (state.capturing) {
-                    CircularProgressIndicator(
-                        Modifier.size(20.dp),
-                        strokeWidth = 2.dp,
-                        color = MaterialTheme.colorScheme.onPrimary,
-                    )
-                    Text("  Snímám…")
-                } else {
+            Text(
+                "Rozlož karty vedle sebe lícem nahoru, aby byly vidět názvy, a vyfoť je. Fotka se zpracuje až po vyfocení.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+            )
+            if (state.capturing) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
+                    Text("  Zpracovávám fotku…", style = MaterialTheme.typography.labelLarge)
+                }
+            } else Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Button(onClick = onCapture, modifier = Modifier.weight(1f)) {
                     Icon(Icons.Filled.CameraAlt, contentDescription = null)
-                    Text(
-                        if (state.rescanSlot != null) "  Sejmout správnou kartu"
-                        else "  Sejmout stůl",
-                    )
+                    Text(if (state.rescanSlot != null) "  Vyfotit kartu" else "  Vyfotit karty")
+                }
+                OutlinedButton(onClick = onGallery, modifier = Modifier.weight(1f)) {
+                    Text("Z galerie")
                 }
             }
 
