@@ -21,6 +21,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.border
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -693,6 +696,7 @@ private fun matchDeckValue(card: CollectionCard, cat: String, value: String): Bo
     else -> true
 }
 
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 private fun DeckFilterMenu(
     expanded: Boolean,
@@ -702,37 +706,68 @@ private fun DeckFilterMenu(
     onClear: () -> Unit,
     onDismiss: () -> Unit,
 ) {
-    androidx.compose.material3.DropdownMenu(expanded = expanded, onDismissRequest = onDismiss) {
-        categories.forEach { (title, values) ->
-            Text(
-                title,
-                Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.primary,
-            )
-            values.forEach { (key, label) ->
-                val isSel = selected.contains(key)
-                androidx.compose.material3.DropdownMenuItem(
-                    text = { Text(label) },
-                    onClick = { onToggle(key) },
-                    leadingIcon = {
-                        Icon(
-                            if (isSel) Icons.Filled.CheckBox else Icons.Filled.CheckBoxOutlineBlank,
-                            contentDescription = null,
-                            tint = if (isSel) MaterialTheme.colorScheme.primary
-                            else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
-                        )
-                    },
-                )
+    if (!expanded) return
+    // Spodní panel: každá kategorie jako přehledná skupina dlaždic.
+    androidx.compose.material3.ModalBottomSheet(onDismissRequest = onDismiss) {
+        Column(
+            Modifier.fillMaxWidth().padding(horizontal = 16.dp)
+                .verticalScroll(androidx.compose.foundation.rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(14.dp),
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("Filtr", Modifier.weight(1f), style = MaterialTheme.typography.titleLarge)
+                if (selected.isNotEmpty()) {
+                    TextButton(onClick = onClear) { Text("Zrušit (${selected.size})") }
+                }
             }
-        }
-        if (selected.isNotEmpty()) {
-            HorizontalDivider()
-            androidx.compose.material3.DropdownMenuItem(
-                text = { Text("Zrušit filtr") },
-                onClick = onClear,
-                leadingIcon = { Icon(Icons.Filled.Close, contentDescription = null) },
-            )
+            categories.forEach { (title, values) ->
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        title.uppercase(),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                    if (title == "Barva") {
+                        // Barvy jako symboly many
+                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            values.forEach { (key, label) ->
+                                val on = selected.contains(key)
+                                androidx.compose.foundation.Image(
+                                    painter = androidx.compose.ui.res.painterResource(manaRes(key.substringAfter(':'))),
+                                    contentDescription = label,
+                                    modifier = Modifier
+                                        .size(36.dp)
+                                        .clip(androidx.compose.foundation.shape.CircleShape)
+                                        .border(
+                                            if (on) 2.dp else 0.dp,
+                                            if (on) MaterialTheme.colorScheme.primary else Color.Transparent,
+                                            androidx.compose.foundation.shape.CircleShape,
+                                        )
+                                        .alpha(if (on) 1f else 0.4f)
+                                        .clickable { onToggle(key) },
+                                )
+                            }
+                        }
+                    } else {
+                        androidx.compose.foundation.layout.FlowRow(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            values.forEach { (key, label) ->
+                                androidx.compose.material3.FilterChip(
+                                    selected = selected.contains(key),
+                                    onClick = { onToggle(key) },
+                                    label = { Text(label) },
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+            Button(
+                onClick = onDismiss,
+                modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
+            ) { Text("Hotovo") }
         }
     }
 }

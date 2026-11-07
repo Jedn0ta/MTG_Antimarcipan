@@ -320,7 +320,7 @@ private fun LazyListScope.collectionListSection(
     if (cards.isEmpty()) return
     item(key = "h-$title") { SectionHeaderC(title) }
     items(cards, key = { it.scryfallId }) { card ->
-        Column(Modifier.animateItem()) {
+        Column {
             SwipeToAddDeck(onRequestAddToDeck = { onSwipe(card) }) {
                 CollectionRow(
                     card = card,
@@ -347,7 +347,7 @@ private fun LazyGridScope.collectionGridSection(title: String, cards: List<Colle
     if (cards.isEmpty()) return
     item(span = { GridItemSpan(maxLineSpan) }, key = "gh-$title") { SectionHeaderC(title) }
     items(cards, key = { it.scryfallId }) { card ->
-        Box(Modifier.fillMaxWidth().animateItem(), contentAlignment = Alignment.Center) {
+        Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
             com.example.antimarcipan.ui.InteractiveThumb(card, width = 88.dp, height = 123.dp)
         }
     }

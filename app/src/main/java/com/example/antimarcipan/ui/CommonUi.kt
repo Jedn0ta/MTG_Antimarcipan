@@ -42,39 +42,12 @@ fun CardThumb(
     width: Dp = 48.dp,
     height: Dp = 67.dp,
 ) {
-    // Periodický lesk přes kartu (krátký průjezd, pak pauza)
-    val shine = androidx.compose.animation.core.rememberInfiniteTransition(label = "shine")
-    val sweep by shine.animateFloat(
-        initialValue = -1f,
-        targetValue = 2.5f,
-        animationSpec = androidx.compose.animation.core.infiniteRepeatable(
-            androidx.compose.animation.core.tween(durationMillis = 4200,
-                easing = androidx.compose.animation.core.LinearEasing),
-        ),
-        label = "sweep",
-    )
     val shape = RoundedCornerShape(6.dp)
     Box(
         modifier
             .size(width = width, height = height)
             .clip(shape)
             .background(MaterialTheme.colorScheme.surfaceVariant)
-            .drawWithContent {
-                drawContent()
-                // lesk jen v první třetině cyklu
-                if (sweep in -0.5f..1.5f) {
-                    val x = size.width * sweep
-                    drawRect(
-                        androidx.compose.ui.graphics.Brush.linearGradient(
-                            0f to androidx.compose.ui.graphics.Color.Transparent,
-                            0.5f to androidx.compose.ui.graphics.Color.White.copy(alpha = 0.22f),
-                            1f to androidx.compose.ui.graphics.Color.Transparent,
-                            start = androidx.compose.ui.geometry.Offset(x - size.width * 0.4f, 0f),
-                            end = androidx.compose.ui.geometry.Offset(x + size.width * 0.4f, size.height),
-                        )
-                    )
-                }
-            }
             .border(
                 1.dp,
                 androidx.compose.ui.graphics.Brush.linearGradient(
