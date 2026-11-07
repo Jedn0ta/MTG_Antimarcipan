@@ -90,6 +90,28 @@ class SynergyRepository(
             .toList()
     }
 
+    /**
+     * Skutečné URL obrázků pro seznam jmen (Scryfall cards/collection).
+     * Klíč = jméno malými písmeny (celé i přední strana u oboustranných).
+     */
+    suspend fun imageUrls(names: Collection<String>): Map<String, String> {
+        val out = mutableMapOf<String, String>()
+        names.map { it.trim() }.filter { it.isNotEmpty() }.distinct().chunked(75).forEach { chunk ->
+            runCatching {
+                scryfall.collection(
+                    com.example.antimarcipan.data.scryfall.CollectionRequest(
+                        chunk.map { com.example.antimarcipan.data.scryfall.NameIdentifier(it) }
+                    )
+                ).data
+            }.getOrNull()?.forEach { c ->
+                val url = c.bestImageUrl ?: return@forEach
+                out[c.name.lowercase()] = url
+                out[c.name.substringBefore(" // ").lowercase()] = url
+            }
+        }
+        return out
+    }
+
     suspend fun recommendationsFor(commanderName: String): Result<List<SynergyRecommendation>> =
         runCatching {
             val slug = Slug.commanderSlug(commanderName)

@@ -1,6 +1,9 @@
 package com.example.antimarcipan.data.scryfall
 
+import kotlinx.serialization.Serializable
+import retrofit2.http.Body
 import retrofit2.http.GET
+import retrofit2.http.POST
 import retrofit2.http.Path
 import retrofit2.http.Query
 
@@ -59,4 +62,14 @@ interface ScryfallApi {
     /** Oficiální rulings (výklady pravidel) ke konkrétní kartě. */
     @GET("cards/{id}/rulings")
     suspend fun rulings(@Path("id") id: String): RulingList
+
+    /** Hromadné dohledání karet podle jména (max. 75 na dotaz). */
+    @POST("cards/collection")
+    suspend fun collection(@Body body: CollectionRequest): ScryfallList
 }
+
+@Serializable
+data class CollectionRequest(val identifiers: List<NameIdentifier>)
+
+@Serializable
+data class NameIdentifier(val name: String)

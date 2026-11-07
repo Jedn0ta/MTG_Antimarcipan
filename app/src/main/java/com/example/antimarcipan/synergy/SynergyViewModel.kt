@@ -31,6 +31,8 @@ data class SynergyUiState(
     val replacements: Map<String, List<String>> = emptyMap(),
     /** Obecné rady k balíku (dříve „Anti Marcipán“). */
     val tips: List<AdvisorTip> = emptyList(),
+    /** URL obrázků navržených karet: jméno (malými) → URL. */
+    val images: Map<String, String> = emptyMap(),
     val error: String? = null,
 )
 
@@ -141,6 +143,16 @@ class SynergyViewModel(
                         _state.value = _state.value.copy(replacements = map)
                     }
                 } catch (_: Exception) { /* náhrady jsou volitelné */ }
+
+                // Obrázky návrhů a náhrad — skutečné URL přes Scryfall API.
+                try {
+                    val st = _state.value
+                    val names = st.suggestions.map { it.name } + st.replacements.values.flatten()
+                    if (names.isNotEmpty()) {
+                        val imgs = synergyRepo.imageUrls(names)
+                        if (imgs.isNotEmpty()) _state.value = _state.value.copy(images = imgs)
+                    }
+                } catch (_: Exception) { /* obrázky jsou volitelné */ }
             } catch (e: Exception) {
                 _state.value = SynergyUiState(
                     error = "Analýza selhala: ${e.message ?: e.javaClass.simpleName}",

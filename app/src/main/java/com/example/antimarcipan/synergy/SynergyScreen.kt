@@ -93,7 +93,7 @@ fun SynergyScreen(
 
                     if (report.misfits.isNotEmpty()) {
                         item { SectionTitle("Zvaž výměnu (${report.misfits.size})") }
-                        items(report.misfits) { FitRow(it, state.replacements[it.card.scryfallId]) }
+                        items(report.misfits) { FitRow(it, state.replacements[it.card.scryfallId], state.images) }
                     }
 
                     item { SectionTitle("Všechny karty podle vhodnosti") }
@@ -101,7 +101,7 @@ fun SynergyScreen(
 
                     if (state.suggestions.isNotEmpty()) {
                         item { SectionTitle("Návrhy karet · ${state.suggestionsSource}") }
-                        items(state.suggestions) { RecRow(it) }
+                        items(state.suggestions) { RecRow(it, state.images) }
                     }
                 }
             }
@@ -137,7 +137,7 @@ private fun SectionTitle(text: String) {
 }
 
 @Composable
-private fun FitRow(fit: CardFit, replacements: List<String>? = null) {
+private fun FitRow(fit: CardFit, replacements: List<String>? = null, images: Map<String, String> = emptyMap()) {
     Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
         Row(
             Modifier.fillMaxWidth(),
@@ -185,7 +185,7 @@ private fun FitRow(fit: CardFit, replacements: List<String>? = null) {
                         Modifier.width(64.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
-                        SuggestionImage(name)
+                        SuggestionImage(name, images[name.lowercase()])
                         Text(
                             name,
                             style = MaterialTheme.typography.labelSmall,
@@ -203,9 +203,9 @@ private fun FitRow(fit: CardFit, replacements: List<String>? = null) {
 
 /** Náhled navrhované karty podle jména (obrázek ze Scryfallu), ťuk = zvětšení. */
 @Composable
-private fun SuggestionImage(name: String) {
+private fun SuggestionImage(name: String, url: String?) {
     var showFull by remember { mutableStateOf(false) }
-    val thumb = scryfallImageUrl(name, "small")
+    val thumb = url
     com.example.antimarcipan.ui.CardThumb(
         model = thumb,
         width = 40.dp,
@@ -216,7 +216,7 @@ private fun SuggestionImage(name: String) {
     if (showFull) {
         androidx.compose.ui.window.Dialog(onDismissRequest = { showFull = false }) {
             coil.compose.AsyncImage(
-                model = scryfallImageUrl(name, "normal"),
+                model = url,
                 contentDescription = name,
                 modifier = Modifier
                     .fillMaxWidth()
@@ -263,13 +263,13 @@ private fun TipCard(tip: com.example.antimarcipan.data.advisor.AdvisorTip) {
 }
 
 @Composable
-private fun RecRow(rec: SynergyRecommendation) {
+private fun RecRow(rec: SynergyRecommendation, images: Map<String, String>) {
     Row(
         Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        SuggestionImage(rec.name)
+        SuggestionImage(rec.name, images[rec.name.lowercase()])
         Column(Modifier.weight(1f)) {
             Text(rec.name, style = MaterialTheme.typography.bodyMedium)
             Text(
