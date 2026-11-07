@@ -471,15 +471,18 @@ private fun DeckDetailView(vm: DeckViewModel, deck: Deck) {
                 onApplyLands = applyLimitedLands,
             )
             if (showBasicPanel) BasicLandPanel(basicCounts, onBasicInc, onBasicDec)
+            androidx.compose.runtime.CompositionLocalProvider(com.example.antimarcipan.ui.LocalCardList provides ((lands + others).map { it.card })) {
             DeckGrid(
                 lands = lands,
                 others = others,
                 emptyDeck = deckCards.isEmpty(),
                 othersLabel = othersLabel,
             )
+            }
             return@Column
         }
 
+        androidx.compose.runtime.CompositionLocalProvider(com.example.antimarcipan.ui.LocalCardList provides ((lands + others).map { it.card } + poolRows.map { it.card })) {
         LazyColumn(Modifier.fillMaxSize()) {
             if (deckCards.isEmpty()) {
                 item {
@@ -621,6 +624,7 @@ private fun DeckDetailView(vm: DeckViewModel, deck: Deck) {
                 }
                 HorizontalDivider()
             }
+        }
         }
     }
 
