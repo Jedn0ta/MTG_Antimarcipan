@@ -118,7 +118,7 @@ fun AntimarcipanApp() {
                 actions = {
                     if (!isSubScreen) {
                         IconButton(onClick = { navController.navigate(LIFE_ROUTE) { launchSingleTop = true } }) {
-                            Icon(Icons.Filled.Favorite, contentDescription = "Počítadlo životů")
+                            Icon(painterResource(com.example.antimarcipan.R.drawable.ic_life_counter), contentDescription = "Počítadlo životů")
                         }
                         IconButton(onClick = { navController.navigate(MANUAL_ROUTE) }) {
                             Icon(Icons.Filled.Add, contentDescription = "Přidat ručně")
