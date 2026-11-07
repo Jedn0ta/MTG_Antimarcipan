@@ -38,6 +38,7 @@ import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Tune
+import com.example.antimarcipan.ui.filter.matches
 import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -117,7 +118,10 @@ fun CollectionScreen(
 
     val wishlist by vm.wishlist.collectAsStateWithLifecycle()
     var showWishlist by remember { mutableStateOf(false) }
-    val source = if (showWishlist) wishlist else cards
+    val fstate by vm.cardFilter.collectAsStateWithLifecycle()
+    val base = if (showWishlist) wishlist else cards
+    val filterOptions = remember(base) { com.example.antimarcipan.ui.filter.buildFilterOptions(base) }
+    val source = remember(base, fstate) { base.filter { fstate.matches(it) } }
     val totalQty = source.sumOf { it.quantity }
     var section by remember { mutableStateOf(0) } // 0 = Vše, 1 = Land, 2 = Spell
     var showSortMenu by remember { mutableStateOf(false) }
@@ -147,54 +151,37 @@ fun CollectionScreen(
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
             )
-            IconButton(onClick = { showControls = !showControls }) {
+            // Zobrazení (seznam/mřížka) hned vedle filtru
+            IconButton(onClick = { settings.setCollectionGrid(!gridMode) }) {
                 Icon(
-                    Icons.Filled.Tune,
-                    contentDescription = "Hledání a filtry",
-                    tint = if (filter.isActive || filter.query.isNotBlank() || showControls)
-                        MaterialTheme.colorScheme.primary
-                    else MaterialTheme.colorScheme.onSurface,
+                    if (gridMode) Icons.AutoMirrored.Filled.ViewList else Icons.Filled.GridView,
+                    contentDescription = "Zobrazení",
                 )
+            }
+            androidx.compose.material3.BadgedBox(
+                badge = {
+                    if (fstate.isActive) androidx.compose.material3.Badge { Text("${fstate.activeCount}") }
+                },
+            ) {
+                IconButton(onClick = { showControls = true }) {
+                    Icon(
+                        Icons.Filled.Tune,
+                        contentDescription = "Filtr",
+                        tint = if (fstate.isActive) MaterialTheme.colorScheme.primary
+                        else MaterialTheme.colorScheme.onSurface,
+                    )
+                }
             }
         }
 
-        AnimatedVisibility(visible = showControls) {
-            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Row(
-                    Modifier.fillMaxWidth().padding(horizontal = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                ) {
-                    OutlinedTextField(
-                        value = filter.query,
-                        onValueChange = vm::setQuery,
-                        modifier = Modifier.weight(1f),
-                        placeholder = { Text("Hledat…") },
-                        leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
-                        singleLine = true,
-                    )
-                    IconButton(onClick = { settings.setCollectionGrid(!gridMode) }) {
-                        Icon(
-                            if (gridMode) Icons.AutoMirrored.Filled.ViewList else Icons.Filled.GridView,
-                            contentDescription = "Zobrazení",
-                        )
-                    }
-                }
-                Row(
-                    Modifier.fillMaxWidth().padding(horizontal = 12.dp),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    CardColor.entries.forEach { c ->
-                        ColorPip(
-                            res = c.drawableRes(),
-                            selected = filter.colors.contains(c),
-                            onClick = { vm.toggleColor(c) },
-                        )
-                    }
-                }
-                AdvancedFilters(filter, vm, sets)
-            }
+        if (showControls) {
+            com.example.antimarcipan.ui.filter.CardFilterSheet(
+                options = filterOptions,
+                state = fstate,
+                resultCount = source.size,
+                onChange = vm::setCardFilter,
+                onDismiss = { showControls = false },
+            )
         }
 
         // Sekce + řazení na jednom řádku
@@ -256,9 +243,9 @@ fun CollectionScreen(
 
         if (source.isEmpty()) {
             EmptyState(
-                if (showWishlist) "Wishlist je prázdný" else if (filter.isActive) "Nic nenalezeno" else "Zatím prázdno",
+                if (showWishlist && !fstate.isActive) "Wishlist je prázdný" else if (fstate.isActive) "Nic nenalezeno" else "Zatím prázdno",
                 if (showWishlist) "Přidej karty na wishlist ze skenu nebo ručně."
-                else if (filter.isActive) "Zkus upravit filtry." else "Naskenuj první kartu v záložce Sken.",
+                else if (fstate.isActive) "Zkus upravit filtr." else "Naskenuj první kartu v záložce Sken.",
             )
         } else if (gridMode) {
             androidx.compose.foundation.lazy.grid.LazyVerticalGrid(

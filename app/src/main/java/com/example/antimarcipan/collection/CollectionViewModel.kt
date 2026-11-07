@@ -118,6 +118,12 @@ class CollectionViewModel(
         }
     }
 
+    /** Kompletní filtr karet (společný model s Balíky). */
+    private val _cardFilter = kotlinx.coroutines.flow.MutableStateFlow(com.example.antimarcipan.ui.filter.CardFilterState())
+    val cardFilter: StateFlow<com.example.antimarcipan.ui.filter.CardFilterState> = _cardFilter
+
+    fun setCardFilter(f: com.example.antimarcipan.ui.filter.CardFilterState) { _cardFilter.value = f }
+
     /** Všechny tisky karty (pro změnu edice). */
     suspend fun printsOf(name: String): List<com.example.antimarcipan.data.scryfall.ScryfallCard> =
         repo.printsOf(name).getOrElse { emptyList() }

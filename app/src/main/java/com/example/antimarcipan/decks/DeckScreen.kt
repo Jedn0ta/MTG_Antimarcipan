@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.border
+import com.example.antimarcipan.ui.filter.matches
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.width
@@ -265,7 +266,7 @@ private fun DeckDetailView(vm: DeckViewModel, deck: Deck) {
     var showMenu by remember { mutableStateOf(false) }
     var showBasics by remember { mutableStateOf(false) }
     var showTypeFilter by remember { mutableStateOf(false) }
-    val selectedFilters = remember { androidx.compose.runtime.mutableStateListOf<String>() }
+    var deckFilter by remember(deck.id) { mutableStateOf(com.example.antimarcipan.ui.filter.CardFilterState()) }
     var pendingRemove by remember { mutableStateOf<CollectionCard?>(null) }
 
     val format = DeckFormat.from(deck.format)
@@ -283,7 +284,9 @@ private fun DeckDetailView(vm: DeckViewModel, deck: Deck) {
         DeckSectionMode.OTHERS -> deckCards.filter { !isLandCard(it.card) }
     }
     // Kategorie filtru se odvozují z kontextu — u landů se tribaly neukážou.
-    val filterCats = remember(sectionBase) { buildDeckFilters(sectionBase.map { it.card }) }
+    val filterOpts = remember(sectionBase) {
+        com.example.antimarcipan.ui.filter.buildFilterOptions(sectionBase.map { it.card })
+    }
 
     Column(Modifier.fillMaxSize()) {
         // Hlavička — název na vlastním řádku (čitelný, snese delší názvy),
@@ -376,29 +379,19 @@ private fun DeckDetailView(vm: DeckViewModel, deck: Deck) {
                 )
             }
             Spacer(Modifier.weight(1f))
-            Box {
-                IconButton(
-                    onClick = { showTypeFilter = true },
-                    enabled = filterCats.isNotEmpty(),
-                ) {
+            androidx.compose.material3.BadgedBox(
+                badge = {
+                    if (deckFilter.isActive) androidx.compose.material3.Badge { Text("${deckFilter.activeCount}") }
+                },
+            ) {
+                IconButton(onClick = { showTypeFilter = true }) {
                     Icon(
                         Icons.Filled.FilterList,
                         contentDescription = "Filtr",
-                        tint = if (selectedFilters.isEmpty()) MaterialTheme.colorScheme.onSurface
-                        else MaterialTheme.colorScheme.primary,
+                        tint = if (deckFilter.isActive) MaterialTheme.colorScheme.primary
+                        else MaterialTheme.colorScheme.onSurface,
                     )
                 }
-                DeckFilterMenu(
-                    expanded = showTypeFilter,
-                    categories = filterCats,
-                    selected = selectedFilters,
-                    onToggle = { v ->
-                        if (selectedFilters.contains(v)) selectedFilters.remove(v)
-                        else selectedFilters.add(v)
-                    },
-                    onClear = { selectedFilters.clear() },
-                    onDismiss = { showTypeFilter = false },
-                )
             }
             IconButton(onClick = { settings.setDeckGrid(!gridMode) }) {
                 Icon(
@@ -408,7 +401,17 @@ private fun DeckDetailView(vm: DeckViewModel, deck: Deck) {
             }
         }
 
-        val visible = sectionBase.filter { matchesDeckFilters(it.card, selectedFilters) }
+        val visible = sectionBase.filter { deckFilter.matches(it.card) }
+
+        if (showTypeFilter) {
+            com.example.antimarcipan.ui.filter.CardFilterSheet(
+                options = filterOpts,
+                state = deckFilter,
+                resultCount = visible.size,
+                onChange = { deckFilter = it },
+                onDismiss = { showTypeFilter = false },
+            )
+        }
         val allLands = visible.filter { isLandCard(it.card) }
         val allOthers = visible.filter { !isLandCard(it.card) }
         val lands = allLands
@@ -486,7 +489,7 @@ private fun DeckDetailView(vm: DeckViewModel, deck: Deck) {
                 }
             }
 
-            if (selectedFilters.isNotEmpty() && allLands.isEmpty() && allOthers.isEmpty() && deckCards.isNotEmpty()) {
+            if (deckFilter.isActive && allLands.isEmpty() && allOthers.isEmpty() && deckCards.isNotEmpty()) {
                 item {
                     Text(
                         "Filtru neodpovídá žádná karta.",
