@@ -77,7 +77,7 @@ fun ManualAddScreen(
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    CardThumb(card.bestImageUrl, width = 54.dp, height = 75.dp)
+                    com.example.antimarcipan.ui.ScryfallThumb(card, width = 54.dp, height = 75.dp)
                     Column(Modifier.weight(1f)) {
                         Text(
                             card.name,

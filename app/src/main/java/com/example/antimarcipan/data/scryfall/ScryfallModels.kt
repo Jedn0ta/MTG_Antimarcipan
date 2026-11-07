@@ -42,6 +42,9 @@ data class ScryfallCard(
 @Serializable
 data class CardFace(
     val name: String? = null,
+    @SerialName("mana_cost") val manaCost: String? = null,
+    @SerialName("type_line") val typeLine: String? = null,
+    @SerialName("oracle_text") val oracleText: String? = null,
     @SerialName("image_uris") val imageUris: ImageUris? = null,
 )
 

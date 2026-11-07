@@ -94,8 +94,8 @@ class SynergyRepository(
      * Skutečné URL obrázků pro seznam jmen (Scryfall cards/collection).
      * Klíč = jméno malými písmeny (celé i přední strana u oboustranných).
      */
-    suspend fun imageUrls(names: Collection<String>): Map<String, String> {
-        val out = mutableMapOf<String, String>()
+    suspend fun cardsByName(names: Collection<String>): Map<String, com.example.antimarcipan.data.scryfall.ScryfallCard> {
+        val out = mutableMapOf<String, com.example.antimarcipan.data.scryfall.ScryfallCard>()
         names.map { it.trim() }.filter { it.isNotEmpty() }.distinct().chunked(75).forEach { chunk ->
             runCatching {
                 scryfall.collection(
@@ -104,9 +104,8 @@ class SynergyRepository(
                     )
                 ).data
             }.getOrNull()?.forEach { c ->
-                val url = c.bestImageUrl ?: return@forEach
-                out[c.name.lowercase()] = url
-                out[c.name.substringBefore(" // ").lowercase()] = url
+                out[c.name.lowercase()] = c
+                out[c.name.substringBefore(" // ").lowercase()] = c
             }
         }
         return out

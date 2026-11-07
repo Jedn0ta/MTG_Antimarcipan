@@ -38,6 +38,19 @@ class MtgApp : Application(), ImageLoaderFactory {
     /** Explicitní Coil loader — vlastní OkHttp (bez rate-limiteru), cache, crossfade. */
     override fun newImageLoader(): ImageLoader =
         ImageLoader.Builder(this)
+            // Scryfall odmítá požadavky s výchozí hlavičkou „okhttp" — posíláme vlastní.
+            .okHttpClient {
+                okhttp3.OkHttpClient.Builder()
+                    .addInterceptor { chain ->
+                        chain.proceed(
+                            chain.request().newBuilder()
+                                .header("User-Agent", "Antimarcipan/0.1 (personal hobby app)")
+                                .header("Accept", "image/*,*/*;q=0.8")
+                                .build()
+                        )
+                    }
+                    .build()
+            }
             .components { add(SvgDecoder.Factory()) }
             .crossfade(true)
             .memoryCachePolicy(CachePolicy.ENABLED)

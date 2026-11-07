@@ -389,7 +389,7 @@ private fun MultiScanReviewSheet(
                         horizontalArrangement = Arrangement.spacedBy(10.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        CardThumb(item.card.bestImageUrl, width = 46.dp, height = 64.dp)
+                        com.example.antimarcipan.ui.ScryfallThumb(item.card, width = 46.dp, height = 64.dp)
                         Column(Modifier.weight(1f)) {
                             Text(item.card.name, style = MaterialTheme.typography.bodyMedium, maxLines = 1)
                             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {

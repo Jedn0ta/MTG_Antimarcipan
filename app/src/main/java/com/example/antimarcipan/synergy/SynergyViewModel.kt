@@ -31,8 +31,8 @@ data class SynergyUiState(
     val replacements: Map<String, List<String>> = emptyMap(),
     /** Obecné rady k balíku (dříve „Anti Marcipán“). */
     val tips: List<AdvisorTip> = emptyList(),
-    /** URL obrázků navržených karet: jméno (malými) → URL. */
-    val images: Map<String, String> = emptyMap(),
+    /** Data navržených karet (obrázek + textace): jméno (malými) → karta. */
+    val images: Map<String, com.example.antimarcipan.data.scryfall.ScryfallCard> = emptyMap(),
     val error: String? = null,
 )
 
@@ -149,7 +149,7 @@ class SynergyViewModel(
                     val st = _state.value
                     val names = st.suggestions.map { it.name } + st.replacements.values.flatten()
                     if (names.isNotEmpty()) {
-                        val imgs = synergyRepo.imageUrls(names)
+                        val imgs = synergyRepo.cardsByName(names)
                         if (imgs.isNotEmpty()) _state.value = _state.value.copy(images = imgs)
                     }
                 } catch (_: Exception) { /* obrázky jsou volitelné */ }

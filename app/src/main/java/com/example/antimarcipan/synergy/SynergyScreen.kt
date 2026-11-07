@@ -137,7 +137,7 @@ private fun SectionTitle(text: String) {
 }
 
 @Composable
-private fun FitRow(fit: CardFit, replacements: List<String>? = null, images: Map<String, String> = emptyMap()) {
+private fun FitRow(fit: CardFit, replacements: List<String>? = null, images: Map<String, com.example.antimarcipan.data.scryfall.ScryfallCard> = emptyMap()) {
     Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
         Row(
             Modifier.fillMaxWidth(),
@@ -203,27 +203,12 @@ private fun FitRow(fit: CardFit, replacements: List<String>? = null, images: Map
 
 /** Náhled navrhované karty podle jména (obrázek ze Scryfallu), ťuk = zvětšení. */
 @Composable
-private fun SuggestionImage(name: String, url: String?) {
-    var showFull by remember { mutableStateOf(false) }
-    val thumb = url
-    com.example.antimarcipan.ui.CardThumb(
-        model = thumb,
-        width = 40.dp,
-        height = 56.dp,
-        modifier = Modifier.clip(androidx.compose.foundation.shape.RoundedCornerShape(6.dp))
-            .clickable { showFull = true },
-    )
-    if (showFull) {
-        androidx.compose.ui.window.Dialog(onDismissRequest = { showFull = false }) {
-            coil.compose.AsyncImage(
-                model = url,
-                contentDescription = name,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(androidx.compose.foundation.shape.RoundedCornerShape(14.dp))
-                    .clickable { showFull = false },
-            )
-        }
+private fun SuggestionImage(name: String, card: com.example.antimarcipan.data.scryfall.ScryfallCard?) {
+    if (card != null) {
+        // ťuk = detail karty s obrázkem a textací
+        com.example.antimarcipan.ui.ScryfallThumb(card, width = 40.dp, height = 56.dp)
+    } else {
+        com.example.antimarcipan.ui.CardThumb(null, width = 40.dp, height = 56.dp)
     }
 }
 
@@ -263,7 +248,7 @@ private fun TipCard(tip: com.example.antimarcipan.data.advisor.AdvisorTip) {
 }
 
 @Composable
-private fun RecRow(rec: SynergyRecommendation, images: Map<String, String>) {
+private fun RecRow(rec: SynergyRecommendation, images: Map<String, com.example.antimarcipan.data.scryfall.ScryfallCard>) {
     Row(
         Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
