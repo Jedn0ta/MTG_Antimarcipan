@@ -188,6 +188,40 @@ class CollectionRepository(
         }
     }
 
+    /**
+     * Změní tisk (edici) karty ve sbírce: nová karta převezme počet kusů
+     * i příznaky, odkazy v balících se přepojí a starý záznam zmizí.
+     */
+    suspend fun changePrinting(old: CollectionCard, newCard: ScryfallCard) {
+        if (newCard.id == old.scryfallId) return
+        val existingNew = dao.findById(newCard.id)
+        if (existingNew == null) {
+            val local = newCard.bestImageUrl?.let { downloadImage(it, newCard.id) }
+            dao.upsert(
+                newCard.toCollectionCard().copy(
+                    localImagePath = local,
+                    quantity = old.quantity,
+                    owned = old.owned,
+                    wishlist = old.wishlist,
+                    addedAt = old.addedAt,
+                )
+            )
+        } else {
+            dao.upsert(
+                existingNew.copy(
+                    quantity = existingNew.quantity + old.quantity,
+                    owned = existingNew.owned || old.owned,
+                    wishlist = existingNew.wishlist || old.wishlist,
+                )
+            )
+        }
+        dao.repointDeckCards(old.scryfallId, newCard.id)
+        dao.deleteDeckRefs(old.scryfallId)
+        dao.repointCommander(old.scryfallId, newCard.id)
+        File(appContext.filesDir, "card_images/${old.scryfallId}.jpg").delete()
+        dao.delete(old.scryfallId)
+    }
+
     /** Označí kartu jako vlastněnou (přesun z wishlistu do sbírky). */
     suspend fun markOwned(scryfallId: String) = dao.setOwned(scryfallId, true)
 

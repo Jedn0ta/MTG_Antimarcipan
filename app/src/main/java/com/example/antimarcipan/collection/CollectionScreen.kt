@@ -38,6 +38,7 @@ import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
@@ -112,6 +113,7 @@ fun CollectionScreen(
     var showControls by remember { mutableStateOf(false) }
     var pendingDelete by remember { mutableStateOf<CollectionCard?>(null) }
     var pendingAddDeck by remember { mutableStateOf<CollectionCard?>(null) }
+    var pendingEdition by remember { mutableStateOf<CollectionCard?>(null) }
 
     val wishlist by vm.wishlist.collectAsStateWithLifecycle()
     var showWishlist by remember { mutableStateOf(false) }
@@ -271,10 +273,28 @@ fun CollectionScreen(
             }
         } else {
             LazyColumn(Modifier.weight(1f)) {
-                collectionListSection("Land (${lands.size})", lands, context, vm, onSwipe, onDelete)
-                collectionListSection("Spell (${spells.size})", spells, context, vm, onSwipe, onDelete)
+                collectionListSection("Land (${lands.size})", lands, context, vm, onSwipe, onDelete) { pendingEdition = it }
+                collectionListSection("Spell (${spells.size})", spells, context, vm, onSwipe, onDelete) { pendingEdition = it }
             }
         }
+    }
+
+    pendingEdition?.let { card ->
+        EditionPickerDialog(
+            card = card,
+            loadPrints = { vm.printsOf(card.name) },
+            onDismiss = { pendingEdition = null },
+            onPick = { print ->
+                pendingEdition = null
+                vm.changePrinting(card, print) {
+                    Toast.makeText(
+                        context,
+                        "Edice změněna: ${print.setName ?: print.set?.uppercase()}",
+                        Toast.LENGTH_SHORT,
+                    ).show()
+                }
+            },
+        )
     }
 
     pendingAddDeck?.let { card ->
@@ -316,6 +336,7 @@ private fun LazyListScope.collectionListSection(
     vm: CollectionViewModel,
     onSwipe: (CollectionCard) -> Unit,
     onDelete: (CollectionCard) -> Unit,
+    onEdition: (CollectionCard) -> Unit = {},
 ) {
     if (cards.isEmpty()) return
     item(key = "h-$title") { SectionHeaderC(title) }
@@ -326,6 +347,7 @@ private fun LazyListScope.collectionListSection(
                     card = card,
                     onLongDelete = { onDelete(card) },
                     loadRulings = { vm.rulingsFor(it) },
+                    onChangeEdition = { onEdition(card) },
                     onOpenGatherer = {
                         runCatching {
                             context.startActivity(
@@ -504,6 +526,7 @@ private fun CollectionRow(
     onOpenGatherer: () -> Unit,
     onLongDelete: () -> Unit,
     loadRulings: suspend (String) -> List<String>,
+    onChangeEdition: () -> Unit = {},
 ) {
     var ringProgress by remember { androidx.compose.runtime.mutableFloatStateOf(0f) }
     Box(
@@ -520,6 +543,13 @@ private fun CollectionRow(
                 modifier = Modifier.weight(1f),
                 onLongHold = onLongDelete,
             )
+            IconButton(onClick = onChangeEdition) {
+                Icon(
+                    Icons.Filled.SwapHoriz,
+                    contentDescription = "Změnit edici",
+                    tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.75f),
+                )
+            }
             GathererButton(
                 cardName = card.name,
                 loadRulings = { loadRulings(card.scryfallId) },
@@ -578,13 +608,14 @@ private fun GathererButton(
                         .heightIn(max = 380.dp)
                         .verticalScroll(androidx.compose.foundation.rememberScrollState())
                 ) {
-                    Text(
-                        when {
-                            rulings == null -> "Načítám…"
-                            rulings!!.isEmpty() -> "Žádné rulings k této kartě."
-                            else -> rulings!!.joinToString("\n\n")
-                        }
-                    )
+                    when {
+                        rulings == null -> Text("Načítám…")
+                        rulings!!.isEmpty() -> Text("Žádné rulings k této kartě.")
+                        else -> com.example.antimarcipan.ui.TranslatableText(
+                            rulings!!.joinToString("\n\n"),
+                            MaterialTheme.typography.bodyMedium,
+                        )
+                    }
                 }
             },
             confirmButton = {
@@ -592,4 +623,73 @@ private fun GathererButton(
             },
         )
     }
+}
+
+/** Výběr jiného tisku (edice) karty — mřížka náhledů se symbolem edice. */
+@Composable
+private fun EditionPickerDialog(
+    card: CollectionCard,
+    loadPrints: suspend () -> List<com.example.antimarcipan.data.scryfall.ScryfallCard>,
+    onDismiss: () -> Unit,
+    onPick: (com.example.antimarcipan.data.scryfall.ScryfallCard) -> Unit,
+) {
+    var prints by remember { mutableStateOf<List<com.example.antimarcipan.data.scryfall.ScryfallCard>?>(null) }
+    androidx.compose.runtime.LaunchedEffect(card.name) { prints = loadPrints() }
+
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Edice — ${card.name}") },
+        text = {
+            val list = prints
+            when {
+                list == null -> Box(Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
+                    androidx.compose.material3.CircularProgressIndicator()
+                }
+                list.isEmpty() -> Text("Nepodařilo se načíst edice (je potřeba internet).")
+                else -> androidx.compose.foundation.lazy.grid.LazyVerticalGrid(
+                    columns = androidx.compose.foundation.lazy.grid.GridCells.Adaptive(92.dp),
+                    modifier = Modifier.heightIn(max = 460.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    items(list, key = { it.id }) { p ->
+                        val current = p.id == card.scryfallId
+                        Column(
+                            Modifier
+                                .clip(androidx.compose.foundation.shape.RoundedCornerShape(8.dp))
+                                .background(
+                                    if (current) MaterialTheme.colorScheme.primary.copy(alpha = 0.18f)
+                                    else Color.Transparent
+                                )
+                                .clickable { onPick(p) }
+                                .padding(4.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                        ) {
+                            com.example.antimarcipan.ui.CardThumb(p.bestImageUrl, width = 84.dp, height = 117.dp)
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                modifier = Modifier.padding(top = 4.dp),
+                            ) {
+                                com.example.antimarcipan.ui.SetSymbol(p.set, size = 14.dp)
+                                Text(
+                                    (p.set ?: "").uppercase() + (p.collectorNumber?.let { " #$it" } ?: ""),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    maxLines = 1,
+                                )
+                            }
+                            Text(
+                                p.setName ?: "",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f),
+                                maxLines = 1,
+                                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = { TextButton(onClick = onDismiss) { Text("Zavřít") } },
+    )
 }

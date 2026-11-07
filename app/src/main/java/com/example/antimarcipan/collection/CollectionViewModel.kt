@@ -118,6 +118,21 @@ class CollectionViewModel(
         }
     }
 
+    /** Všechny tisky karty (pro změnu edice). */
+    suspend fun printsOf(name: String): List<com.example.antimarcipan.data.scryfall.ScryfallCard> =
+        repo.printsOf(name).getOrElse { emptyList() }
+
+    fun changePrinting(
+        old: CollectionCard,
+        newCard: com.example.antimarcipan.data.scryfall.ScryfallCard,
+        onDone: () -> Unit = {},
+    ) {
+        viewModelScope.launch {
+            repo.changePrinting(old, newCard)
+            onDone()
+        }
+    }
+
     fun removeFromWishlist(scryfallId: String) {
         viewModelScope.launch { repo.removeFromWishlist(scryfallId) }
     }

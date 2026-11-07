@@ -9,6 +9,7 @@ composeBom = "2024.09.03"
 navigation = "2.8.2"
 camerax = "1.3.4"
 mlkitText = "16.0.1"
+mlkitTranslate = "17.0.3"
 retrofit = "2.11.0"
 okhttp = "4.12.0"
 serialization = "1.7.3"
@@ -37,6 +38,7 @@ camerax-camera2 = { group = "androidx.camera", name = "camera-camera2", version.
 camerax-lifecycle = { group = "androidx.camera", name = "camera-lifecycle", version.ref = "camerax" }
 camerax-view = { group = "androidx.camera", name = "camera-view", version.ref = "camerax" }
 mlkit-text-recognition = { group = "com.google.mlkit", name = "text-recognition", version.ref = "mlkitText" }
+mlkit-translate = { group = "com.google.mlkit", name = "translate", version.ref = "mlkitTranslate" }
 
 retrofit = { group = "com.squareup.retrofit2", name = "retrofit", version.ref = "retrofit" }
 retrofit-serialization = { group = "com.squareup.retrofit2", name = "converter-kotlinx-serialization", version.ref = "retrofit" }

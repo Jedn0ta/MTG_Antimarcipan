@@ -88,7 +88,10 @@ fun CardInfoDialog(card: CollectionCard, onDismiss: () -> Unit) {
                     color = MaterialTheme.colorScheme.primary,
                 )
                 card.typeLine?.let { Text(it, style = MaterialTheme.typography.bodyMedium) }
-                card.oracleText?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
+                // Textace s vysvětlivkami samotných hesel + možnost překladu do češtiny
+                com.example.antimarcipan.data.KeywordGlossary.annotate(card.oracleText)
+                    ?.takeIf { it.isNotBlank() }
+                    ?.let { TranslatableText(it, MaterialTheme.typography.bodySmall) }
                 Text(
                     buildString {
                         card.rarity?.let { append(it.replaceFirstChar { c -> c.uppercase() }) }

@@ -32,6 +32,16 @@ interface CollectionDao {
     @Query("UPDATE collection_cards SET wishlist = :wish WHERE scryfallId = :id")
     suspend fun setWishlist(id: String, wish: Boolean)
 
+    // --- změna edice: přepojení odkazů v balících ---
+    @Query("UPDATE deck_cards SET scryfallId = :newId WHERE scryfallId = :oldId AND deckId NOT IN (SELECT deckId FROM deck_cards WHERE scryfallId = :newId)")
+    suspend fun repointDeckCards(oldId: String, newId: String)
+
+    @Query("DELETE FROM deck_cards WHERE scryfallId = :oldId")
+    suspend fun deleteDeckRefs(oldId: String)
+
+    @Query("UPDATE decks SET commanderScryfallId = :newId WHERE commanderScryfallId = :oldId")
+    suspend fun repointCommander(oldId: String, newId: String)
+
     @Upsert
     suspend fun upsert(card: CollectionCard)
 
