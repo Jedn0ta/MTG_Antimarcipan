@@ -71,6 +71,8 @@ object CzechTranslator {
           mana value = mana value, stack = stack.
         - Symboly many a ceny ve složených závorkách ({T}, {2}{G}, {X}) ponech beze změny.
         - Zachovej členění na řádky a odstavce; text v závorkách přelož také.
+        - Neviditelné řídicí znaky U+E000 a U+E001 (označují vysvětlivku od aplikace) ponech
+          přesně na jejich místech kolem přeloženého textu závorky.
         - Vrať pouze překlad, bez komentářů a bez uvozovek.
     """.trimIndent()
 
@@ -172,7 +174,7 @@ fun TranslatableText(text: String, style: TextStyle = MaterialTheme.typography.b
     val useAi = aiKey.isNotBlank()
 
     Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-        Text(if (showCz && translated != null) translated!! else text, style = style)
+        SymbolText(if (showCz && translated != null) translated!! else text, style = style)
         Row(verticalAlignment = Alignment.CenterVertically) {
             TextButton(
                 onClick = {

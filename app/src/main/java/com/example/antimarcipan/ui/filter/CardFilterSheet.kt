@@ -317,7 +317,7 @@ fun MultiSelectField(
     if (open) {
         var query by remember { mutableStateOf("") }
         val shown = options.filter { query.isBlank() || it.second.contains(query.trim(), ignoreCase = true) }
-        AlertDialog(
+        com.example.antimarcipan.ui.GoldDialog(
             onDismissRequest = { open = false },
             title = { Text(label) },
             text = {

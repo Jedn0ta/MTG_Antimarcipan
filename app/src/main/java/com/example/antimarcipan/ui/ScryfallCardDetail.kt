@@ -68,7 +68,7 @@ fun ScryfallCardDetailDialog(card: ScryfallCard, onDismiss: () -> Unit) {
     var imageIndex by remember(card.id) { mutableIntStateOf(0) }
     val images = faces.mapNotNull { it.image }.distinct()
 
-    AlertDialog(
+    com.example.antimarcipan.ui.GoldDialog(
         onDismissRequest = onDismiss,
         title = { Text(card.name) },
         text = {

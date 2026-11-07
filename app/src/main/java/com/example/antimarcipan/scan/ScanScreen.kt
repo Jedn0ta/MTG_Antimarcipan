@@ -527,11 +527,7 @@ private fun CandidateCard(
                         Text(it, style = MaterialTheme.typography.bodySmall)
                     }
                     translation.text?.let {
-                        Text(
-                            it,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.85f),
-                        )
+                        com.example.antimarcipan.ui.SymbolText(it, MaterialTheme.typography.bodySmall)
                     }
                 }
             }

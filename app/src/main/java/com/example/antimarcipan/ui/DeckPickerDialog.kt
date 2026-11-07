@@ -24,7 +24,7 @@ fun DeckPickerDialog(
     onDismiss: () -> Unit,
     onPick: (Deck) -> Unit,
 ) {
-    AlertDialog(
+    com.example.antimarcipan.ui.GoldDialog(
         onDismissRequest = onDismiss,
         title = { Text("Přidat do balíku") },
         text = {

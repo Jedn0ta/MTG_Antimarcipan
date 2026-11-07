@@ -126,7 +126,8 @@ object KeywordGlossary {
         val parts = found.map { (name, expl) ->
             if (found.size == 1) expl else "${name.replaceFirstChar { it.uppercase() }}: $expl"
         }
-        return "$line (${parts.joinToString("; ")})"
+        // \uE000…\uE001 = doplněk od aplikace (vykreslí se jinou barvou)
+        return "$line \uE000(${parts.joinToString("; ")})\uE001"
     }
 
     /** Nejdelší shoda hesla na začátku tokenu (např. „First strike“, „Protection from red“). */

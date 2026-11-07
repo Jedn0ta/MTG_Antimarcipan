@@ -15,7 +15,7 @@ fun ConfirmDialog(
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
 ) {
-    AlertDialog(
+    com.example.antimarcipan.ui.GoldDialog(
         onDismissRequest = onDismiss,
         title = { Text(title) },
         text = { Text(message) },

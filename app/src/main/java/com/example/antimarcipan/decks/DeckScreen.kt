@@ -414,10 +414,28 @@ private fun DeckDetailView(vm: DeckViewModel, deck: Deck) {
         }
         val allLands = visible.filter { isLandCard(it.card) }
         val allOthers = visible.filter { !isLandCard(it.card) }
-        val lands = allLands
+        // Basic landy se zobrazují jen v panelu základních zemí
+        val lands = allLands.filterNot { isBasicLand(it.card) }
         val others = allOthers
+        val showBasicPanel = sectionMode != DeckSectionMode.OTHERS
+        val basicCounts = BASIC_TYPES.associate { (name, _) ->
+            name to deckCards.filter { isBasicLand(it.card) && basicBaseName(it.card.name) == name }
+                .sumOf { it.deckQuantity }
+        }
+        val onBasicInc: (String) -> Unit = { name ->
+            val entry = deckCards.filter { isBasicLand(it.card) && basicBaseName(it.card.name) == name }
+                .minByOrNull { if (it.card.name.startsWith("Snow", true)) 1 else 0 }
+            if (entry != null) vm.setDeckCardQty(deck.id, entry.card.scryfallId, entry.deckQuantity + 1)
+            else vm.addBasicLands(deck.id, mapOf(name to 1))
+        }
+        val onBasicDec: (String) -> Unit = { name ->
+            deckCards.filter { isBasicLand(it.card) && basicBaseName(it.card.name) == name && it.deckQuantity > 0 }
+                .maxByOrNull { it.deckQuantity }
+                ?.let { vm.setDeckCardQty(deck.id, it.card.scryfallId, it.deckQuantity - 1) }
+        }
 
         if (gridMode) {
+            if (showBasicPanel) BasicLandPanel(basicCounts, onBasicInc, onBasicDec)
             DeckGrid(
                 lands = lands,
                 others = others,
@@ -437,10 +455,12 @@ private fun DeckDetailView(vm: DeckViewModel, deck: Deck) {
                 }
             }
 
+            if (showBasicPanel) {
+                val landTotal = lands.sumOf { it.deckQuantity } + basicCounts.values.sum()
+                item { SectionHeader("Land ($landTotal)") }
+                item { BasicLandPanel(basicCounts, onBasicInc, onBasicDec) }
+            }
             if (lands.isNotEmpty()) {
-                // Basicy první, pak ostatní země
-                val orderedLands = lands.sortedBy { if (isBasicLand(it.card)) 0 else 1 }
-                item { SectionHeader("Land (${lands.sumOf { it.deckQuantity }})") }
                 item {
                     Card(
                         Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
@@ -448,17 +468,17 @@ private fun DeckDetailView(vm: DeckViewModel, deck: Deck) {
                             containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
                         ),
                     ) {
-                        orderedLands.forEachIndexed { i, entry ->
+                        lands.forEachIndexed { i, entry ->
                             DeckEntryRow(
                                 entry = entry,
-                                isBasic = isBasicLand(entry.card),
+                                isBasic = false,
                                 isCommander = entry.card.scryfallId == deck.commanderScryfallId,
                                 showCommander = format == DeckFormat.COMMANDER,
                                 onCommander = { vm.setCommander(entry.card) },
                                 onLongRemove = { pendingRemove = entry.card },
                                 onChangeQty = { q -> vm.setDeckCardQty(deck.id, entry.card.scryfallId, q) },
                             )
-                            if (i < orderedLands.lastIndex) HorizontalDivider()
+                            if (i < lands.lastIndex) HorizontalDivider()
                         }
                     }
                 }
@@ -818,7 +838,7 @@ private fun DeckGrid(
     ) {
         if (orderedLands.isNotEmpty()) {
             item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(maxLineSpan) }) {
-                SectionHeader("Land (${orderedLands.sumOf { it.deckQuantity }})")
+                SectionHeader("Ostatní země (${orderedLands.sumOf { it.deckQuantity }})")
             }
             gridItems(orderedLands, key = { "gl-" + it.card.scryfallId }) { entry ->
                 DeckGridCell(entry)
@@ -849,6 +869,96 @@ private fun DeckGridCell(entry: com.example.antimarcipan.data.local.DeckCardWith
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onPrimary,
                 )
+            }
+        }
+    }
+}
+
+/** Typy základních zemí a jejich mana. */
+private val BASIC_TYPES = listOf(
+    "Plains" to "W", "Island" to "U", "Swamp" to "B", "Mountain" to "R", "Forest" to "G", "Wastes" to "C",
+)
+
+/** „Snow-Covered Forest“ → „Forest“. */
+private fun basicBaseName(name: String): String =
+    name.removePrefix("Snow-Covered ").removePrefix("snow-covered ").trim()
+
+/**
+ * Panel základních zemí: dlaždice se symbolem many, počtem a −/+.
+ * Ťuknutí na symbol přidá jeden kus.
+ */
+@Composable
+private fun BasicLandPanel(
+    counts: Map<String, Int>,
+    onInc: (String) -> Unit,
+    onDec: (String) -> Unit,
+) {
+    Card(
+        Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
+        colors = androidx.compose.material3.CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.10f)
+        ),
+        border = androidx.compose.foundation.BorderStroke(1.dp, com.example.antimarcipan.ui.GoldBorderBrush),
+    ) {
+        Column(Modifier.padding(horizontal = 6.dp, vertical = 10.dp)) {
+            Text(
+                "Základní země · ${counts.values.sum()}",
+                Modifier.padding(start = 6.dp, bottom = 6.dp),
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.primary,
+            )
+            Row(Modifier.fillMaxWidth()) {
+                BASIC_TYPES.forEach { (name, mana) ->
+                    val n = counts[name] ?: 0
+                    Column(
+                        Modifier.weight(1f),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(2.dp),
+                    ) {
+                        androidx.compose.foundation.Image(
+                            painter = androidx.compose.ui.res.painterResource(manaRes(mana)),
+                            contentDescription = "$name +1",
+                            modifier = Modifier
+                                .size(38.dp)
+                                .clip(androidx.compose.foundation.shape.CircleShape)
+                                .alpha(if (n > 0) 1f else 0.45f)
+                                .clickable { onInc(name) },
+                        )
+                        Text(
+                            "$n",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = if (n > 0) MaterialTheme.colorScheme.onSurface
+                            else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.45f),
+                        )
+                        Text(
+                            name,
+                            style = MaterialTheme.typography.labelSmall,
+                            maxLines = 1,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                        )
+                        Row {
+                            Text(
+                                "−",
+                                Modifier
+                                    .clip(androidx.compose.foundation.shape.CircleShape)
+                                    .clickable(enabled = n > 0) { onDec(name) }
+                                    .padding(horizontal = 8.dp, vertical = 2.dp),
+                                style = MaterialTheme.typography.titleMedium,
+                                color = if (n > 0) MaterialTheme.colorScheme.primary
+                                else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
+                            )
+                            Text(
+                                "+",
+                                Modifier
+                                    .clip(androidx.compose.foundation.shape.CircleShape)
+                                    .clickable { onInc(name) }
+                                    .padding(horizontal = 8.dp, vertical = 2.dp),
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.primary,
+                            )
+                        }
+                    }
+                }
             }
         }
     }
@@ -946,7 +1056,7 @@ private fun BasicLandsDialog(
         "Forest" to com.example.antimarcipan.R.drawable.mana_g,
     )
     val counts = remember { mutableStateMapOf<String, Int>() }
-    AlertDialog(
+    com.example.antimarcipan.ui.GoldDialog(
         onDismissRequest = onDismiss,
         title = { Text("Přidat základní země") },
         text = {
@@ -993,7 +1103,7 @@ private fun FormatDialog(
     onDismiss: () -> Unit,
     onPick: (DeckFormat) -> Unit,
 ) {
-    AlertDialog(
+    com.example.antimarcipan.ui.GoldDialog(
         onDismissRequest = onDismiss,
         title = { Text("Formát balíku") },
         text = {
@@ -1037,7 +1147,7 @@ private fun NewDeckDialog(
     var name by remember { mutableStateOf("") }
     var format by remember { mutableStateOf(DeckFormat.SINGLETON) }
     val colors = remember { androidx.compose.runtime.mutableStateListOf<String>() }
-    AlertDialog(
+    com.example.antimarcipan.ui.GoldDialog(
         onDismissRequest = onDismiss,
         title = { Text("Nový balík") },
         text = {
@@ -1236,7 +1346,7 @@ private fun DeckNameDialog(
 ) {
     var name by remember { mutableStateOf(initial) }
     val colors = remember { androidx.compose.runtime.mutableStateListOf<String>().apply { addAll(parseDeckColors(initialColors).filter { it in WUBRG }) } }
-    AlertDialog(
+    com.example.antimarcipan.ui.GoldDialog(
         onDismissRequest = onDismiss,
         title = { Text(title) },
         text = {

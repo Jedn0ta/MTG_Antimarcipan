@@ -586,7 +586,7 @@ private fun GathererButton(
         androidx.compose.runtime.LaunchedEffect(Unit) {
             if (rulings == null) rulings = loadRulings()
         }
-        androidx.compose.material3.AlertDialog(
+        com.example.antimarcipan.ui.GoldDialog(
             onDismissRequest = { showRulings = false },
             title = { Text("Rulings — $cardName") },
             text = {
@@ -623,7 +623,7 @@ private fun EditionPickerDialog(
     var prints by remember { mutableStateOf<List<com.example.antimarcipan.data.scryfall.ScryfallCard>?>(null) }
     androidx.compose.runtime.LaunchedEffect(card.name) { prints = loadPrints() }
 
-    androidx.compose.material3.AlertDialog(
+    com.example.antimarcipan.ui.GoldDialog(
         onDismissRequest = onDismiss,
         title = { Text("Edice — ${card.name}") },
         text = {

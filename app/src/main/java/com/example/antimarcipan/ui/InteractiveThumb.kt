@@ -73,7 +73,7 @@ fun InteractiveThumb(
 
 @Composable
 fun CardInfoDialog(card: CollectionCard, onDismiss: () -> Unit) {
-    AlertDialog(
+    com.example.antimarcipan.ui.GoldDialog(
         onDismissRequest = onDismiss,
         title = { Text(card.name) },
         text = {
