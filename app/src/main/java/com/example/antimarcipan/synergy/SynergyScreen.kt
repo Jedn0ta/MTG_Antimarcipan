@@ -133,18 +133,7 @@ private fun ThemeSummary(colors: Set<String>, themes: List<String>, tribes: List
 
 @Composable
 private fun SectionTitle(text: String) {
-    Text(
-        text,
-        Modifier.fillMaxWidth()
-            .background(
-                androidx.compose.ui.graphics.Brush.horizontalGradient(
-                    listOf(MaterialTheme.colorScheme.primary.copy(alpha = 0.16f), Color.Transparent)
-                )
-            )
-            .padding(horizontal = 16.dp, vertical = 10.dp),
-        style = MaterialTheme.typography.titleSmall,
-        color = MaterialTheme.colorScheme.primary,
-    )
+    com.example.antimarcipan.ui.OrnamentHeader(text)
 }
 
 @Composable

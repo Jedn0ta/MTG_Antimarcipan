@@ -20,6 +20,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
@@ -81,13 +83,23 @@ fun AntimarcipanApp() {
         // tmavém pozadí není vidět. Držíme světlý obsah.
         contentColor = MaterialTheme.colorScheme.onSurface,
         topBar = {
+          androidx.compose.foundation.layout.Column {
             TopAppBar(
                 modifier = Modifier.background(BarGradient),
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = Color.Transparent,
                     scrolledContainerColor = Color.Transparent,
                 ),
-                title = { Text(title) },
+                title = {
+                    Text(
+                        title,
+                        style = MaterialTheme.typography.titleLarge.copy(
+                            brush = androidx.compose.ui.graphics.Brush.linearGradient(
+                                listOf(Color(0xFFF6DE9A), Color(0xFFE9C46A), Color(0xFFB98A35)),
+                            ),
+                        ),
+                    )
+                },
                 navigationIcon = {
                     if (isSubScreen) {
                         IconButton(onClick = { navController.popBackStack() }) {
@@ -106,6 +118,15 @@ fun AntimarcipanApp() {
                     }
                 },
             )
+            // tenká zlatá linka pod lištou
+            androidx.compose.foundation.layout.Box(
+                Modifier.fillMaxWidth().height(1.dp).background(
+                    androidx.compose.ui.graphics.Brush.horizontalGradient(
+                        listOf(Color.Transparent, Color(0xAAE9C46A), Color.Transparent),
+                    )
+                )
+            )
+          }
         },
         bottomBar = {
             if (!isSubScreen) {

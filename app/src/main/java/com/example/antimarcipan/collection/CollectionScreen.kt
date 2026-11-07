@@ -306,18 +306,7 @@ private fun isLandCard(card: CollectionCard): Boolean =
 
 @Composable
 private fun SectionHeaderC(text: String) {
-    Text(
-        text,
-        Modifier.fillMaxWidth()
-            .background(
-                androidx.compose.ui.graphics.Brush.horizontalGradient(
-                    listOf(MaterialTheme.colorScheme.primary.copy(alpha = 0.16f), androidx.compose.ui.graphics.Color.Transparent)
-                )
-            )
-            .padding(horizontal = 16.dp, vertical = 8.dp),
-        style = MaterialTheme.typography.titleSmall,
-        color = MaterialTheme.colorScheme.primary,
-    )
+    com.example.antimarcipan.ui.OrnamentHeader(text)
 }
 
 private fun LazyListScope.collectionListSection(

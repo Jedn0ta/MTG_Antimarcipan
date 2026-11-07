@@ -1,6 +1,11 @@
 package com.example.antimarcipan.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.draw.rotate
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -36,11 +41,50 @@ fun CardThumb(
     width: Dp = 48.dp,
     height: Dp = 67.dp,
 ) {
+    // Periodický lesk přes kartu (krátký průjezd, pak pauza)
+    val shine = androidx.compose.animation.core.rememberInfiniteTransition(label = "shine")
+    val sweep by shine.animateFloat(
+        initialValue = -1f,
+        targetValue = 2.5f,
+        animationSpec = androidx.compose.animation.core.infiniteRepeatable(
+            androidx.compose.animation.core.tween(durationMillis = 4200,
+                easing = androidx.compose.animation.core.LinearEasing),
+        ),
+        label = "sweep",
+    )
+    val shape = RoundedCornerShape(6.dp)
     Box(
         modifier
             .size(width = width, height = height)
-            .clip(RoundedCornerShape(6.dp))
-            .background(MaterialTheme.colorScheme.surfaceVariant),
+            .clip(shape)
+            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .drawWithContent {
+                drawContent()
+                // lesk jen v první třetině cyklu
+                if (sweep in -0.5f..1.5f) {
+                    val x = size.width * sweep
+                    drawRect(
+                        androidx.compose.ui.graphics.Brush.linearGradient(
+                            0f to androidx.compose.ui.graphics.Color.Transparent,
+                            0.5f to androidx.compose.ui.graphics.Color.White.copy(alpha = 0.22f),
+                            1f to androidx.compose.ui.graphics.Color.Transparent,
+                            start = androidx.compose.ui.geometry.Offset(x - size.width * 0.4f, 0f),
+                            end = androidx.compose.ui.geometry.Offset(x + size.width * 0.4f, size.height),
+                        )
+                    )
+                }
+            }
+            .border(
+                1.dp,
+                androidx.compose.ui.graphics.Brush.linearGradient(
+                    listOf(
+                        androidx.compose.ui.graphics.Color(0xFFF6DE9A),
+                        androidx.compose.ui.graphics.Color(0xFF9C7A2E),
+                        androidx.compose.ui.graphics.Color(0xFFE9C46A),
+                    )
+                ),
+                shape,
+            ),
         contentAlignment = Alignment.Center,
     ) {
         if (model == null) {
@@ -104,3 +148,44 @@ fun ScreenTitle(text: String) {
         modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
     )
 }
+
+/** Ozdobný nadpis sekce: zlatý kosočtverec, text a mizející zlatá linka. */
+@Composable
+fun OrnamentHeader(text: String, modifier: Modifier = Modifier) {
+    val gold = MaterialTheme.colorScheme.primary
+    Row(
+        modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Box(
+            Modifier
+                .size(8.dp)
+                .rotate(45f)
+                .background(
+                    androidx.compose.ui.graphics.Brush.linearGradient(
+                        listOf(androidx.compose.ui.graphics.Color(0xFFF6DE9A), gold)
+                    )
+                ),
+        )
+        Text(
+            text.uppercase(),
+            style = MaterialTheme.typography.labelLarge.copy(
+                letterSpacing = androidx.compose.ui.unit.TextUnit(1.6f, androidx.compose.ui.unit.TextUnitType.Sp),
+                fontFamily = androidx.compose.ui.text.font.FontFamily.Serif,
+            ),
+            color = gold,
+        )
+        Box(
+            Modifier
+                .weight(1f)
+                .height(1.dp)
+                .background(
+                    androidx.compose.ui.graphics.Brush.horizontalGradient(
+                        listOf(gold.copy(alpha = 0.7f), androidx.compose.ui.graphics.Color.Transparent)
+                    )
+                ),
+        )
+    }
+}
+

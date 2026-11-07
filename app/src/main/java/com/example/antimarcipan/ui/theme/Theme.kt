@@ -4,6 +4,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
 
 // Paleta inspirovaná noční fantasy krajinou — hluboká indigová, fialová, zlatá.
 private val Gold = Color(0xFFE9C46A)
@@ -33,6 +34,23 @@ private val DarkColors = darkColorScheme(
     error = Color(0xFFF2777A),
 )
 
+// Nadpisy patkovým písmem (fantasy dojem), text zůstává čitelný bezpatkový.
+private val Serif = androidx.compose.ui.text.font.FontFamily.Serif
+private val Base = androidx.compose.material3.Typography()
+private val FantasyTypography = androidx.compose.material3.Typography(
+    displaySmall = Base.displaySmall.copy(fontFamily = Serif),
+    headlineLarge = Base.headlineLarge.copy(fontFamily = Serif),
+    headlineMedium = Base.headlineMedium.copy(fontFamily = Serif),
+    headlineSmall = Base.headlineSmall.copy(fontFamily = Serif),
+    titleLarge = Base.titleLarge.copy(
+        fontFamily = Serif,
+        fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
+        letterSpacing = androidx.compose.ui.unit.TextUnit(0.4f, androidx.compose.ui.unit.TextUnitType.Sp),
+    ),
+    titleMedium = Base.titleMedium.copy(fontFamily = Serif, fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold),
+    titleSmall = Base.titleSmall.copy(fontFamily = Serif),
+)
+
 @Composable
 fun AntimarcipanTheme(
     content: @Composable () -> Unit,
@@ -40,6 +58,12 @@ fun AntimarcipanTheme(
     // Appka má jen tmavý režim — odpovídá noční fantasy estetice.
     MaterialTheme(
         colorScheme = DarkColors,
+        typography = FantasyTypography,
+        shapes = androidx.compose.material3.Shapes(
+            small = androidx.compose.foundation.shape.RoundedCornerShape(10.dp),
+            medium = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
+            large = androidx.compose.foundation.shape.RoundedCornerShape(22.dp),
+        ),
         content = content,
     )
 }
