@@ -1,5 +1,10 @@
 package com.example.antimarcipan.ui
 
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
+
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -64,7 +69,7 @@ fun GoldDialog(
                     }
                 }
                 text?.let {
-                    Box(Modifier.weight(1f, fill = false)) {
+                    Box(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState())) {
                         ProvideTextStyle(MaterialTheme.typography.bodyMedium) { it() }
                     }
                 }
@@ -78,4 +83,35 @@ fun GoldDialog(
             }
         }
     }
+}
+
+private val GoldChipBrush = Brush.linearGradient(listOf(Color(0xFFF6DE9A), Color(0xFFD9B05A), Color(0xFFB98A35)))
+
+/** Přepínací čip ve zlaté: vybraný = zlatý podklad s tmavým textem, ostatní zlatý rámeček. */
+@Composable
+fun GoldChip(
+    selected: Boolean,
+    onClick: () -> Unit,
+    label: @Composable () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    leadingIcon: (@Composable () -> Unit)? = null,
+) {
+    FilterChip(
+        selected = selected,
+        onClick = onClick,
+        label = label,
+        modifier = modifier,
+        enabled = enabled,
+        leadingIcon = leadingIcon,
+        colors = FilterChipDefaults.filterChipColors(
+            containerColor = Color.Transparent,
+            labelColor = Color(0xFFEAD9A8),
+            iconColor = Color(0xFFEAD9A8),
+            selectedContainerColor = Color(0xFFE2BC62),
+            selectedLabelColor = Color(0xFF1E1633),
+            selectedLeadingIconColor = Color(0xFF1E1633),
+        ),
+        border = if (selected) null else BorderStroke(1.dp, GoldChipBrush),
+    )
 }

@@ -149,7 +149,7 @@ fun CardFilterSheet(
                     if (state.colors.isNotEmpty()) {
                         FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                             ColorMode.entries.forEach { m ->
-                                FilterChip(
+                                com.example.antimarcipan.ui.GoldChip(
                                     selected = state.colorMode == m,
                                     onClick = { onChange(state.copy(colorMode = m)) },
                                     label = { Text(m.label) },
@@ -254,7 +254,7 @@ private fun ChipGroup(values: List<Pair<String, String>>, selected: Set<String>,
         verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         values.forEach { (key, label) ->
-            FilterChip(selected = key in selected, onClick = { onToggle(key) }, label = { Text(label) })
+            com.example.antimarcipan.ui.GoldChip(selected = key in selected, onClick = { onToggle(key) }, label = { Text(label) })
         }
     }
 }

@@ -138,17 +138,17 @@ fun CollectionScreen(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(6.dp),
         ) {
-            androidx.compose.material3.FilterChip(
+            com.example.antimarcipan.ui.GoldChip(
                 selected = tab == 0,
                 onClick = { tab = 0 },
                 label = { Text("Sbírka") },
             )
-            androidx.compose.material3.FilterChip(
+            com.example.antimarcipan.ui.GoldChip(
                 selected = tab == 1,
                 onClick = { tab = 1 },
                 label = { Text("Wishlist") },
             )
-            androidx.compose.material3.FilterChip(
+            com.example.antimarcipan.ui.GoldChip(
                 selected = tab == 2,
                 onClick = { tab = 2 },
                 label = { Text("Draft") },
@@ -199,7 +199,7 @@ fun CollectionScreen(
             horizontalArrangement = Arrangement.spacedBy(6.dp),
         ) {
             listOf("Vše", "Land", "Spell").forEachIndexed { i, label ->
-                androidx.compose.material3.FilterChip(
+                com.example.antimarcipan.ui.GoldChip(
                     selected = section == i,
                     onClick = { section = i },
                     label = { Text(label) },
@@ -407,7 +407,7 @@ private fun AdvancedFilters(
         Text("Typ", style = MaterialTheme.typography.labelMedium)
         FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             CardType.entries.forEach { t ->
-                FilterChip(
+                com.example.antimarcipan.ui.GoldChip(
                     selected = filter.types.contains(t),
                     onClick = { vm.toggleType(t) },
                     label = { Text(t.label) },
@@ -417,7 +417,7 @@ private fun AdvancedFilters(
         Text("Rarita", style = MaterialTheme.typography.labelMedium)
         FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             Rarity.entries.forEach { r ->
-                FilterChip(
+                com.example.antimarcipan.ui.GoldChip(
                     selected = filter.rarities.contains(r),
                     onClick = { vm.toggleRarity(r) },
                     label = { Text(r.label) },
@@ -427,7 +427,7 @@ private fun AdvancedFilters(
         Text("Mana value", style = MaterialTheme.typography.labelMedium)
         FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             (0..7).forEach { b ->
-                FilterChip(
+                com.example.antimarcipan.ui.GoldChip(
                     selected = filter.cmcBuckets.contains(b),
                     onClick = { vm.toggleCmc(b) },
                     label = { Text(if (b == 7) "7+" else b.toString()) },
@@ -438,7 +438,7 @@ private fun AdvancedFilters(
             Text("Edice", style = MaterialTheme.typography.labelMedium)
             FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 sets.forEach { s ->
-                    FilterChip(
+                    com.example.antimarcipan.ui.GoldChip(
                         selected = filter.sets.contains(s.code),
                         onClick = { vm.toggleSet(s.code) },
                         label = { Text(s.label) },
@@ -461,7 +461,7 @@ private fun SortRow(filter: CollectionFilter, vm: CollectionViewModel) {
     ) {
         SortBy.entries.forEach { s ->
             val active = filter.sortBy == s
-            FilterChip(
+            com.example.antimarcipan.ui.GoldChip(
                 selected = active,
                 onClick = { vm.setSort(s) },
                 label = { Text(s.label + if (active) (if (filter.sortDesc) " ↓" else " ↑") else "") },

@@ -58,7 +58,7 @@ fun AdvisorScreen(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             decks.forEach { deck ->
-                FilterChip(
+                com.example.antimarcipan.ui.GoldChip(
                     selected = selectedDeckId == deck.id,
                     onClick = {
                         selectedDeckId = deck.id

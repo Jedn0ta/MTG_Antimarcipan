@@ -286,7 +286,7 @@ private fun LanguageCard(vm: SettingsViewModel) {
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 com.example.antimarcipan.data.settings.TranslationLang.entries.forEach { lang ->
-                    androidx.compose.material3.FilterChip(
+                    com.example.antimarcipan.ui.GoldChip(
                         selected = current == lang,
                         onClick = { vm.setTranslationLang(lang) },
                         label = { Text(lang.label) },

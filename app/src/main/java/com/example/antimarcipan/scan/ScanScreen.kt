@@ -174,9 +174,13 @@ fun ScanScreen(
                     Icon(Icons.Filled.CameraAlt, contentDescription = null)
                     Text("  Spustit skenování")
                 }
-                OutlinedButton(
+                Button(
                     onClick = { vm.setMultiScan(true); scanning = true },
                     modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                    colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                        containerColor = androidx.compose.ui.graphics.Color(0xFF6A4BC4),
+                        contentColor = androidx.compose.ui.graphics.Color.White,
+                    ),
                 ) {
                     Text("Multisken z fotky (víc karet naráz)")
                 }
@@ -209,12 +213,12 @@ fun ScanScreen(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    androidx.compose.material3.FilterChip(
+                    com.example.antimarcipan.ui.GoldChip(
                         selected = !state.multiScan,
                         onClick = { if (state.multiScan) vm.setMultiScan(false) },
                         label = { Text("Jednotlivě") },
                     )
-                    androidx.compose.material3.FilterChip(
+                    com.example.antimarcipan.ui.GoldChip(
                         selected = state.multiScan,
                         onClick = { if (!state.multiScan) vm.setMultiScan(true) },
                         label = { Text("Multisken") },

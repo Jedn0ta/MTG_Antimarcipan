@@ -378,7 +378,7 @@ private fun DeckDetailView(vm: DeckViewModel, deck: Deck) {
             verticalAlignment = Alignment.CenterVertically,
         ) {
             DeckSectionMode.entries.forEach { mode ->
-                androidx.compose.material3.FilterChip(
+                com.example.antimarcipan.ui.GoldChip(
                     selected = sectionMode == mode,
                     onClick = { settings.setDeckSection(mode.name) },
                     label = { Text(mode.label) },
@@ -421,8 +421,12 @@ private fun DeckDetailView(vm: DeckViewModel, deck: Deck) {
         val allLands = visible.filter { isLandCard(it.card) }
         val allOthers = visible.filter { !isLandCard(it.card) }
         // Basic landy se zobrazují jen v panelu základních zemí
-        val lands = allLands.filterNot { isBasicLand(it.card) }
-        val others = allOthers
+        val allMode = sectionMode == DeckSectionMode.ALL
+        // „Vše“: žádné seskupování, všechno podle abecedy
+        val lands = if (allMode) emptyList() else allLands.filterNot { isBasicLand(it.card) }.sortedBy { it.card.name.lowercase() }
+        val others = if (allMode) (allLands.filterNot { isBasicLand(it.card) } + allOthers).sortedBy { it.card.name.lowercase() }
+        else allOthers.sortedBy { it.card.name.lowercase() }
+        val othersLabel = if (allMode) "Vše" else "Spell"
         val showBasicPanel = sectionMode != DeckSectionMode.OTHERS
         val basicCounts = BASIC_TYPES.associate { (name, _) ->
             name to deckCards.filter { isBasicLand(it.card) && basicBaseName(it.card.name) == name }
@@ -471,6 +475,7 @@ private fun DeckDetailView(vm: DeckViewModel, deck: Deck) {
                 lands = lands,
                 others = others,
                 emptyDeck = deckCards.isEmpty(),
+                othersLabel = othersLabel,
             )
             return@Column
         }
@@ -530,7 +535,7 @@ private fun DeckDetailView(vm: DeckViewModel, deck: Deck) {
             }
 
             if (others.isNotEmpty()) {
-                item { SectionHeader("Spell (${others.sumOf { it.deckQuantity }})") }
+                item { SectionHeader("$othersLabel (${others.sumOf { it.deckQuantity }})") }
                 item {
                     Card(
                         Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
@@ -852,7 +857,7 @@ private fun DeckFilterMenu(
                             verticalArrangement = Arrangement.spacedBy(8.dp),
                         ) {
                             values.forEach { (key, label) ->
-                                androidx.compose.material3.FilterChip(
+                                com.example.antimarcipan.ui.GoldChip(
                                     selected = selected.contains(key),
                                     onClick = { onToggle(key) },
                                     label = { Text(label) },
@@ -894,6 +899,7 @@ private fun DeckGrid(
     lands: List<com.example.antimarcipan.data.local.DeckCardWithQty>,
     others: List<com.example.antimarcipan.data.local.DeckCardWithQty>,
     emptyDeck: Boolean,
+    othersLabel: String = "Spell",
 ) {
     if (emptyDeck) {
         Text(
@@ -920,7 +926,7 @@ private fun DeckGrid(
             }
         }
         item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(maxLineSpan) }) {
-            SectionHeader("Spell (${others.sumOf { it.deckQuantity }})")
+            SectionHeader("$othersLabel (${others.sumOf { it.deckQuantity }})")
         }
         gridItems(others, key = { "go-" + it.card.scryfallId }) { entry ->
             DeckGridCell(entry)

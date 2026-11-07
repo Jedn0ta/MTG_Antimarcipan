@@ -123,11 +123,11 @@ fun LifeCounterScreen() {
         ) {
             Text("Hráči", style = MaterialTheme.typography.labelMedium)
             (2..6).forEach { k ->
-                FilterChip(selected = n == k, onClick = { LifeState.count = k; LifeState.starter = null; save() }, label = { Text("$k") })
+                com.example.antimarcipan.ui.GoldChip(selected = n == k, onClick = { LifeState.count = k; LifeState.starter = null; save() }, label = { Text("$k") })
             }
             Text("  Životy", style = MaterialTheme.typography.labelMedium)
             listOf(20, 30, 40).forEach { l ->
-                FilterChip(
+                com.example.antimarcipan.ui.GoldChip(
                     selected = LifeState.startLife == l,
                     onClick = { LifeState.startLife = l; LifeState.reset(); save() },
                     label = { Text("$l") },
