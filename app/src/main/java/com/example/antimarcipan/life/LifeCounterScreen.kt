@@ -1,7 +1,6 @@
 package com.example.antimarcipan.life
 
 import android.content.Context
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -204,7 +203,7 @@ private fun Tile(index: Int, rotation: Float, modifier: Modifier, save: () -> Un
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Box(Modifier.padding(bottom = 2.dp)) {
-                    AnimatedVisibility(p.delta != 0, enter = fadeIn(), exit = fadeOut()) {
+                    androidx.compose.animation.AnimatedVisibility(visible = p.delta != 0, enter = fadeIn(), exit = fadeOut()) {
                         Text(
                             (if (p.delta > 0) "+" else "") + p.delta,
                             color = if (p.delta > 0) Color(0xFFB6F2C4) else Color(0xFFFFB4B4),
