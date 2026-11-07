@@ -260,6 +260,7 @@ fun CollectionScreen(
                 else if (fstate.isActive) "Zkus upravit filtr." else "Naskenuj první kartu v záložce Sken.",
             )
         } else if (gridMode) {
+            androidx.compose.runtime.CompositionLocalProvider(com.example.antimarcipan.ui.LocalCardList provides (lands + spells)) {
             androidx.compose.foundation.lazy.grid.LazyVerticalGrid(
                 columns = androidx.compose.foundation.lazy.grid.GridCells.Adaptive(90.dp),
                 modifier = Modifier.weight(1f),
@@ -270,10 +271,13 @@ fun CollectionScreen(
                 collectionGridSection("Land (${lands.size})", lands)
                 collectionGridSection("Spell (${spells.size})", spells)
             }
+            }
         } else {
+            androidx.compose.runtime.CompositionLocalProvider(com.example.antimarcipan.ui.LocalCardList provides (lands + spells)) {
             LazyColumn(Modifier.weight(1f)) {
                 collectionListSection("Land (${lands.size})", lands, context, vm, onSwipe, onDelete) { pendingEdition = it }
                 collectionListSection("Spell (${spells.size})", spells, context, vm, onSwipe, onDelete) { pendingEdition = it }
+            }
             }
         }
     }

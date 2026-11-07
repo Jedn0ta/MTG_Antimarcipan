@@ -67,9 +67,15 @@ fun InteractiveThumb(
 
     if (showInfo) CardInfoDialog(card) { showInfo = false }
     if (showFull) {
-        val model = card.thumbModel()
-        if (model != null) FullCardDialog(model) { showFull = false }
-        else showFull = false
+        val list = LocalCardList.current.filter { it.thumbModel() != null }
+        val start = list.indexOfFirst { it.scryfallId == card.scryfallId }
+        if (start >= 0 && list.size > 1) {
+            FullCardPager(list, start) { showFull = false }
+        } else {
+            val model = card.thumbModel()
+            if (model != null) FullCardDialog(model) { showFull = false }
+            else showFull = false
+        }
     }
 }
 
@@ -107,6 +113,45 @@ fun CardInfoDialog(card: CollectionCard, onDismiss: () -> Unit) {
         },
         confirmButton = { TextButton(onClick = onDismiss) { Text("Zavřít") } },
     )
+}
+
+/** Seznam karet, ve kterém se nachází náhled — pro listování swipem v plném náhledu. */
+val LocalCardList = androidx.compose.runtime.staticCompositionLocalOf<List<CollectionCard>> { emptyList() }
+
+/** Plný náhled s listováním: swipe doleva/doprava = další/předchozí karta seznamu. */
+@Composable
+private fun FullCardPager(cards: List<CollectionCard>, start: Int, onDismiss: () -> Unit) {
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false),
+    ) {
+        val pager = androidx.compose.foundation.pager.rememberPagerState(initialPage = start) { cards.size }
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            androidx.compose.foundation.pager.HorizontalPager(
+                state = pager,
+                contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 28.dp),
+                pageSpacing = 12.dp,
+            ) { i ->
+                AsyncImage(
+                    model = cards[i].thumbModel(),
+                    contentDescription = cards[i].name,
+                    contentScale = ContentScale.Fit,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 560.dp)
+                        .border(2.dp, GoldBorderBrush, androidx.compose.foundation.shape.RoundedCornerShape(18.dp))
+                        .padding(4.dp)
+                        .clip(androidx.compose.foundation.shape.RoundedCornerShape(14.dp)),
+                )
+            }
+            Text(
+                "${pager.currentPage + 1} / ${cards.size}  ·  ${cards[pager.currentPage].name}",
+                Modifier.padding(top = 10.dp),
+                style = MaterialTheme.typography.labelLarge,
+                color = androidx.compose.ui.graphics.Color.White,
+            )
+        }
+    }
 }
 
 @Composable
