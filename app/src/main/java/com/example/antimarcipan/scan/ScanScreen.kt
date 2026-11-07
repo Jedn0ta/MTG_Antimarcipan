@@ -524,25 +524,6 @@ private fun CandidateCard(
                         Modifier.weight(1f),
                         style = MaterialTheme.typography.titleMedium,
                     )
-                    // Překlad textace do zvoleného jazyka
-                    if (state.translating) {
-                        CircularProgressIndicator(
-                            Modifier.size(22.dp),
-                            strokeWidth = 2.dp,
-                        )
-                    } else {
-                        androidx.compose.material3.IconButton(
-                            onClick = { if (translation != null) onHideTranslation() else onTranslate() },
-                            modifier = Modifier.size(32.dp),
-                        ) {
-                            androidx.compose.material3.Icon(
-                                androidx.compose.material.icons.Icons.Filled.Translate,
-                                contentDescription = "Přeložit do: $langLabel",
-                                tint = if (translation != null) MaterialTheme.colorScheme.primary
-                                else MaterialTheme.colorScheme.onSurface,
-                            )
-                        }
-                    }
                 }
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     com.example.antimarcipan.ui.SetSymbol(candidate.set, size = 16.dp)
@@ -553,26 +534,11 @@ private fun CandidateCard(
                     )
                 }
                 Text(candidate.typeLine ?: "", style = MaterialTheme.typography.bodySmall)
-                if (translation != null) {
-                    androidx.compose.material3.HorizontalDivider(Modifier.padding(vertical = 6.dp))
-                    if (translation.fallbackToEnglish) {
-                        Text(
-                            "V jazyce „$langLabel“ karta nevyšla — ukazuji anglicky.",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.error,
-                        )
-                    }
-                    Text(
-                        translation.name,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.primary,
+                candidate.oracleText?.takeIf { it.isNotBlank() }?.let {
+                    com.example.antimarcipan.ui.SymbolText(
+                        com.example.antimarcipan.data.KeywordGlossary.annotate(it) ?: it,
+                        MaterialTheme.typography.bodySmall,
                     )
-                    translation.typeLine?.let {
-                        Text(it, style = MaterialTheme.typography.bodySmall)
-                    }
-                    translation.text?.let {
-                        com.example.antimarcipan.ui.SymbolText(it, MaterialTheme.typography.bodySmall)
-                    }
                 }
             }
         }

@@ -163,9 +163,7 @@ fun SettingsScreen(
 
         AppearanceCard(vm)
 
-        LanguageCard(vm)
 
-        AiTranslateCard(vm)
 
         BackupCard(vm)
 
@@ -267,97 +265,6 @@ private fun BackgroundSwatch(
 }
 
 @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
-@Composable
-private fun LanguageCard(vm: SettingsViewModel) {
-    val current by vm.translationLang.collectAsStateWithLifecycle()
-    Card(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp)) {
-        Column(
-            Modifier.fillMaxWidth().padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-            Text("Jazyk aplikace", style = MaterialTheme.typography.titleMedium)
-            Text(
-                "Výchozí je čeština. Překladač ve skenu překládá textaci karet " +
-                    "do zvoleného jazyka (čeština = originál, protože karty v ní nevyšly).",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-            )
-            androidx.compose.foundation.layout.FlowRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                com.example.antimarcipan.data.settings.TranslationLang.entries.forEach { lang ->
-                    com.example.antimarcipan.ui.GoldChip(
-                        selected = current == lang,
-                        onClick = { vm.setTranslationLang(lang) },
-                        label = { Text(lang.label) },
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun AiTranslateCard(vm: SettingsViewModel) {
-    val saved by vm.aiKey.collectAsStateWithLifecycle()
-    var input by remember(saved) { mutableStateOf(saved) }
-    var visible by remember { mutableStateOf(false) }
-    val context = LocalContext.current
-    Card(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp)) {
-        Column(
-            Modifier.fillMaxWidth().padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-            Text("Překlad pravidel (AI)", style = MaterialTheme.typography.titleMedium)
-            Text(
-                "Přesný překlad textů karet a rulings do češtiny s MTG terminologií. " +
-                    "Vlož svůj Anthropic API klíč (console.anthropic.com → API Keys). " +
-                    "Klíč zůstane jen v telefonu; překlad jedné karty stojí zlomky haléře. " +
-                    "Bez klíče se použije offline strojový překlad.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-            )
-            androidx.compose.material3.OutlinedTextField(
-                value = input,
-                onValueChange = { input = it },
-                label = { Text("API klíč (sk-ant-…)") },
-                singleLine = true,
-                visualTransformation = if (visible) androidx.compose.ui.text.input.VisualTransformation.None
-                else androidx.compose.ui.text.input.PasswordVisualTransformation(),
-                trailingIcon = {
-                    androidx.compose.material3.TextButton(onClick = { visible = !visible }) {
-                        Text(if (visible) "Skrýt" else "Ukázat")
-                    }
-                },
-                modifier = Modifier.fillMaxWidth(),
-            )
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Button(
-                    onClick = {
-                        vm.setAiKey(input)
-                        Toast.makeText(
-                            context,
-                            if (input.isBlank()) "AI překlad vypnut" else "Klíč uložen",
-                            Toast.LENGTH_SHORT,
-                        ).show()
-                    },
-                    enabled = input.trim() != saved,
-                ) { Text("Uložit") }
-                if (saved.isNotBlank()) {
-                    androidx.compose.material3.OutlinedButton(onClick = { input = ""; vm.setAiKey("") }) {
-                        Text("Odebrat")
-                    }
-                }
-            }
-            Text(
-                if (saved.isNotBlank()) "Stav: AI překlad zapnutý" else "Stav: offline strojový překlad",
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.primary,
-            )
-        }
-    }
-}
-
 @Composable
 private fun AboutCard(sha: String) {
     var showGuide by remember { mutableStateOf(false) }

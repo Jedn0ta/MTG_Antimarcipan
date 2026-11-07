@@ -93,7 +93,7 @@ fun CardInfoDialog(card: CollectionCard, onDismiss: () -> Unit) {
                 // Textace s vysvětlivkami samotných hesel + možnost překladu do češtiny
                 com.example.antimarcipan.data.KeywordGlossary.annotate(card.oracleText)
                     ?.takeIf { it.isNotBlank() }
-                    ?.let { TranslatableText(it, MaterialTheme.typography.bodySmall) }
+                    ?.let { SymbolText(it, MaterialTheme.typography.bodySmall) }
                 Text(
                     buildString {
                         card.rarity?.let { append(it.replaceFirstChar { c -> c.uppercase() }) }

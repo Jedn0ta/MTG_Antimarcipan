@@ -90,7 +90,6 @@ dependencies {
     implementation(libs.camerax.lifecycle)
     implementation(libs.camerax.view)
     implementation(libs.mlkit.text.recognition)
-    implementation(libs.mlkit.translate)
 
     // Networking (Scryfall + EDHREC)
     implementation(libs.retrofit)

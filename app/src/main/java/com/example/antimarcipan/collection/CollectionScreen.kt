@@ -610,7 +610,7 @@ private fun GathererButton(
                     when {
                         rulings == null -> Text("Načítám…")
                         rulings!!.isEmpty() -> Text("Žádné rulings k této kartě.")
-                        else -> com.example.antimarcipan.ui.TranslatableText(
+                        else -> com.example.antimarcipan.ui.SymbolText(
                             rulings!!.joinToString("\n\n"),
                             MaterialTheme.typography.bodyMedium,
                         )

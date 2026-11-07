@@ -108,7 +108,7 @@ fun ScryfallCardDetailDialog(card: ScryfallCard, onDismiss: () -> Unit) {
                     f.mana?.takeIf { it.isNotBlank() }?.let { ManaCost(it, symbolSize = 18) }
                     f.type?.let { Text(it, style = MaterialTheme.typography.bodyMedium) }
                     KeywordGlossary.annotate(f.text)?.takeIf { it.isNotBlank() }?.let {
-                        TranslatableText(it, MaterialTheme.typography.bodySmall)
+                        SymbolText(it, MaterialTheme.typography.bodySmall)
                     }
                 }
             }
