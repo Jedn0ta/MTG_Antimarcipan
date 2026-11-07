@@ -60,7 +60,8 @@ class LifePlayer(life: Int) {
 object LifeState {
     var count by mutableIntStateOf(4)
     var startLife by mutableIntStateOf(20)
-    var starter by mutableStateOf<Int?>(null)
+    /** 0 = nic, 1 = den, 2 = noc */
+    var dayNight by mutableIntStateOf(0)
     val players = List(6) { LifePlayer(20) }
     private var loaded = false
 
@@ -70,6 +71,7 @@ object LifeState {
         val p = ctx.getSharedPreferences("life_counter", Context.MODE_PRIVATE)
         count = p.getInt("count", 4)
         startLife = p.getInt("start", 20)
+        dayNight = p.getInt("dayNight", 0)
         players.forEachIndexed { i, pl ->
             pl.life = p.getInt("life$i", startLife)
             pl.poison = p.getInt("poison$i", 0)
@@ -78,14 +80,14 @@ object LifeState {
 
     fun save(ctx: Context) {
         val e = ctx.getSharedPreferences("life_counter", Context.MODE_PRIVATE).edit()
-        e.putInt("count", count).putInt("start", startLife)
+        e.putInt("count", count).putInt("start", startLife).putInt("dayNight", dayNight)
         players.forEachIndexed { i, pl -> e.putInt("life$i", pl.life).putInt("poison$i", pl.poison) }
         e.apply()
     }
 
     fun reset() {
         players.forEach { it.life = startLife; it.poison = 0; it.delta = 0 }
-        starter = null
+        dayNight = 0
     }
 }
 
@@ -115,27 +117,35 @@ fun LifeCounterScreen() {
     val save = { LifeState.save(ctx) }
 
     Column(Modifier.fillMaxSize().background(Color(0xFF0E0B1C))) {
-        // Ovládání
+        // Ovládání: rozbalovací výběry, den/noc, reset
         Row(
-            Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 8.dp, vertical = 4.dp),
+            Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 6.dp),
             horizontalArrangement = Arrangement.spacedBy(6.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text("Hráči", style = MaterialTheme.typography.labelMedium)
-            (2..6).forEach { k ->
-                com.example.antimarcipan.ui.GoldChip(selected = n == k, onClick = { LifeState.count = k; LifeState.starter = null; save() }, label = { Text("$k") })
+            Dropdown("Hráči: $n", (2..6).map { "$it hráči" to it }, Modifier.weight(1f)) {
+                LifeState.count = it; save()
             }
-            Text("  Životy", style = MaterialTheme.typography.labelMedium)
-            listOf(20, 30, 40).forEach { l ->
-                com.example.antimarcipan.ui.GoldChip(
-                    selected = LifeState.startLife == l,
-                    onClick = { LifeState.startLife = l; LifeState.reset(); save() },
-                    label = { Text("$l") },
+            Dropdown("Životy: ${LifeState.startLife}", listOf(20, 30, 40).map { "$it životů" to it }, Modifier.weight(1f)) {
+                LifeState.startLife = it; LifeState.reset(); save()
+            }
+            val dn = LifeState.dayNight
+            androidx.compose.material3.OutlinedButton(
+                onClick = { LifeState.dayNight = (dn + 1) % 3; save() },
+                contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp),
+                border = androidx.compose.foundation.BorderStroke(1.dp, com.example.antimarcipan.ui.GoldBorderBrush),
+            ) {
+                Text(
+                    when (dn) { 1 -> "☀ Den"; 2 -> "☾ Noc"; else -> "☀/☾" },
+                    color = when (dn) { 1 -> Color(0xFFFFD86B); 2 -> Color(0xFFAFC3FF); else -> Color(0xFFEAD9A8) },
                 )
             }
-            TextButton(onClick = { LifeState.starter = (0 until n).random() }) { Text("Kdo začne?") }
-            IconButton(onClick = { LifeState.reset(); save() }) {
-                Icon(Icons.Filled.Refresh, contentDescription = "Nová hra")
+            androidx.compose.material3.Button(
+                onClick = { LifeState.reset(); save() },
+                contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp),
+            ) {
+                Icon(Icons.Filled.Refresh, contentDescription = null)
+                Text(" Reset")
             }
         }
 
@@ -165,7 +175,7 @@ private fun Tile(index: Int, rotation: Float, modifier: Modifier, save: () -> Un
     val p = LifeState.players[index]
     val color = PLAYER_COLORS[index]
     val dead = p.life <= 0 || p.poison >= 10
-    val isStarter = LifeState.starter == index
+    val isStarter = false
 
     fun change(d: Int) {
         p.life += d
@@ -219,7 +229,7 @@ private fun Tile(index: Int, rotation: Float, modifier: Modifier, save: () -> Un
                     fontWeight = FontWeight.Bold,
                 )
                 Text(
-                    if (isStarter) "Hráč ${index + 1} · začíná" else "Hráč ${index + 1}",
+                    "Hráč ${index + 1}",
                     color = Color.White.copy(alpha = 0.8f),
                     style = MaterialTheme.typography.labelMedium,
                 )
@@ -228,15 +238,16 @@ private fun Tile(index: Int, rotation: Float, modifier: Modifier, save: () -> Un
                     "☠ ${p.poison}",
                     Modifier
                         .padding(top = 6.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(Color.Black.copy(alpha = 0.3f))
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(Color.Black.copy(alpha = 0.35f))
                         .combinedClickable(
                             onClick = { p.poison++; save() },
                             onLongClick = { if (p.poison > 0) { p.poison--; save() } },
                         )
-                        .padding(horizontal = 12.dp, vertical = 4.dp),
-                    color = if (p.poison >= 10) Color(0xFFB6F2C4) else Color.White.copy(alpha = 0.85f),
-                    style = MaterialTheme.typography.labelLarge,
+                        .border(1.dp, Color.White.copy(alpha = 0.25f), RoundedCornerShape(16.dp))
+                        .padding(horizontal = 22.dp, vertical = 10.dp),
+                    color = if (p.poison >= 10) Color(0xFFB6F2C4) else Color.White.copy(alpha = 0.9f),
+                    fontSize = 22.sp, fontWeight = FontWeight.Bold,
                 )
             }
         }
@@ -265,4 +276,27 @@ private fun RowScope.TapZone(label: String, onTap: () -> Unit, onHold: () -> Uni
 private fun Color.compositeOver(bg: Color): Color {
     val a = alpha
     return Color(red * a + bg.red * (1 - a), green * a + bg.green * (1 - a), blue * a + bg.blue * (1 - a), 1f)
+}
+
+@Composable
+private fun <T> Dropdown(label: String, options: List<Pair<String, T>>, modifier: Modifier, onPick: (T) -> Unit) {
+    var open by remember { mutableStateOf(false) }
+    Box(modifier) {
+        androidx.compose.material3.OutlinedButton(
+            onClick = { open = true },
+            modifier = Modifier.fillMaxWidth(),
+            contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 8.dp),
+            border = androidx.compose.foundation.BorderStroke(1.dp, com.example.antimarcipan.ui.GoldBorderBrush),
+        ) {
+            Text("$label ▾", color = Color(0xFFEAD9A8), maxLines = 1)
+        }
+        androidx.compose.material3.DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
+            options.forEach { (text, v) ->
+                androidx.compose.material3.DropdownMenuItem(
+                    text = { Text(text) },
+                    onClick = { onPick(v); open = false },
+                )
+            }
+        }
+    }
 }
