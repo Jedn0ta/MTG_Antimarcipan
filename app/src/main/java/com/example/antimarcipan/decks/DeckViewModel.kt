@@ -51,6 +51,29 @@ class DeckViewModel(
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     /** Změní počet konkrétní karty (např. základní země) v balíku. */
+    /** Pool limited balíku (karty z boosterů), quantity v deckQuantity. */
+    val selectedDeckPool: StateFlow<List<com.example.antimarcipan.data.local.DeckCardWithQty>> =
+        selectedDeckId
+            .flatMapLatest { id -> if (id == null) flowOf(emptyList()) else deckRepo.pool(id) }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    fun startPoolScan(deckId: Long, name: String) {
+        com.example.antimarcipan.scan.PoolScanTarget.target.value =
+            com.example.antimarcipan.scan.PoolTarget(deckId, name)
+    }
+
+    fun setPoolQty(deckId: Long, scryfallId: String, qty: Int) {
+        viewModelScope.launch { deckRepo.setPoolQty(deckId, scryfallId, qty) }
+    }
+
+    /** Hromadně přidá všechny karty z poolu do sbírky. */
+    fun importPoolToCollection(deckId: Long) {
+        viewModelScope.launch {
+            deckRepo.poolOf(deckId).forEach { collectionRepo.addOwned(it.scryfallId, it.quantity) }
+            deckRepo.setPoolImported(deckId, true)
+        }
+    }
+
     fun setDeckCardQty(deckId: Long, scryfallId: String, qty: Int) {
         viewModelScope.launch { deckRepo.setBasicLandCount(deckId, scryfallId, qty) }
     }

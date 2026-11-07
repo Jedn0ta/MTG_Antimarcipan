@@ -129,19 +129,16 @@ object LimitedAdvisor {
 fun LimitedAdvisorPanel(
     format: DeckFormat,
     deckCards: List<CollectionCard>,
-    collection: List<CollectionCard>,
-    poolSet: String?,
-    onPickSet: (String?) -> Unit,
+    pool: List<CollectionCard>,
+    poolImported: Boolean,
+    onScanPool: () -> Unit,
+    onImportPool: () -> Unit,
     onAddCard: (CollectionCard) -> Unit,
     onApplyLands: (Map<String, Int>) -> Unit,
 ) {
     var expanded by rememberSaveable { mutableStateOf(true) }
     var showGuide by rememberSaveable { mutableStateOf(false) }
-    var showSetPicker by remember { mutableStateOf(false) }
-
-    val pool = collection.filter {
-        it.owned && poolSet != null && it.setCode.equals(poolSet, true) && !LimitedAdvisor.isBasic(it)
-    }
+    var confirmImport by remember { mutableStateOf(false) }
     val spells = deckCards.filter { !LimitedAdvisor.isLand(it) }
     val nonBasicLands = deckCards.count { LimitedAdvisor.isLand(it) && !LimitedAdvisor.isBasic(it) }
     val basics = deckCards.count { LimitedAdvisor.isBasic(it) }
@@ -172,15 +169,17 @@ fun LimitedAdvisorPanel(
             if (!expanded) return@Column
 
             // Pool
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    if (poolSet == null) "Pool: nevybrán" else "Pool: ${poolSet.uppercase()} · ${pool.sumOf { it.quantity }} karet",
-                    Modifier.weight(1f),
-                    style = MaterialTheme.typography.bodySmall,
-                )
-                TextButton(onClick = { showSetPicker = true }) { Text("Edice poolu") }
-                TextButton(onClick = { showGuide = true }) { Text("Jak hrát") }
+            Text(
+                "Pool: ${pool.sumOf { it.quantity }} karet" + if (poolImported) " · přidáno do sbírky ✓" else "",
+                style = MaterialTheme.typography.bodySmall,
+            )
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                OutlinedButton(onClick = onScanPool) { Text("Skenovat pool") }
+                OutlinedButton(onClick = { confirmImport = true }, enabled = pool.isNotEmpty() && !poolImported) {
+                    Text("Pool do sbírky")
+                }
             }
+            TextButton(onClick = { showGuide = true }) { Text("Jak se ${format.label} hraje") }
 
             // Kontrola struktury
             Check("Karet v balíku", "${deckCards.size} / 40", deckCards.size >= 40)
@@ -249,33 +248,13 @@ fun LimitedAdvisorPanel(
     }
 
     if (showGuide) LimitedGuideDialog(format) { showGuide = false }
-    if (showSetPicker) {
-        val sets = collection.filter { it.owned && it.setCode != null }
-            .groupBy { it.setCode!!.lowercase() }
-            .map { (code, cards) -> Triple(code, cards.first().setName ?: code.uppercase(), cards.sumOf { it.quantity }) }
-            .sortedByDescending { it.third }
+    if (confirmImport) {
         com.example.antimarcipan.ui.GoldDialog(
-            onDismissRequest = { showSetPicker = false },
-            title = { Text("Edice poolu") },
-            text = {
-                Column(
-                    Modifier.androidxScroll(),
-                ) {
-                    Text(
-                        "Naskenuj karty z otevřených boosterů do sbírky a vyber jejich edici — rádce pak hodnotí tvůj pool.",
-                        style = MaterialTheme.typography.bodySmall,
-                    )
-                    sets.forEach { (code, name, n) ->
-                        FilterChip(
-                            selected = code.equals(poolSet, true),
-                            onClick = { onPickSet(code); showSetPicker = false },
-                            label = { Text("$name (${code.uppercase()}) · $n") },
-                        )
-                    }
-                }
-            },
-            confirmButton = { TextButton(onClick = { onPickSet(null); showSetPicker = false }) { Text("Bez poolu") } },
-            dismissButton = { TextButton(onClick = { showSetPicker = false }) { Text("Zavřít") } },
+            onDismissRequest = { confirmImport = false },
+            title = { Text("Přidat pool do sbírky?") },
+            text = { Text("Všech ${pool.sumOf { it.quantity }} karet z poolu se přidá do sbírky (počty se přičtou).") },
+            confirmButton = { TextButton(onClick = { onImportPool(); confirmImport = false }) { Text("Přidat") } },
+            dismissButton = { TextButton(onClick = { confirmImport = false }) { Text("Zrušit") } },
         )
     }
 }
@@ -309,7 +288,7 @@ Jak probíhá Sealed:
 • Hraje se obvykle na 2 vítězné hry (Bo3), 20 životů.
 
 Postup stavby:
-1. Naskenuj všechny karty z boosterů do sbírky a vyber edici poolu.
+1. Ťukni na „Skenovat pool“ a naskenuj všechny karty z boosterů (jdou do poolu, ne do sbírky).
 2. Projdi bomby (silné rare/mythic) a removal — ty určují barvy.
 3. Vyber 2 nejsilnější a nejhlubší barvy (rádce je spočítá). Třetí barvu jen „splashni“ pro 1–2 bomby, pokud máš fixing.
 4. Cíl: 17 zemí + 23 kouzel, z toho 15–17 tvorů a co nejvíc removalu.
@@ -333,7 +312,7 @@ Jak vybírat (pick order):
 • Do konce 1. boosteru se snaž ustálit na 2 barvách.
 
 Stavba balíku: 17 zemí + 23 kouzel, 15–17 tvorů, co nejvíc removalu, rozumná křivka.
-Tip: po draftu naskenuj karty do sbírky a vyber edici poolu — rádce ohodnotí karty a doporučí barvy.
+Tip: v balíku ťukni na „Skenovat pool“ a naskenuj vydraftované karty — rádce je ohodnotí a doporučí barvy. Po dohrání je můžeš hromadně přidat do sbírky.
 """.trimIndent()
     else -> ""
 }

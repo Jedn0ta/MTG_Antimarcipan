@@ -258,6 +258,7 @@ private fun DeckDetailView(vm: DeckViewModel, deck: Deck) {
     val context = LocalContext.current
     val deckCards by vm.selectedDeckCards.collectAsStateWithLifecycle()
     val collection by vm.collection.collectAsStateWithLifecycle()
+    val poolRows by vm.selectedDeckPool.collectAsStateWithLifecycle()
 
     val settings = remember { (context.applicationContext as com.example.antimarcipan.MtgApp).container.appSettings }
     val gridMode by settings.deckGrid.collectAsStateWithLifecycle()
@@ -437,7 +438,12 @@ private fun DeckDetailView(vm: DeckViewModel, deck: Deck) {
                 ?.let { vm.setDeckCardQty(deck.id, it.card.scryfallId, it.deckQuantity - 1) }
         }
 
-        val collectionAll = collection
+        val poolCards = poolRows.map { it.card.copy(quantity = it.deckQuantity) }
+        val addFromPool: (CollectionCard) -> Unit = { c ->
+            val inDeck = deckCards.firstOrNull { it.card.scryfallId == c.scryfallId }
+            if (inDeck == null) vm.addCard(c)
+            else vm.setDeckCardQty(deck.id, c.scryfallId, inDeck.deckQuantity + 1)
+        }
         val applyLimitedLands: (Map<String, Int>) -> Unit = { split ->
             // vynulovat basicy, které v rozpisu nejsou, ostatní nastavit
             deckCards.filter { isBasicLand(it.card) && basicBaseName(it.card.name) !in split.keys }
@@ -449,10 +455,11 @@ private fun DeckDetailView(vm: DeckViewModel, deck: Deck) {
             if (format.isLimited) LimitedAdvisorPanel(
                 format = format,
                 deckCards = flatCards,
-                collection = collectionAll,
-                poolSet = deck.poolSet,
-                onPickSet = { vm.setPoolSet(deck.id, it) },
-                onAddCard = { vm.addCard(it) },
+                pool = poolCards,
+                poolImported = deck.poolImported,
+                onScanPool = { vm.startPoolScan(deck.id, deck.name) },
+                onImportPool = { vm.importPoolToCollection(deck.id) },
+                onAddCard = addFromPool,
                 onApplyLands = applyLimitedLands,
             )
             if (showBasicPanel) BasicLandPanel(basicCounts, onBasicInc, onBasicDec)
@@ -479,10 +486,11 @@ private fun DeckDetailView(vm: DeckViewModel, deck: Deck) {
                 LimitedAdvisorPanel(
                     format = format,
                     deckCards = flatCards,
-                    collection = collectionAll,
-                    poolSet = deck.poolSet,
-                    onPickSet = { vm.setPoolSet(deck.id, it) },
-                    onAddCard = { vm.addCard(it) },
+                    pool = poolCards,
+                    poolImported = deck.poolImported,
+                    onScanPool = { vm.startPoolScan(deck.id, deck.name) },
+                    onImportPool = { vm.importPoolToCollection(deck.id) },
+                    onAddCard = addFromPool,
                     onApplyLands = applyLimitedLands,
                 )
             }
@@ -551,10 +559,37 @@ private fun DeckDetailView(vm: DeckViewModel, deck: Deck) {
                 }
             }
 
-            item { SectionHeader("Přidat ze sbírky") }
+            if (format.isLimited) {
+                item { SectionHeader("Pool (${poolRows.sumOf { it.deckQuantity }})") }
+                if (poolRows.isEmpty()) item {
+                    Text(
+                        "Pool je prázdný. V rádci ťukni na „Skenovat pool“ a naskenuj karty z boosterů.",
+                        Modifier.padding(16.dp), style = MaterialTheme.typography.bodySmall,
+                    )
+                }
+                items(poolRows, key = { "pool-" + it.card.scryfallId }) { row ->
+                    val used = deckCards.firstOrNull { it.card.scryfallId == row.card.scryfallId }?.deckQuantity ?: 0
+                    val free = row.deckQuantity - used
+                    Row(
+                        Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        com.example.antimarcipan.ui.CardListInfo(card = row.card, modifier = Modifier.weight(1f))
+                        Text("$free/${row.deckQuantity}", style = MaterialTheme.typography.labelMedium)
+                        IconButton(onClick = { vm.setPoolQty(deck.id, row.card.scryfallId, row.deckQuantity - 1) }) {
+                            Icon(Icons.Filled.Delete, contentDescription = "Odebrat z poolu")
+                        }
+                        IconButton(onClick = { addFromPool(row.card) }, enabled = free > 0) {
+                            Icon(Icons.Filled.Add, contentDescription = "Do balíku")
+                        }
+                    }
+                    HorizontalDivider()
+                }
+            }
+            if (!format.isLimited) item { SectionHeader("Přidat ze sbírky") }
             val inDeckIds = deckCards.map { it.card.scryfallId }.toSet()
-            val addable = collection.filter { it.scryfallId !in inDeckIds }
-            if (addable.isEmpty()) {
+            val addable = if (format.isLimited) emptyList() else collection.filter { it.scryfallId !in inDeckIds }
+            if (addable.isEmpty() && !format.isLimited) {
                 item {
                     Text(
                         "Všechny karty ze sbírky už jsou v balíku (nebo je sbírka prázdná).",
@@ -1208,9 +1243,9 @@ private fun NewDeckDialog(
                 if (format.isLimited) {
                     Text(
                         if (format == DeckFormat.SEALED)
-                            "Sealed: otevři 6 boosterů, karty naskenuj do sbírky a v balíku vyber edici poolu. Rádce v balíku pak doporučí barvy, nejlepší karty a rozpis 17 zemí."
+                            "Sealed: otevři 6 boosterů a v balíku přes „Skenovat pool“ naskenuj karty do poolu (ne do sbírky). Rádce v balíku pak doporučí barvy, nejlepší karty a rozpis 17 zemí."
                         else
-                            "Draft: z každého boosteru si vybereš 1 kartu a zbytek posíláš dál. Po draftu karty naskenuj, v balíku vyber edici poolu a rádce pomůže se stavbou.",
+                            "Draft: z každého boosteru si vybereš 1 kartu a zbytek posíláš dál. Vydraftované karty naskenuj v balíku přes „Skenovat pool“, rádce pomůže se stavbou. Do sbírky je přidáš hromadně až na konci.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.primary,
                     )

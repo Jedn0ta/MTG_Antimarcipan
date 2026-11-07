@@ -167,6 +167,20 @@ class CollectionRepository(
         }
     }
 
+    /** Uloží kartu jako „nezařazenou“ (není ve sbírce ani na wishlistu) — např. pool draftu. */
+    suspend fun ensureUnsorted(card: ScryfallCard) {
+        if (dao.findById(card.id) != null) return
+        val local = card.bestImageUrl?.let { downloadImage(it, card.id) }
+        dao.upsert(card.toCollectionCard().copy(localImagePath = local, owned = false, wishlist = false, quantity = 0))
+    }
+
+    /** Přidá [qty] kusů karty do sbírky (nezařazená → vlastněná). */
+    suspend fun addOwned(scryfallId: String, qty: Int) {
+        val e = dao.findById(scryfallId) ?: return
+        if (e.owned) dao.bumpQuantity(scryfallId, qty)
+        else dao.upsert(e.copy(owned = true, quantity = qty))
+    }
+
     suspend fun addToWishlist(card: ScryfallCard) {
         val existing = dao.findById(card.id)
         if (existing == null) {

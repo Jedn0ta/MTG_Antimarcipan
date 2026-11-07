@@ -19,6 +19,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.ui.graphics.Color
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -181,6 +182,14 @@ fun AntimarcipanApp() {
             }
         },
     ) { padding ->
+        val poolTarget by com.example.antimarcipan.scan.PoolScanTarget.target.collectAsState()
+        androidx.compose.runtime.LaunchedEffect(poolTarget?.deckId) {
+            if (poolTarget != null) navController.navigate(Dest.Scan.route) {
+                popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                launchSingleTop = true
+                restoreState = true
+            }
+        }
         NavHost(
             navController = navController,
             startDestination = Dest.Scan.route,

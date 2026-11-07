@@ -84,7 +84,28 @@ fun ScanScreen(
     val decks by vm.decks.collectAsStateWithLifecycle()
     val transLang by vm.translationLang.collectAsStateWithLifecycle()
 
-    Box(Modifier.fillMaxSize()) {
+    val poolTarget by PoolScanTarget.target.collectAsStateWithLifecycle()
+    Column(Modifier.fillMaxSize()) {
+    poolTarget?.let { t ->
+        androidx.compose.material3.Surface(
+            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.18f),
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            androidx.compose.foundation.layout.Row(
+                Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    "Skenuješ pool pro „${t.deckName}“ — uložené karty jdou do poolu, ne do sbírky.",
+                    Modifier.weight(1f),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+                androidx.compose.material3.TextButton(onClick = { PoolScanTarget.target.value = null }) { Text("Hotovo") }
+            }
+        }
+    }
+    Box(Modifier.fillMaxSize().weight(1f)) {
         if (!hasPermission) {
             Column(
                 Modifier.fillMaxSize().padding(24.dp),
@@ -255,6 +276,7 @@ fun ScanScreen(
                 )
             }
         }
+    }
     }
 }
 

@@ -51,6 +51,8 @@ data class Deck(
     val format: String = "FREEFORM",
     /** Limited (draft/sealed): kód edice, ze které je pool karet. */
     val poolSet: String? = null,
+    /** Pool už byl hromadně přidán do sbírky. */
+    val poolImported: Boolean = false,
     val createdAt: Long = System.currentTimeMillis(),
 )
 
@@ -61,6 +63,18 @@ data class Deck(
     indices = [Index("scryfallId")],
 )
 data class DeckCard(
+    val deckId: Long,
+    val scryfallId: String,
+    val quantity: Int = 1,
+)
+
+/** Pool limited balíku (draft/sealed): karty z otevřených boosterů. */
+@Entity(
+    tableName = "deck_pool",
+    primaryKeys = ["deckId", "scryfallId"],
+    indices = [Index("scryfallId")],
+)
+data class DeckPoolCard(
     val deckId: Long,
     val scryfallId: String,
     val quantity: Int = 1,

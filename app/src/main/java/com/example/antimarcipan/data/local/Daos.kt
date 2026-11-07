@@ -138,6 +138,31 @@ interface DeckDao {
     )
     fun observeDeckCardsWithQty(deckId: Long): Flow<List<DeckCardWithQty>>
 
+    @Query(
+        """
+        SELECT c.*, p.quantity AS deckQuantity FROM collection_cards c
+        INNER JOIN deck_pool p ON p.scryfallId = c.scryfallId
+        WHERE p.deckId = :deckId
+        ORDER BY c.cmc, c.name
+        """
+    )
+    fun observePool(deckId: Long): Flow<List<DeckCardWithQty>>
+
+    @Query("SELECT * FROM deck_pool WHERE deckId = :deckId")
+    suspend fun poolOf(deckId: Long): List<DeckPoolCard>
+
+    @Query("SELECT quantity FROM deck_pool WHERE deckId = :deckId AND scryfallId = :id")
+    suspend fun poolQty(deckId: Long, id: String): Int?
+
+    @androidx.room.Upsert
+    suspend fun upsertPool(card: DeckPoolCard)
+
+    @Query("DELETE FROM deck_pool WHERE deckId = :deckId AND scryfallId = :id")
+    suspend fun deletePool(deckId: Long, id: String)
+
+    @Query("UPDATE decks SET poolImported = :v WHERE id = :deckId")
+    suspend fun setPoolImported(deckId: Long, v: Boolean)
+
     @Query("UPDATE deck_cards SET quantity = :qty WHERE deckId = :deckId AND scryfallId = :scryfallId")
     suspend fun setDeckCardQuantity(deckId: Long, scryfallId: String, qty: Int)
 

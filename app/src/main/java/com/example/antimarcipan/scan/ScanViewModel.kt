@@ -260,6 +260,13 @@ class ScanViewModel(
     fun confirmAllToCollection() {
         val items = _state.value.pending
         if (items.isEmpty()) return
+        PoolScanTarget.target.value?.let { t ->
+            viewModelScope.launch {
+                items.forEach { repo.ensureUnsorted(it.card); deckRepo.addToPool(t.deckId, it.card.id) }
+                finishBatch(items.size, "Do poolu „${t.deckName}“: ${items.size} karet")
+            }
+            return
+        }
         viewModelScope.launch {
             items.forEach { repo.addToCollection(it.card) }
             finishBatch(items.size, "Uloženo ${items.size} karet do sbírky")
@@ -307,6 +314,14 @@ class ScanViewModel(
 
     fun addToCollection() {
         val card = _state.value.candidate ?: return
+        PoolScanTarget.target.value?.let { t ->
+            viewModelScope.launch {
+                repo.ensureUnsorted(card)
+                deckRepo.addToPool(t.deckId, card.id)
+                flashAdded("Do poolu: ${card.name}")
+            }
+            return
+        }
         viewModelScope.launch {
             repo.addToCollection(card)
             flashAdded("Přidáno do sbírky: ${card.name}")

@@ -22,6 +22,21 @@ class DeckRepository(private val dao: DeckDao) {
     suspend fun createDeck(name: String, format: String = "FREEFORM", colors: String? = null, poolSet: String? = null): Long =
         dao.insertDeck(Deck(name = name, format = format, colors = colors, poolSet = poolSet))
 
+    fun pool(deckId: Long) = dao.observePool(deckId)
+
+    suspend fun addToPool(deckId: Long, scryfallId: String) {
+        val q = dao.poolQty(deckId, scryfallId) ?: 0
+        dao.upsertPool(com.example.antimarcipan.data.local.DeckPoolCard(deckId, scryfallId, q + 1))
+    }
+
+    suspend fun setPoolQty(deckId: Long, scryfallId: String, qty: Int) {
+        if (qty <= 0) dao.deletePool(deckId, scryfallId)
+        else dao.upsertPool(com.example.antimarcipan.data.local.DeckPoolCard(deckId, scryfallId, qty))
+    }
+
+    suspend fun poolOf(deckId: Long) = dao.poolOf(deckId)
+    suspend fun setPoolImported(deckId: Long, v: Boolean) = dao.setPoolImported(deckId, v)
+
     suspend fun setPoolSet(deckId: Long, set: String?) = dao.setPoolSet(deckId, set)
 
     suspend fun setColors(deckId: Long, colors: String?) = dao.setColors(deckId, colors)
