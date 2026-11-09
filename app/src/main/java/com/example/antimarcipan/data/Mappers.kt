@@ -21,6 +21,7 @@ fun ScryfallCard.toCollectionCard(quantity: Int = 1): CollectionCard =
         imageUrl = bestImageUrl,
         gathererUrl = relatedUris?.gatherer,
         priceUsd = prices?.usd,
+        priceEur = prices?.eur,
         quantity = quantity,
     )
 

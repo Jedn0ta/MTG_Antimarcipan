@@ -66,7 +66,16 @@ interface ScryfallApi {
     /** Hromadné dohledání karet podle jména (max. 75 na dotaz). */
     @POST("cards/collection")
     suspend fun collection(@Body body: CollectionRequest): ScryfallList
+
+    @POST("cards/collection")
+    suspend fun collectionById(@Body body: IdCollectionRequest): ScryfallList
 }
+
+@Serializable
+data class IdCollectionRequest(val identifiers: List<IdIdentifier>)
+
+@Serializable
+data class IdIdentifier(val id: String)
 
 @Serializable
 data class CollectionRequest(val identifiers: List<NameIdentifier>)

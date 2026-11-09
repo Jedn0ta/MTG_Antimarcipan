@@ -46,6 +46,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.zIndex
+import androidx.compose.material.icons.filled.FlashOn
+import androidx.compose.material.icons.filled.FlashOff
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -188,11 +191,31 @@ fun ScanScreen(
         } else {
             var showReview by remember { mutableStateOf(false) }
 
-            if (!state.multiScan) CameraPreview(
-                onText = vm::onTextRecognized,
-                modifier = Modifier.fillMaxSize(),
-                onLines = vm::onFrameLines,
-            )
+            var torch by remember { mutableStateOf(false) }
+            if (!state.multiScan) {
+                CameraPreview(
+                    onText = vm::onTextRecognized,
+                    modifier = Modifier.fillMaxSize(),
+                    onLines = vm::onFrameLines,
+                    torchOn = torch,
+                )
+                androidx.compose.material3.FilledIconButton(
+                    onClick = { torch = !torch },
+                    modifier = Modifier.align(Alignment.TopEnd).padding(12.dp).size(52.dp).zIndex(2f),
+                    colors = androidx.compose.material3.IconButtonDefaults.filledIconButtonColors(
+                        containerColor = if (torch) androidx.compose.ui.graphics.Color(0xFFE2BC62)
+                        else androidx.compose.ui.graphics.Color(0xAA1E1633),
+                        contentColor = if (torch) androidx.compose.ui.graphics.Color(0xFF1E1633)
+                        else androidx.compose.ui.graphics.Color.White,
+                    ),
+                ) {
+                    Icon(
+                        if (torch) androidx.compose.material.icons.Icons.Filled.FlashOn
+                        else androidx.compose.material.icons.Icons.Filled.FlashOff,
+                        contentDescription = if (torch) "Vypnout světlo" else "Zapnout světlo",
+                    )
+                }
+            }
             val photoUri = remember {
                 val dir = java.io.File(context.cacheDir, "photos").apply { mkdirs() }
                 androidx.core.content.FileProvider.getUriForFile(

@@ -28,6 +28,7 @@ data class CollectionCard(
     /** Odkaz na tuto konkrétní kartu na Gathereru (oficiální pravidla). */
     val gathererUrl: String? = null,
     val priceUsd: String?,
+    val priceEur: String? = null,
     val quantity: Int = 1,
     /** Karta je ve sbírce (vlastněná). */
     val owned: Boolean = true,

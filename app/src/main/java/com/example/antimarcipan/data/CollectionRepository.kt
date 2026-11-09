@@ -42,6 +42,26 @@ class CollectionRepository(
      * a pokud se z fotky podařilo přečíst edici (set kód + číslo) a sedí na
      * stejnou kartu, vrátí rovnou ten konkrétní tisk — tedy správnou edici.
      */
+    /** Obnoví ceny všech uložených karet (nejvýš jednou za 12 h, pokud není [force]). */
+    suspend fun refreshPrices(force: Boolean = false): Result<Int> = runCatching {
+        val prefs = appContext.getSharedPreferences("prices", Context.MODE_PRIVATE)
+        val last = prefs.getLong("last", 0L)
+        if (!force && System.currentTimeMillis() - last < 12 * 3600_000L) return@runCatching 0
+        val ids = dao.allIds()
+        var n = 0
+        ids.chunked(75).forEach { chunk ->
+            val res = scryfall.collectionById(
+                com.example.antimarcipan.data.scryfall.IdCollectionRequest(
+                    chunk.map { com.example.antimarcipan.data.scryfall.IdIdentifier(it) }
+                )
+            )
+            res.data.forEach { c -> dao.updatePrices(c.id, c.prices?.usd, c.prices?.eur); n++ }
+            kotlinx.coroutines.delay(120)
+        }
+        prefs.edit().putLong("last", System.currentTimeMillis()).apply()
+        n
+    }
+
     suspend fun lookup(rawText: String): Result<ScryfallCard> = runCatching {
         val parsed = OcrParser.parse(rawText)
         require(parsed.nameGuess.length >= 3) { "Text příliš krátký na jméno karty" }

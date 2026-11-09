@@ -31,6 +31,7 @@ class CollectionViewModel(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     init {
+        viewModelScope.launch { repo.refreshPrices() }
         // Dostáhne náhledy u karet, které je ještě nemají lokálně uložené.
         viewModelScope.launch { repo.backfillImages() }
     }

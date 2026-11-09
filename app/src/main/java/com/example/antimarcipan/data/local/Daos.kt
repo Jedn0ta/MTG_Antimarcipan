@@ -20,6 +20,12 @@ interface CollectionDao {
     @Query("SELECT * FROM collection_cards WHERE owned = 1 ORDER BY addedAt DESC")
     fun observeAll(): Flow<List<CollectionCard>>
 
+    @Query("SELECT scryfallId FROM collection_cards")
+    suspend fun allIds(): List<String>
+
+    @Query("UPDATE collection_cards SET priceUsd = :usd, priceEur = :eur WHERE scryfallId = :id")
+    suspend fun updatePrices(id: String, usd: String?, eur: String?)
+
     @Query("SELECT * FROM collection_cards WHERE owned = 0 AND wishlist = 0 ORDER BY addedAt DESC")
     fun observeUnsorted(): Flow<List<CollectionCard>>
 

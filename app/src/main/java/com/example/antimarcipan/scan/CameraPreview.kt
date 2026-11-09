@@ -1,5 +1,8 @@
 package com.example.antimarcipan.scan
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.Preview
@@ -23,7 +26,12 @@ fun CameraPreview(
     onText: (String) -> Unit,
     modifier: Modifier = Modifier,
     onLines: (List<String>) -> Unit = {},
+    torchOn: Boolean = false,
 ) {
+    var camera by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<androidx.camera.core.Camera?>(null) }
+    androidx.compose.runtime.LaunchedEffect(torchOn, camera) {
+        camera?.let { c -> if (c.cameraInfo.hasFlashUnit()) c.cameraControl.enableTorch(torchOn) }
+    }
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val analysisExecutor = remember { Executors.newSingleThreadExecutor() }
@@ -51,7 +59,7 @@ fun CameraPreview(
 
                 try {
                     provider.unbindAll()
-                    provider.bindToLifecycle(
+                    camera = provider.bindToLifecycle(
                         lifecycleOwner,
                         CameraSelector.DEFAULT_BACK_CAMERA,
                         preview,

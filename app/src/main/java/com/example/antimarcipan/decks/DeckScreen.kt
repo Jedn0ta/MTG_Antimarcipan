@@ -361,6 +361,13 @@ private fun DeckDetailView(vm: DeckViewModel, deck: Deck) {
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.85f),
                 )
+                com.example.antimarcipan.ui.totalPriceLabel(deckCards.map { it.card to it.deckQuantity })?.let {
+                    Text(
+                        it,
+                        style = MaterialTheme.typography.labelLarge,
+                        color = androidx.compose.ui.graphics.Color(0xFF8FD6A0),
+                    )
+                }
                 val shownColors = parseDeckColors(deck.colors).ifEmpty { deckColors }
                 ColorIdentityPips(shownColors, symbolSize = 15)
                 comboName(shownColors)?.let {

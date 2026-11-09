@@ -155,7 +155,7 @@ fun CollectionScreen(
             )
             Spacer(Modifier.weight(1f))
             Text(
-                "$totalQty",
+                "$totalQty" + (com.example.antimarcipan.ui.totalPriceLabel(source.map { it to it.quantity.coerceAtLeast(1) })?.let { " · $it" } ?: ""),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
             )
