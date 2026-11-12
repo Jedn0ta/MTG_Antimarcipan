@@ -42,6 +42,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Brush
@@ -80,6 +81,7 @@ object LifeState {
         count = p.getInt("count", 4)
         startLife = p.getInt("start", 20)
         dayNight = p.getInt("dayNight", 0)
+        curve = p.getInt("curve", 0).coerceIn(0, TIME_CURVES.lastIndex)
         players.forEachIndexed { i, pl ->
             pl.life = p.getInt("life$i", startLife)
             pl.poison = p.getInt("poison$i", 0)
@@ -88,7 +90,7 @@ object LifeState {
 
     fun save(ctx: Context) {
         val e = ctx.getSharedPreferences("life_counter", Context.MODE_PRIVATE).edit()
-        e.putInt("count", count).putInt("start", startLife).putInt("dayNight", dayNight)
+        e.putInt("count", count).putInt("start", startLife).putInt("dayNight", dayNight).putInt("curve", curve)
         players.forEachIndexed { i, pl -> e.putInt("life$i", pl.life).putInt("poison$i", pl.poison) }
         e.apply()
     }
@@ -102,6 +104,13 @@ object LifeState {
     // ---- Režim tahů ----
     /** Hráči potvrzují konec tahu tlačítkem; měří se čas a zaznamenává historie životů. */
     var turnMode by mutableStateOf(false)
+    /** Křivka doporučeného času tahu (index do TIME_CURVES). */
+    var curve by mutableIntStateOf(0)
+    /** Pro aktuální tah už se upozornilo (vibrace). */
+    var warned by mutableStateOf(false)
+
+    /** Doporučený čas tahu v ms pro aktuální tah (null = bez limitu). */
+    fun limitMs(): Long? = TIME_CURVES[curve].limitFor(turn)
     var active by mutableIntStateOf(0)
     var turn by mutableIntStateOf(1)
     var turnStart by mutableStateOf(System.currentTimeMillis())
@@ -131,8 +140,25 @@ object LifeState {
         if (next <= active) turn++
         active = next
         turnStart = t
+        warned = false
     }
 }
+
+/**
+ * Křivka doporučeného času: začíná na [baseSec] a každým kolem přidá [perTurnSec],
+ * až po strop [maxSec] — první kola jsou rychlá, pozdější s víc kartami delší.
+ */
+data class TimeCurve(val label: String, val baseSec: Int, val perTurnSec: Int, val maxSec: Int) {
+    fun limitFor(turn: Int): Long? =
+        if (baseSec <= 0) null else minOf(maxSec, baseSec + perTurnSec * (turn - 1)) * 1000L
+}
+
+val TIME_CURVES = listOf(
+    TimeCurve("Bez limitu", 0, 0, 0),
+    TimeCurve("Rychlá", 45, 10, 180),
+    TimeCurve("Standardní", 60, 15, 240),
+    TimeCurve("Pohodová", 90, 20, 360),
+)
 
 data class HistoryEntry(val turn: Int, val player: Int, val lives: List<Int>, val durationMs: Long)
 
@@ -164,7 +190,15 @@ fun LifeCounterScreen() {
         onDispose { view.keepScreenOn = false; LifeState.save(ctx) }
     }
     LaunchedEffect(LifeState.turnMode) {
-        while (LifeState.turnMode) { LifeState.now = System.currentTimeMillis(); delay(1000) }
+        while (LifeState.turnMode) {
+            LifeState.now = System.currentTimeMillis()
+            val lim = LifeState.limitMs()
+            if (lim != null && !LifeState.warned && LifeState.now - LifeState.turnStart > lim) {
+                LifeState.warned = true
+                vibrate(ctx)
+            }
+            delay(500)
+        }
     }
     val fs = LifeState.fullscreen
     DisposableEffect(fs) {
@@ -225,6 +259,20 @@ private fun Tile(index: Int, rotation: Float, modifier: Modifier, save: () -> Un
         p.delta = 0
     }
 
+    val lim = LifeState.limitMs()
+    val over = isStarter && lim != null && LifeState.now - LifeState.turnStart > lim
+    // Blikání při překročení doporučeného času
+    val blink = if (over) {
+        val tr = androidx.compose.animation.core.rememberInfiniteTransition(label = "blink")
+        tr.animateFloat(
+            0f, 1f,
+            androidx.compose.animation.core.infiniteRepeatable(
+                androidx.compose.animation.core.tween(500),
+                androidx.compose.animation.core.RepeatMode.Reverse,
+            ),
+            label = "blinkA",
+        ).value
+    } else 0f
     Box(
         modifier
             .clip(RoundedCornerShape(18.dp))
@@ -234,9 +282,11 @@ private fun Tile(index: Int, rotation: Float, modifier: Modifier, save: () -> Un
                     else listOf(color, color.copy(alpha = 0.55f).compositeOver(Color(0xFF120E22)))
                 )
             )
+            .background(Color(0xFFFF3B3B).copy(alpha = 0.35f * blink))
             .border(
                 if (isStarter) 3.dp else 1.dp,
-                Brush.linearGradient(listOf(Color(0xFFF6DE9A), Color(0xFFB98A35))),
+                if (over) Brush.linearGradient(listOf(Color(0xFFFF6B6B), Color(0xFFFFB4B4)))
+                else Brush.linearGradient(listOf(Color(0xFFF6DE9A), Color(0xFFB98A35))),
                 RoundedCornerShape(18.dp),
             ),
     ) {
@@ -247,13 +297,14 @@ private fun Tile(index: Int, rotation: Float, modifier: Modifier, save: () -> Un
             }
             if (LifeState.turnMode) {
                 Text(
-                    if (isStarter) "⏱ " + formatDuration(LifeState.now - LifeState.turnStart)
+                    if (isStarter) "⏱ " + formatDuration(LifeState.now - LifeState.turnStart) +
+                        (lim?.let { " / " + formatDuration(it) } ?: "")
                     else "Σ " + formatDuration(p.totalMs),
                     Modifier.align(Alignment.TopStart).padding(10.dp)
                         .clip(RoundedCornerShape(10.dp))
                         .background(Color.Black.copy(alpha = if (isStarter) 0.45f else 0.25f))
                         .padding(horizontal = 8.dp, vertical = 3.dp),
-                    color = if (isStarter) Color(0xFFF6DE9A) else Color.White.copy(alpha = 0.6f),
+                    color = if (over) Color(0xFFFFB4B4) else if (isStarter) Color(0xFFF6DE9A) else Color.White.copy(alpha = 0.6f),
                     fontSize = if (isStarter) 16.sp else 12.sp,
                     fontWeight = FontWeight.Bold,
                 )
@@ -392,6 +443,7 @@ private fun CenterButton(modifier: Modifier, onClick: () -> Unit) {
 }
 
 @Composable
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 private fun LifeMenu(onDismiss: () -> Unit, save: () -> Unit) {
     var showHistory by remember { mutableStateOf(false) }
     if (showHistory) { HistoryDialog { showHistory = false }; return }
@@ -446,10 +498,31 @@ private fun LifeMenu(onDismiss: () -> Unit, save: () -> Unit) {
                         label = { Text("Historie životů") },
                     )
                 }
-                if (LifeState.turnMode) Text(
-                    "Hráč na tahu ukončí tah tlačítkem na své dlaždici. V rohu běží čas tahu, u ostatních celkový čas.",
-                    style = MaterialTheme.typography.bodySmall,
-                )
+                if (LifeState.turnMode) {
+                    Text(
+                        "Hráč na tahu ukončí tah tlačítkem na své dlaždici. V rohu běží čas tahu, u ostatních celkový čas.",
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                    Text("Doporučený čas tahu", style = MaterialTheme.typography.labelLarge)
+                    androidx.compose.foundation.layout.FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    ) {
+                        TIME_CURVES.forEachIndexed { i, c ->
+                            com.example.antimarcipan.ui.GoldChip(
+                                selected = LifeState.curve == i,
+                                onClick = { LifeState.curve = i; LifeState.warned = false; save() },
+                                label = { Text(c.label) },
+                            )
+                        }
+                    }
+                    val c = TIME_CURVES[LifeState.curve]
+                    if (c.baseSec > 0) Text(
+                        "1. kolo ${formatDuration(c.limitFor(1)!!)}, 5. kolo ${formatDuration(c.limitFor(5)!!)}, " +
+                            "10. kolo ${formatDuration(c.limitFor(10)!!)} (max ${formatDuration(c.maxSec * 1000L)}). " +
+                            "Po překročení dlaždice zabliká a telefon zavibruje.",
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                }
                 com.example.antimarcipan.ui.GoldChip(
                     selected = LifeState.fullscreen,
                     onClick = { LifeState.fullscreen = !LifeState.fullscreen; onDismiss() },
@@ -542,4 +615,15 @@ private fun HistoryDialog(onDismiss: () -> Unit) {
         },
         confirmButton = { TextButton(onClick = onDismiss) { Text("Zavřít") } },
     )
+}
+
+private fun vibrate(ctx: Context) {
+    runCatching {
+        val v = if (android.os.Build.VERSION.SDK_INT >= 31)
+            (ctx.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as android.os.VibratorManager).defaultVibrator
+        else @Suppress("DEPRECATION") (ctx.getSystemService(Context.VIBRATOR_SERVICE) as android.os.Vibrator)
+        val pattern = longArrayOf(0, 300, 150, 300, 150, 500)
+        if (android.os.Build.VERSION.SDK_INT >= 26) v.vibrate(android.os.VibrationEffect.createWaveform(pattern, -1))
+        else @Suppress("DEPRECATION") v.vibrate(pattern, -1)
+    }
 }
