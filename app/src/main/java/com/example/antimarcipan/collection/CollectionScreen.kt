@@ -160,12 +160,30 @@ fun CollectionScreen(
                 onClick = { tab = 3 },
                 label = { Text("Playground") },
             )
-            Spacer(Modifier.weight(1f))
+        }
+        // Souhrn (počet + cena) a ikony zobrazení / filtru na vlastním řádku
+        Row(
+            Modifier.fillMaxWidth().padding(start = 12.dp, end = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
             Text(
-                "$totalQty" + (com.example.antimarcipan.ui.totalPriceLabel(source.map { it to it.quantity.coerceAtLeast(1) })?.let { " · $it" } ?: ""),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                "$totalQty ks",
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
+                maxLines = 1,
             )
+            com.example.antimarcipan.ui.totalPriceLabel(source.map { it to it.quantity.coerceAtLeast(1) })?.let {
+                Text(
+                    "· $it",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = androidx.compose.ui.graphics.Color(0xFF8FD6A0),
+                    maxLines = 1,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false),
+                )
+            }
+            Spacer(Modifier.weight(1f))
             // Zobrazení (seznam/mřížka) hned vedle filtru
             IconButton(onClick = { settings.setCollectionGrid(!gridMode) }) {
                 Icon(
