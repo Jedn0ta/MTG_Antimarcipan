@@ -94,6 +94,9 @@ fun AntimarcipanApp() {
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = Color.Transparent,
                     scrolledContainerColor = Color.Transparent,
+                    titleContentColor = Color(0xFFF3E7C4),
+                    navigationIconContentColor = Color(0xFFF3E7C4),
+                    actionIconContentColor = Color(0xFFF3E7C4),
                 ),
                 title = {
                     Text(

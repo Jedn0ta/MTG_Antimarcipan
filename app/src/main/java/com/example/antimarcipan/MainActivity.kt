@@ -13,7 +13,11 @@ import com.example.antimarcipan.ui.theme.AntimarcipanTheme
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
+        // Vždy světlé ikony stavového řádku (aplikace má tmavé pozadí bez ohledu na režim telefonu)
+        enableEdgeToEdge(
+            statusBarStyle = androidx.activity.SystemBarStyle.dark(android.graphics.Color.TRANSPARENT),
+            navigationBarStyle = androidx.activity.SystemBarStyle.dark(android.graphics.Color.TRANSPARENT),
+        )
         setContent {
             AntimarcipanTheme {
                 Box(Modifier.fillMaxSize()) {

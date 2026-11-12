@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.MtgScanner" parent="android:Theme.Material.Light.NoActionBar" />
+    <style name="Theme.MtgScanner" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">#FF120E22</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
 
     <!-- Splash screen (Android 12+ i starší přes core-splashscreen) -->
     <style name="Theme.Antimarcipan.Starting" parent="Theme.SplashScreen">
