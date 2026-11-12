@@ -140,7 +140,6 @@ fun formatDuration(ms: Long): String {
     val s = ms / 1000
     return if (s >= 3600) "%d:%02d:%02d".format(s / 3600, s / 60 % 60, s % 60) else "%d:%02d".format(s / 60, s % 60)
 }
-}
 
 private val PLAYER_COLORS = listOf(
     Color(0xFF8E2C3A), Color(0xFF2B4F8E), Color(0xFF2F7A4C),
