@@ -17,6 +17,8 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -58,6 +60,7 @@ class LifePlayer(life: Int) {
     var poison by mutableIntStateOf(0)
     var delta by mutableIntStateOf(0)
     var deltaTick by mutableIntStateOf(0)
+    var totalMs by mutableStateOf(0L)
 }
 
 object LifeState {
@@ -91,9 +94,52 @@ object LifeState {
     }
 
     fun reset() {
-        players.forEach { it.life = startLife; it.poison = 0; it.delta = 0 }
+        players.forEach { it.life = startLife; it.poison = 0; it.delta = 0; it.totalMs = 0L }
         dayNight = 0
+        resetTurns()
     }
+
+    // ---- Režim tahů ----
+    /** Hráči potvrzují konec tahu tlačítkem; měří se čas a zaznamenává historie životů. */
+    var turnMode by mutableStateOf(false)
+    var active by mutableIntStateOf(0)
+    var turn by mutableIntStateOf(1)
+    var turnStart by mutableStateOf(System.currentTimeMillis())
+    /** Tiknutí hodin pro překreslení časovače. */
+    var now by mutableStateOf(System.currentTimeMillis())
+    /** Historie: (tah, hráč na tahu, životy všech hráčů po tahu). */
+    val history = androidx.compose.runtime.mutableStateListOf<HistoryEntry>()
+
+    fun resetTurns() {
+        active = 0; turn = 1; turnStart = System.currentTimeMillis()
+        history.clear()
+        history += HistoryEntry(0, -1, players.take(count).map { it.life }, 0L)
+    }
+
+    fun endTurn() {
+        val t = System.currentTimeMillis()
+        val dur = t - turnStart
+        players[active].totalMs += dur
+        history += HistoryEntry(turn, active, players.take(count).map { it.life }, dur)
+        // další živý hráč
+        var next = active
+        for (i in 1..count) {
+            val c = (active + i) % count
+            val p = players[c]
+            if (p.life > 0 && p.poison < 10) { next = c; break }
+        }
+        if (next <= active) turn++
+        active = next
+        turnStart = t
+    }
+}
+
+data class HistoryEntry(val turn: Int, val player: Int, val lives: List<Int>, val durationMs: Long)
+
+fun formatDuration(ms: Long): String {
+    val s = ms / 1000
+    return if (s >= 3600) "%d:%02d:%02d".format(s / 3600, s / 60 % 60, s % 60) else "%d:%02d".format(s / 60, s % 60)
+}
 }
 
 private val PLAYER_COLORS = listOf(
@@ -117,6 +163,9 @@ fun LifeCounterScreen() {
     DisposableEffect(Unit) {
         view.keepScreenOn = true
         onDispose { view.keepScreenOn = false; LifeState.save(ctx) }
+    }
+    LaunchedEffect(LifeState.turnMode) {
+        while (LifeState.turnMode) { LifeState.now = System.currentTimeMillis(); delay(1000) }
     }
     val fs = LifeState.fullscreen
     DisposableEffect(fs) {
@@ -164,7 +213,7 @@ private fun Tile(index: Int, rotation: Float, modifier: Modifier, save: () -> Un
     val p = LifeState.players[index]
     val color = PLAYER_COLORS[index]
     val dead = p.life <= 0 || p.poison >= 10
-    val isStarter = false
+    val isStarter = LifeState.turnMode && LifeState.active == index
 
     fun change(d: Int) {
         p.life += d
@@ -196,6 +245,31 @@ private fun Tile(index: Int, rotation: Float, modifier: Modifier, save: () -> Un
             Row(Modifier.fillMaxSize()) {
                 TapZone("−", { change(-1) }, { change(-5) })
                 TapZone("+", { change(1) }, { change(5) })
+            }
+            if (LifeState.turnMode) {
+                Text(
+                    if (isStarter) "⏱ " + formatDuration(LifeState.now - LifeState.turnStart)
+                    else "Σ " + formatDuration(p.totalMs),
+                    Modifier.align(Alignment.TopStart).padding(10.dp)
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(Color.Black.copy(alpha = if (isStarter) 0.45f else 0.25f))
+                        .padding(horizontal = 8.dp, vertical = 3.dp),
+                    color = if (isStarter) Color(0xFFF6DE9A) else Color.White.copy(alpha = 0.6f),
+                    fontSize = if (isStarter) 16.sp else 12.sp,
+                    fontWeight = FontWeight.Bold,
+                )
+                if (isStarter) Text(
+                    "Tah ${LifeState.turn}",
+                    Modifier.align(Alignment.TopEnd).padding(12.dp),
+                    color = Color(0xFFF6DE9A), fontSize = 12.sp,
+                )
+                if (isStarter) androidx.compose.material3.Button(
+                    onClick = { LifeState.endTurn() },
+                    modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 10.dp),
+                    colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFFE2BC62), contentColor = Color(0xFF1E1633),
+                    ),
+                ) { Text("Konec tahu", fontWeight = FontWeight.Bold) }
             }
             Column(
                 Modifier.align(Alignment.Center),
@@ -320,6 +394,8 @@ private fun CenterButton(modifier: Modifier, onClick: () -> Unit) {
 
 @Composable
 private fun LifeMenu(onDismiss: () -> Unit, save: () -> Unit) {
+    var showHistory by remember { mutableStateOf(false) }
+    if (showHistory) { HistoryDialog { showHistory = false }; return }
     com.example.antimarcipan.ui.GoldDialog(
         onDismissRequest = onDismiss,
         title = { Text("Nastavení hry") },
@@ -355,6 +431,26 @@ private fun LifeMenu(onDismiss: () -> Unit, save: () -> Unit) {
                         )
                     }
                 }
+                Text("Režim tahů", style = MaterialTheme.typography.labelLarge)
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    com.example.antimarcipan.ui.GoldChip(
+                        selected = LifeState.turnMode,
+                        onClick = {
+                            LifeState.turnMode = !LifeState.turnMode
+                            if (LifeState.turnMode) LifeState.resetTurns()
+                        },
+                        label = { Text(if (LifeState.turnMode) "Zapnuto" else "Vypnuto") },
+                    )
+                    if (LifeState.history.size > 1 || LifeState.turnMode) com.example.antimarcipan.ui.GoldChip(
+                        selected = false,
+                        onClick = { showHistory = true },
+                        label = { Text("Historie životů") },
+                    )
+                }
+                if (LifeState.turnMode) Text(
+                    "Hráč na tahu ukončí tah tlačítkem na své dlaždici. V rohu běží čas tahu, u ostatních celkový čas.",
+                    style = MaterialTheme.typography.bodySmall,
+                )
                 com.example.antimarcipan.ui.GoldChip(
                     selected = LifeState.fullscreen,
                     onClick = { LifeState.fullscreen = !LifeState.fullscreen; onDismiss() },
@@ -366,6 +462,82 @@ private fun LifeMenu(onDismiss: () -> Unit, save: () -> Unit) {
                 ) {
                     Icon(Icons.Filled.Refresh, contentDescription = null)
                     Text("  Reset — nová hra")
+                }
+            }
+        },
+        confirmButton = { TextButton(onClick = onDismiss) { Text("Zavřít") } },
+    )
+}
+
+/** Historie životů: graf průběhu + tabulka po tazích. */
+@Composable
+private fun HistoryDialog(onDismiss: () -> Unit) {
+    val h = LifeState.history.toList()
+    val n = LifeState.count
+    com.example.antimarcipan.ui.GoldDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Historie životů") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                if (h.size < 2) {
+                    Text("Zatím žádný ukončený tah.", style = MaterialTheme.typography.bodySmall)
+                } else {
+                    // Graf
+                    val maxL = (h.flatMap { it.lives }.maxOrNull() ?: 20).coerceAtLeast(1)
+                    androidx.compose.foundation.Canvas(
+                        Modifier.fillMaxWidth().height(160.dp)
+                            .background(Color.Black.copy(alpha = 0.25f), RoundedCornerShape(10.dp))
+                            .padding(8.dp)
+                    ) {
+                        val stepX = size.width / (h.size - 1).coerceAtLeast(1)
+                        for (pi in 0 until n) {
+                            val path = androidx.compose.ui.graphics.Path()
+                            h.forEachIndexed { i, e ->
+                                val life = e.lives.getOrElse(pi) { 0 }.coerceAtLeast(0)
+                                val x = i * stepX
+                                val y = size.height * (1f - life.toFloat() / maxL)
+                                if (i == 0) path.moveTo(x, y) else path.lineTo(x, y)
+                            }
+                            drawPath(
+                                path, PLAYER_COLORS[pi].copy(alpha = 1f).let { c ->
+                                    Color(minOf(1f, c.red * 1.6f), minOf(1f, c.green * 1.6f), minOf(1f, c.blue * 1.6f))
+                                },
+                                style = androidx.compose.ui.graphics.drawscope.Stroke(width = 5f),
+                            )
+                        }
+                    }
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        (0 until n).forEach { pi ->
+                            Text("● H${pi + 1}", color = PLAYER_COLORS[pi].let { c ->
+                                Color(minOf(1f, c.red * 1.6f), minOf(1f, c.green * 1.6f), minOf(1f, c.blue * 1.6f))
+                            }, style = MaterialTheme.typography.labelMedium)
+                        }
+                    }
+                    // Tabulka
+                    Row {
+                        Text("Tah", Modifier.width(64.dp), style = MaterialTheme.typography.labelMedium)
+                        (0 until n).forEach { Text("H${it + 1}", Modifier.weight(1f), style = MaterialTheme.typography.labelMedium) }
+                    }
+                    h.forEach { e ->
+                        Row {
+                            Text(
+                                if (e.player < 0) "start" else "${e.turn}·H${e.player + 1} ${formatDuration(e.durationMs)}",
+                                Modifier.width(64.dp), style = MaterialTheme.typography.labelSmall,
+                            )
+                            (0 until n).forEach { pi ->
+                                Text(
+                                    "${e.lives.getOrElse(pi) { 0 }}",
+                                    Modifier.weight(1f),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    fontWeight = if (pi == e.player) FontWeight.Bold else FontWeight.Normal,
+                                )
+                            }
+                        }
+                    }
+                    Text(
+                        "Celkový čas: " + (0 until n).joinToString("  ") { "H${it + 1} ${formatDuration(LifeState.players[it].totalMs)}" },
+                        style = MaterialTheme.typography.labelSmall,
+                    )
                 }
             }
         },
