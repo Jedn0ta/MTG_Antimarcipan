@@ -122,14 +122,48 @@ object LifeState {
     fun resetTurns() {
         active = 0; turn = 1; turnStart = System.currentTimeMillis()
         history.clear()
-        history += HistoryEntry(0, -1, players.take(count).map { it.life }, 0L)
+        history += HistoryEntry(0, -1, players.take(count).map { it.life }, 0L,
+            poison = players.take(count).map { it.poison }, active = 0, turnNo = 1)
+    }
+
+    /** Zapíše dávku změny životů hráče (po krátké pauze v ťukání). */
+    fun recordChange(player: Int, delta: Int) {
+        if (history.isEmpty()) {
+            // výchozí stav = současný stav bez této dávky
+            history += HistoryEntry(0, -1,
+                players.take(count).mapIndexed { i, p -> if (i == player) p.life - delta else p.life }, 0L,
+                poison = players.take(count).map { it.poison }, active = active, turnNo = turn)
+        }
+        history += HistoryEntry(turn, player, players.take(count).map { it.life }, 0L,
+            delta = delta, poison = players.take(count).map { it.poison }, active = active, turnNo = turn)
+    }
+
+    /** Vrátí stav hry k záznamu [index]; pozdější záznamy zahodí. */
+    fun revertTo(index: Int) {
+        val e = history.getOrNull(index) ?: return
+        e.lives.forEachIndexed { i, l -> players[i].life = l; players[i].delta = 0 }
+        e.poison.forEachIndexed { i, v -> players[i].poison = v }
+        while (history.size > index + 1) history.removeAt(history.lastIndex)
+        if (e.delta == null && e.player >= 0) {
+            // byl to konec tahu → na tahu je další po něm
+            var next = e.player
+            for (i in 1..count) {
+                val c = (e.player + i) % count
+                if (players[c].life > 0 && players[c].poison < 10) { next = c; break }
+            }
+            if (next <= e.player) turn = e.turn + 1 else turn = e.turn
+            active = next
+        } else { active = e.active; turn = e.turnNo }
+        turnStart = System.currentTimeMillis()
+        warned = false
     }
 
     fun endTurn() {
         val t = System.currentTimeMillis()
         val dur = t - turnStart
         players[active].totalMs += dur
-        history += HistoryEntry(turn, active, players.take(count).map { it.life }, dur)
+        history += HistoryEntry(turn, active, players.take(count).map { it.life }, dur,
+            poison = players.take(count).map { it.poison }, active = active, turnNo = turn)
         // další živý hráč
         var next = active
         for (i in 1..count) {
@@ -160,7 +194,20 @@ val TIME_CURVES = listOf(
     TimeCurve("Pohodová", 90, 20, 360),
 )
 
-data class HistoryEntry(val turn: Int, val player: Int, val lives: List<Int>, val durationMs: Long)
+/**
+ * Záznam historie: buď konec tahu ([delta] == null), nebo dávka změny životů hráče.
+ * Ukládá stav všech hráčů po záznamu, aby se k němu dalo vrátit.
+ */
+data class HistoryEntry(
+    val turn: Int,
+    val player: Int,
+    val lives: List<Int>,
+    val durationMs: Long,
+    val delta: Int? = null,
+    val poison: List<Int> = emptyList(),
+    val active: Int = 0,
+    val turnNo: Int = 1,
+)
 
 fun formatDuration(ms: Long): String {
     val s = ms / 1000
@@ -256,6 +303,7 @@ private fun Tile(index: Int, rotation: Float, modifier: Modifier, save: () -> Un
     }
     LaunchedEffect(p.deltaTick) {
         delay(1600)
+        if (p.delta != 0) LifeState.recordChange(index, p.delta)
         p.delta = 0
     }
 
@@ -492,7 +540,7 @@ private fun LifeMenu(onDismiss: () -> Unit, save: () -> Unit) {
                         },
                         label = { Text(if (LifeState.turnMode) "Zapnuto" else "Vypnuto") },
                     )
-                    if (LifeState.history.size > 1 || LifeState.turnMode) com.example.antimarcipan.ui.GoldChip(
+                    com.example.antimarcipan.ui.GoldChip(
                         selected = false,
                         onClick = { showHistory = true },
                         label = { Text("Historie životů") },
@@ -552,7 +600,7 @@ private fun HistoryDialog(onDismiss: () -> Unit) {
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 if (h.size < 2) {
-                    Text("Zatím žádný ukončený tah.", style = MaterialTheme.typography.bodySmall)
+                    Text("Zatím žádný záznam — změň životy nebo ukonči tah.", style = MaterialTheme.typography.bodySmall)
                 } else {
                     // Graf
                     val maxL = (h.flatMap { it.lives }.maxOrNull() ?: 20).coerceAtLeast(1)
@@ -587,14 +635,30 @@ private fun HistoryDialog(onDismiss: () -> Unit) {
                     }
                     // Tabulka
                     Row {
-                        Text("Tah", Modifier.width(64.dp), style = MaterialTheme.typography.labelMedium)
+                        Text("Záznam", Modifier.width(92.dp), style = MaterialTheme.typography.labelMedium)
                         (0 until n).forEach { Text("H${it + 1}", Modifier.weight(1f), style = MaterialTheme.typography.labelMedium) }
+                        Text("    ", fontSize = 18.sp)
                     }
-                    h.forEach { e ->
-                        Row {
+                    Text(
+                        "Ťukni na ↶ u záznamu a hra se vrátí přesně do stavu po něm.",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Color(0xFFB9A7EC),
+                    )
+                    h.forEachIndexed { idx, e ->
+                        Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
-                                if (e.player < 0) "start" else "${e.turn}·H${e.player + 1} ${formatDuration(e.durationMs)}",
-                                Modifier.width(64.dp), style = MaterialTheme.typography.labelSmall,
+                                when {
+                                    e.player < 0 -> "start"
+                                    e.delta != null -> "H${e.player + 1} " + (if (e.delta > 0) "+" else "") + e.delta
+                                    else -> "Tah ${e.turn} H${e.player + 1} ${formatDuration(e.durationMs)}"
+                                },
+                                Modifier.width(92.dp),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = when {
+                                    e.delta == null -> Color(0xFFF6DE9A)
+                                    e.delta > 0 -> Color(0xFFB6F2C4)
+                                    else -> Color(0xFFFFB4B4)
+                                },
                             )
                             (0 until n).forEach { pi ->
                                 Text(
@@ -604,6 +668,14 @@ private fun HistoryDialog(onDismiss: () -> Unit) {
                                     fontWeight = if (pi == e.player) FontWeight.Bold else FontWeight.Normal,
                                 )
                             }
+                            if (idx < h.lastIndex) Text(
+                                "↶",
+                                Modifier
+                                    .clip(androidx.compose.foundation.shape.CircleShape)
+                                    .clickable { LifeState.revertTo(idx); onDismiss() }
+                                    .padding(horizontal = 8.dp, vertical = 2.dp),
+                                color = Color(0xFFF6DE9A), fontSize = 18.sp,
+                            ) else Text("  ", fontSize = 18.sp, modifier = Modifier.padding(horizontal = 8.dp))
                         }
                     }
                     Text(
