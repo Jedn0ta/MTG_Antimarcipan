@@ -63,12 +63,14 @@ class CollectionRepository(
     }
 
     /** Najde kartu podle levého spodního rohu (číslo + kód edice) — i pro cizojazyčné karty. */
-    suspend fun lookupByCorner(rawText: String): Result<ScryfallCard> = runCatching {
-        val (numbers, sets) = OcrParser.parseCorner(rawText)
+    suspend fun lookupByCorner(rawText: String, strict: Boolean = false): Result<ScryfallCard> = runCatching {
+        val (numbers, sets) = OcrParser.parseCorner(rawText, strict)
         require(numbers.isNotEmpty() && sets.isNotEmpty()) { "V rohu není čitelné číslo a edice" }
+        // Málo pokusů — Scryfall jinak dočasně blokuje dotazy (429) a pak se nenajde nic.
+        val maxTries = if (strict) 1 else 4
         var tries = 0
         for (set in sets) for (n in numbers) {
-            if (tries++ >= 8) break
+            if (tries++ >= maxTries) break
             runCatching { scryfall.cardBySetAndNumber(set.lowercase(Locale.ROOT), n) }
                 .getOrNull()?.let { return@runCatching it }
         }
@@ -81,7 +83,7 @@ class CollectionRepository(
 
         val byName = runCatching { scryfall.cardByFuzzyName(parsed.nameGuess) }.getOrElse { e ->
             // Cizojazyčná karta: jméno nenajdeme, zkusíme roh (edice + číslo)
-            return@runCatching lookupByCorner(rawText).getOrElse { throw e }
+            return@runCatching lookupByCorner(rawText, strict = true).getOrElse { throw e }
         }
 
         // Zkus upřesnit edici podle set kódu + čísla z fotky.

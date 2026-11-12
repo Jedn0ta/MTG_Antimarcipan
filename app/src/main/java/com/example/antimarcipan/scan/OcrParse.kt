@@ -72,7 +72,7 @@ object OcrParser {
      *   „DMU • EN“                  → kód edice
      * Vrátí kandidáty seřazené od nejpravděpodobnějších.
      */
-    fun parseCorner(raw: String): Pair<List<String>, List<String>> {
+    fun parseCorner(raw: String, strict: Boolean = false): Pair<List<String>, List<String>> {
         val lines = raw.lineSequence().map { it.trim().uppercase() }.filter { it.isNotEmpty() }.toList()
         val numbers = LinkedHashSet<String>()
         val sets = LinkedHashSet<String>()
@@ -82,7 +82,7 @@ object OcrParser {
         val setLang = Regex("""\b([A-Z0-9]{3,5})\s*[•·*.,:\-]+\s*([A-Z]{2,3})\b""")
         lines.forEach { l -> slash.find(l)?.let { numbers += it.groupValues[1].trimStart('0').ifEmpty { "0" } } }
         lines.forEach { l -> rarityNum.find(l)?.let { numbers += it.groupValues[1].trimStart('0').ifEmpty { "0" } } }
-        lines.forEach { l ->
+        if (!strict) lines.forEach { l ->
             numRarity.findAll(l).forEach { m ->
                 val n = m.groupValues[1]
                 if (n.any { it.isDigit() }) numbers += n.trimStart('0').ifEmpty { "0" }.lowercase()
@@ -95,7 +95,7 @@ object OcrParser {
             }
         }
         // Záložně: samostatné 3–5znakové tokeny s písmenem
-        lines.forEach { l ->
+        if (!strict) lines.forEach { l ->
             Regex("""\b([A-Z][A-Z0-9]{2,4})\b""").findAll(l).forEach { m ->
                 val s = m.groupValues[1]
                 if (s !in STOPWORDS && s !in LANGS) sets += s

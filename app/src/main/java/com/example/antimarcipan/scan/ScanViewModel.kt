@@ -69,6 +69,7 @@ class ScanViewModel(
     val translationLang: StateFlow<TranslationLang> = settings.translationLang
 
     private var lastQuery: String = ""
+    private var lastLookupAt = 0L
     private var nextSlot: Long = 1
 
     /** Poslední řádky z OCR (pro multisken „sejmi stůl“). */
@@ -119,6 +120,10 @@ class ScanViewModel(
             .firstOrNull { it.length >= 3 && it.any(Char::isLetter) } ?: return
 
         if (firstLine.equals(lastQuery, ignoreCase = true) || _state.value.looking) return
+        // Nejvýš ~1 dotaz za 0,8 s, ať Scryfall dotazy neblokuje.
+        val now = System.currentTimeMillis()
+        if (now - lastLookupAt < 800) return
+        lastLookupAt = now
         lastQuery = firstLine
 
         _state.value = _state.value.copy(
