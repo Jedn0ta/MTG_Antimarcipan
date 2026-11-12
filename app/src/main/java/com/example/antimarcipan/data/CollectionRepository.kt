@@ -187,6 +187,21 @@ class CollectionRepository(
         card.id
     }.getOrNull()
 
+    /** Playground — prozkoumané karty. */
+    val playground: Flow<List<CollectionCard>> = dao.observePlayground()
+
+    suspend fun addToPlayground(card: ScryfallCard) {
+        val e = dao.findById(card.id)
+        if (e != null) { dao.setPlayground(card.id, true); return }
+        val local = card.bestImageUrl?.let { downloadImage(it, card.id) }
+        dao.upsert(card.toCollectionCard().copy(localImagePath = local, owned = false, wishlist = false, playground = true, quantity = 0))
+    }
+
+    /** Odebere z playgroundu; karta, která jinde není, se smaže úplně. */
+    suspend fun removeFromPlayground(c: CollectionCard) {
+        if (!c.owned && !c.wishlist && c.quantity <= 0) dao.delete(c.scryfallId) else dao.setPlayground(c.scryfallId, false)
+    }
+
     /** Nezařazené karty (draft / rozpracované, např. pool limited balíku). */
     val unsorted: Flow<List<CollectionCard>> = dao.observeUnsorted()
 
@@ -280,7 +295,11 @@ class CollectionRepository(
     }
 
     /** Označí kartu jako vlastněnou (přesun z wishlistu do sbírky). */
-    suspend fun markOwned(scryfallId: String) = dao.setOwned(scryfallId, true)
+    suspend fun markOwned(scryfallId: String) {
+        val e = dao.findById(scryfallId) ?: return
+        if (e.quantity <= 0) dao.upsert(e.copy(owned = true, quantity = 1, playground = false))
+        else { dao.setOwned(scryfallId, true); dao.setPlayground(scryfallId, false) }
+    }
 
     suspend fun removeFromWishlist(scryfallId: String) {
         val existing = dao.findById(scryfallId)

@@ -110,6 +110,8 @@ class ScanViewModel(
     fun onTextRecognized(text: String) {
         // V multiskenu nic nepřidáváme automaticky — čeká se na „Sejmout stůl“.
         if (_state.value.multiScan) return
+        // Nalezená karta zůstává na obrazovce, dokud s ní uživatel něco neudělá.
+        if (_state.value.candidate != null) return
         if (_state.value.cornerMode) { onCornerText(text); return }
 
         val firstLine = text.lineSequence()
@@ -348,6 +350,14 @@ class ScanViewModel(
             deckRepo.addCard(deckId, card.id)
             val deckName = deckRepo.deck(deckId)?.name ?: "balíku"
             flashAdded("Přidáno do „$deckName“: ${card.name}")
+        }
+    }
+
+    fun addToPlayground() {
+        val card = _state.value.candidate ?: return
+        viewModelScope.launch {
+            repo.addToPlayground(card)
+            flashAdded("Do playgroundu: ${card.name}")
         }
     }
 

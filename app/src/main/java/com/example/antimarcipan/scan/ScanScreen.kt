@@ -301,6 +301,7 @@ fun ScanScreen(
                             onDismiss = vm::dismissCandidate,
                             onAddCollection = vm::addToCollection,
                             onAddWishlist = vm::addToWishlist,
+                            onAddPlayground = vm::addToPlayground,
                             onAddDeck = vm::addToDeck,
                             onLoadPrints = vm::loadPrints,
                             onSelectPrint = vm::selectPrint,
@@ -352,8 +353,9 @@ fun ScanScreen(
 @Composable
 private fun AddedConfirmation(tick: Int, text: String?, modifier: Modifier = Modifier) {
     var visible by remember { mutableStateOf(false) }
+    val initialTick = remember { tick }
     androidx.compose.runtime.LaunchedEffect(tick) {
-        if (tick > 0) {
+        if (tick > 0 && tick != initialTick) {
             visible = true
             kotlinx.coroutines.delay(1300)
             visible = false
@@ -544,6 +546,7 @@ private fun CandidateCard(
     onDismiss: () -> Unit,
     onAddCollection: () -> Unit,
     onAddWishlist: () -> Unit,
+    onAddPlayground: () -> Unit,
     onAddDeck: (Long) -> Unit,
     onLoadPrints: () -> Unit,
     onSelectPrint: (com.example.antimarcipan.data.scryfall.ScryfallCard) -> Unit,
@@ -633,7 +636,10 @@ private fun CandidateCard(
             val pad = androidx.compose.foundation.layout.PaddingValues(horizontal = 6.dp)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedButton(onClick = onDismiss, modifier = Modifier.weight(1f), contentPadding = pad) {
-                    Text("Zahodit", maxLines = 1, softWrap = false, style = MaterialTheme.typography.labelLarge)
+                    Text("Skenovat dál", maxLines = 1, softWrap = false, style = MaterialTheme.typography.labelLarge)
+                }
+                OutlinedButton(onClick = onAddPlayground, modifier = Modifier.weight(1f), contentPadding = pad) {
+                    Text("Playground", maxLines = 1, softWrap = false, style = MaterialTheme.typography.labelLarge)
                 }
                 OutlinedButton(onClick = onAddWishlist, modifier = Modifier.weight(1f), contentPadding = pad) {
                     Text("Wishlist", maxLines = 1, softWrap = false, style = MaterialTheme.typography.labelLarge)

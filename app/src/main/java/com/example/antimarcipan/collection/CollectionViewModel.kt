@@ -42,6 +42,13 @@ class CollectionViewModel(
             CollectionFiltering.apply(cards, f)
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    val playground: StateFlow<List<CollectionCard>> =
+        combine(repo.playground, _filter) { cards, f ->
+            CollectionFiltering.apply(cards, f)
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    fun removeFromPlayground(c: CollectionCard) { viewModelScope.launch { repo.removeFromPlayground(c) } }
+
     /** Draft — nezařazené (rozpracované) karty. */
     val drafts: StateFlow<List<CollectionCard>> =
         combine(repo.unsorted, _filter) { cards, f ->

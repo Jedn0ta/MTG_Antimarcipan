@@ -34,6 +34,8 @@ data class CollectionCard(
     val owned: Boolean = true,
     /** Karta je na wishlistu (chci ji). */
     val wishlist: Boolean = false,
+    /** Playground — prozkoumané karty (např. špatně rozpoznané nebo k prohlédnutí). */
+    val playground: Boolean = false,
     val addedAt: Long = System.currentTimeMillis(),
 )
 
