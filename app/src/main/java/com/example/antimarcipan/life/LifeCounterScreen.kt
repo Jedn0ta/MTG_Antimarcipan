@@ -42,6 +42,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
@@ -82,6 +83,7 @@ object LifeState {
         startLife = p.getInt("start", 20)
         dayNight = p.getInt("dayNight", 0)
         keepOn = p.getBoolean("keepOn", true)
+        dimIdle = p.getBoolean("dimIdle", true)
         curve = p.getInt("curve", 0).coerceIn(0, TIME_CURVES.lastIndex)
         players.forEachIndexed { i, pl ->
             pl.life = p.getInt("life$i", startLife)
@@ -91,7 +93,7 @@ object LifeState {
 
     fun save(ctx: Context) {
         val e = ctx.getSharedPreferences("life_counter", Context.MODE_PRIVATE).edit()
-        e.putInt("count", count).putInt("start", startLife).putInt("dayNight", dayNight).putBoolean("keepOn", keepOn).putInt("curve", curve)
+        e.putInt("count", count).putInt("start", startLife).putInt("dayNight", dayNight).putBoolean("keepOn", keepOn).putBoolean("dimIdle", dimIdle).putInt("curve", curve)
         players.forEachIndexed { i, pl -> e.putInt("life$i", pl.life).putInt("poison$i", pl.poison) }
         e.apply()
     }
@@ -107,6 +109,10 @@ object LifeState {
     var turnMode by mutableStateOf(false)
     /** Nevypínat obrazovku (spořič) — výchozí zapnuto. */
     var keepOn by mutableStateOf(true)
+    /** Úspora baterie: po minutě bez dotyku ztlumit jas (obrazovka nezhasne). */
+    var dimIdle by mutableStateOf(true)
+    var lastTouch = System.currentTimeMillis()
+    var dimmed by mutableStateOf(false)
     /** Křivka doporučeného času tahu (index do TIME_CURVES). */
     var curve by mutableIntStateOf(0)
     /** Pro aktuální tah už se upozornilo (vibrace). */
@@ -243,6 +249,26 @@ fun LifeCounterScreen() {
         view.keepScreenOn = keepOn
         onDispose { }
     }
+    // Úspora baterie: ztlumení jasu při nečinnosti
+    val activity = ctx as? android.app.Activity
+    fun setBrightness(v: Float) {
+        activity?.window?.let { w -> w.attributes = w.attributes.apply { screenBrightness = v } }
+    }
+    LaunchedEffect(keepOn, LifeState.dimIdle) {
+        LifeState.lastTouch = System.currentTimeMillis()
+        while (keepOn && LifeState.dimIdle) {
+            val idle = System.currentTimeMillis() - LifeState.lastTouch > 60_000
+            if (idle != LifeState.dimmed) {
+                LifeState.dimmed = idle
+                setBrightness(if (idle) 0.04f else -1f)
+            }
+            delay(1000)
+        }
+        if (LifeState.dimmed) { LifeState.dimmed = false; setBrightness(-1f) }
+    }
+    DisposableEffect(Unit) {
+        onDispose { LifeState.dimmed = false; setBrightness(-1f) }
+    }
     LaunchedEffect(LifeState.turnMode) {
         while (LifeState.turnMode) {
             LifeState.now = System.currentTimeMillis()
@@ -271,7 +297,20 @@ fun LifeCounterScreen() {
     Column(Modifier.fillMaxSize().background(Color(0xFF0E0B1C))) {
         // Rozložení hráčů kolem stolu + kulaté tlačítko nastavení uprostřed
         var showMenu by remember { mutableStateOf(false) }
-        Box(Modifier.fillMaxSize()) {
+        Box(
+            Modifier.fillMaxSize().pointerInput(Unit) {
+                awaitPointerEventScope {
+                    while (true) {
+                        awaitPointerEvent(androidx.compose.ui.input.pointer.PointerEventPass.Initial)
+                        LifeState.lastTouch = System.currentTimeMillis()
+                        if (LifeState.dimmed) {
+                            LifeState.dimmed = false
+                            setBrightness(-1f)
+                        }
+                    }
+                }
+            }
+        ) {
         Column(Modifier.fillMaxSize().padding(4.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             if (n == 2) {
                 Tile(0, 180f, Modifier.weight(1f).fillMaxWidth(), save)
@@ -582,6 +621,11 @@ private fun LifeMenu(onDismiss: () -> Unit, save: () -> Unit) {
                     selected = LifeState.keepOn,
                     onClick = { LifeState.keepOn = !LifeState.keepOn; save() },
                     label = { Text(if (LifeState.keepOn) "Obrazovka nezhasíná ✓" else "Obrazovka může zhasnout") },
+                )
+                if (LifeState.keepOn) com.example.antimarcipan.ui.GoldChip(
+                    selected = LifeState.dimIdle,
+                    onClick = { LifeState.dimIdle = !LifeState.dimIdle; save() },
+                    label = { Text("Šetřit baterii: ztlumit po 1 min bez dotyku") },
                 )
                 com.example.antimarcipan.ui.GoldChip(
                     selected = LifeState.fullscreen,
