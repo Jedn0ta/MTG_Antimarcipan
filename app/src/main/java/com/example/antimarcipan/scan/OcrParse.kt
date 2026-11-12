@@ -64,6 +64,46 @@ object OcrParser {
         return null
     }
 
+    private val LANGS = setOf("EN", "DE", "FR", "IT", "ES", "PT", "JP", "JA", "KO", "RU", "ZH", "ZHS", "ZHT", "CS", "PH")
+
+    /**
+     * Rozbor levého spodního rohu karty (funguje pro karty v jakémkoli jazyce):
+     *   „123/280 R“ nebo „0123 R“  → sběratelské číslo
+     *   „DMU • EN“                  → kód edice
+     * Vrátí kandidáty seřazené od nejpravděpodobnějších.
+     */
+    fun parseCorner(raw: String): Pair<List<String>, List<String>> {
+        val lines = raw.lineSequence().map { it.trim().uppercase() }.filter { it.isNotEmpty() }.toList()
+        val numbers = LinkedHashSet<String>()
+        val sets = LinkedHashSet<String>()
+        val slash = Regex("""\b(\d{1,4})\s*/\s*\d{1,4}\b""")
+        val numRarity = Regex("""(?:^|\s)(\d{1,4}[A-Z]?)\s*[CURMLSTP]?\b""")
+        val rarityNum = Regex("""\b[CURMLSTP]\s+(\d{1,4})\b""")
+        val setLang = Regex("""\b([A-Z0-9]{3,5})\s*[•·*.,:\-]+\s*([A-Z]{2,3})\b""")
+        lines.forEach { l -> slash.find(l)?.let { numbers += it.groupValues[1].trimStart('0').ifEmpty { "0" } } }
+        lines.forEach { l -> rarityNum.find(l)?.let { numbers += it.groupValues[1].trimStart('0').ifEmpty { "0" } } }
+        lines.forEach { l ->
+            numRarity.findAll(l).forEach { m ->
+                val n = m.groupValues[1]
+                if (n.any { it.isDigit() }) numbers += n.trimStart('0').ifEmpty { "0" }.lowercase()
+            }
+        }
+        lines.forEach { l ->
+            setLang.findAll(l).forEach { m ->
+                val s = m.groupValues[1]; val lang = m.groupValues[2]
+                if (lang in LANGS && s.any { it.isLetter() } && s !in STOPWORDS) sets += s
+            }
+        }
+        // Záložně: samostatné 3–5znakové tokeny s písmenem
+        lines.forEach { l ->
+            Regex("""\b([A-Z][A-Z0-9]{2,4})\b""").findAll(l).forEach { m ->
+                val s = m.groupValues[1]
+                if (s !in STOPWORDS && s !in LANGS) sets += s
+            }
+        }
+        return numbers.take(3) to sets.take(4)
+    }
+
     private fun clean(s: String): String =
         s.replace(Regex("[^\\p{L}\\p{N} ,'\\-]"), "")
             .replace(Regex("\\s+"), " ")

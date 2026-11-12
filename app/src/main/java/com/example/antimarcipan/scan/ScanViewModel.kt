@@ -41,6 +41,8 @@ data class ScanUiState(
     val confirmText: String? = null,
     /** Multisken: skenuje víc karet po sobě, potvrzení hromadně. */
     val multiScan: Boolean = false,
+    /** Hledání podle levého spodního rohu (číslo + edice) — pro cizojazyčné karty. */
+    val cornerMode: Boolean = false,
     val pending: List<PendingScan> = emptyList(),
     /** Když != null, další naskenovaná karta nahradí tento slot (přenačtení). */
     val rescanSlot: Long? = null,
@@ -73,8 +75,21 @@ class ScanViewModel(
     @Volatile private var latestLines: List<String> = emptyList()
 
     /** Zapne/vypne multisken (víc rozprostřených karet, sejmutí stolu). */
+    fun setCornerMode(on: Boolean) {
+        lastQuery = ""
+        _state.value = _state.value.copy(
+            multiScan = false,
+            cornerMode = on,
+            candidate = null,
+            prints = emptyList(),
+            status = if (on) "Namiř na levý spodní roh karty — číslo a kód edice (např. 123/280 · DMU • DE)"
+            else "Namiř foťák na jméno karty",
+        )
+    }
+
     fun setMultiScan(on: Boolean) {
         _state.value = _state.value.copy(
+            cornerMode = false,
             multiScan = on,
             candidate = null,
             prints = emptyList(),
@@ -95,6 +110,7 @@ class ScanViewModel(
     fun onTextRecognized(text: String) {
         // V multiskenu nic nepřidáváme automaticky — čeká se na „Sejmout stůl“.
         if (_state.value.multiScan) return
+        if (_state.value.cornerMode) { onCornerText(text); return }
 
         val firstLine = text.lineSequence()
             .map { it.trim() }
@@ -127,6 +143,28 @@ class ScanViewModel(
                         looking = false,
                         status = "Nenašlo se — zkus lepší světlo / úhel",
                     )
+                }
+        }
+    }
+
+    private fun onCornerText(text: String) {
+        val (numbers, sets) = OcrParser.parseCorner(text)
+        if (numbers.isEmpty() || sets.isEmpty() || _state.value.looking) return
+        val key = numbers.first() + "|" + sets.first()
+        if (key == lastQuery) return
+        lastQuery = key
+        _state.value = _state.value.copy(
+            looking = true,
+            status = "Hledám ${sets.first()} #${numbers.first()}…",
+            prints = emptyList(),
+        )
+        viewModelScope.launch {
+            repo.lookupByCorner(text)
+                .onSuccess { card ->
+                    _state.value = _state.value.copy(candidate = card, looking = false, status = editionLabel(card))
+                }
+                .onFailure {
+                    _state.value = _state.value.copy(looking = false, status = "Roh nečitelný — přibliž a přisviť (číslo + kód edice)")
                 }
         }
     }
