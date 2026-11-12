@@ -11,6 +11,16 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.background
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.SwapHoriz
+import androidx.compose.material.icons.filled.Inventory2
+import androidx.compose.material.icons.automirrored.filled.MenuBook
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.PhotoCamera
+import androidx.compose.material.icons.filled.Translate
+import androidx.compose.material.icons.filled.TouchApp
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.CameraAlt
@@ -45,42 +55,69 @@ private data class GuideStep(
 
 private val GUIDE_STEPS = listOf(
     GuideStep(
+        Icons.Filled.TouchApp,
+        "Vítej v Antimarcipánu",
+        "Appka na skenování karet Magicu, správu sbírky, stavbu balíků a hraní. Ovládá se hlavně gesty, tak si je projdeme:\n\n• Ťuknutí na náhled karty → detail s textací.\n• Podržení náhledu → celá karta ve velkém, swipem listuješ dál.\n• Swipe řádku doprava přes půlku displeje → přidání do balíku.\n• Dlouhé podržení (2–3 s) se ukazuje plnícím se kolečkem — dělá „nebezpečnější“ akce jako mazání nebo otevření webu.\n\nPrůvodce kdykoli pustíš znovu v Nastavení.",
+    ),
+    GuideStep(
         Icons.Filled.CameraAlt,
-        "Skenování karet",
-        "Namiř foťák na jméno karty a appka ji najde ve Scryfallu i se správnou edicí. " +
-            "V režimu Multisken projedeš víc karet po sobě a potvrdíš je naráz. " +
-            "Ikonou překladu zobrazíš textaci v jazyce zvoleném v Nastavení.",
+        "Skenování podle jména",
+        "Záložka Sken → Spustit skenování (foťák se zapne až teď). Namiř na jméno karty nahoře.\n\n• Vpravo nahoře je tlačítko s bleskem — zapne světlo telefonu.\n• Nalezená karta zůstane na obrazovce, dokud nerozhodneš: Skenovat dál, Playground (uložit k prozkoumání), Wishlist, Do balíku nebo Do sbírky.\n• Ťuknutím na edici vybereš jiný tisk (obrázek, cena).\n• Pod kartou je anglická textace se symboly many; vysvětlivky vlastností (Flying, Dredge…) od appky jsou fialovou kurzívou.",
+    ),
+    GuideStep(
+        Icons.Filled.Translate,
+        "Cizojazyčné karty — režim Roh",
+        "Německé, japonské a jiné karty se podle jména nenajdou. Přepni na „Roh“ a namiř do zlatého rámečku levý spodní roh karty: číslo karty (123/280 R) a kód edice s jazykem (DMU • DE).\n\nAppka podle toho najde přesný tisk a uloží ho s anglickou textací. Funguje u karet zhruba od roku 2015; starší roh nemají — ty přidej ručně.\n\nPozn.: překladač textací byl odstraněn, textace je anglicky s vysvětlivkami.",
+    ),
+    GuideStep(
+        Icons.Filled.PhotoCamera,
+        "Multisken z fotky",
+        "Víc karet naráz: Sken → Multisken z fotky. Rozlož karty lícem nahoru vedle sebe, ťukni „Vyfotit karty“ (otevře se fotoaparát telefonu) nebo vyber fotku „Z galerie“.\n\nPak uvidíš průběh: čtu text → hledám karty 3/12 → hotovo. Nalezené karty zkontroluješ a potvrdíš najednou; špatnou přenačteš.\n\nTip: rovně, dobré světlo, bez odlesků na názvech.",
+    ),
+    GuideStep(
+        Icons.Filled.Add,
+        "Ruční přidání",
+        "Ikona + v horní liště: napiš jméno, vyber kartu ze Scryfallu (ťuknutím na náhled vidíš detail s obrázkem a textací) a přidej ji do sbírky, na wishlist nebo do balíku.",
     ),
     GuideStep(
         Icons.Filled.ViewModule,
         "Sbírka",
-        "Všechny naskenované i ručně přidané karty. Přepínáš seznam/mřížku, filtruješ a hledáš. " +
-            "Ťuknutím zobrazíš detail, podržením celou kartu, swipem vpravo přidáš do balíku. " +
-            "Dlouhé podržení textu kartu smaže.",
+        "Záložky nahoře:\n• Sbírka — co vlastníš.\n• Wishlist — co chceš.\n• Draft — rozpracované karty z poolu draftu/sealedu.\n• Playground — karty odložené k prozkoumání.\n\nPod nimi počet kusů a celková cena (€, případně \$). Vpravo přepnutí seznam/mřížka a filtr (jméno, text, barvy, MV, typy, tribal, vlastnosti, edice, rarita…). Řádek Vše/Land/Spell + řazení (jméno, cena, MV…).",
     ),
     GuideStep(
         Icons.Filled.Style,
-        "Balíky",
-        "Postav si balík — Commander i „jednokarták“. Země jsou zvlášť, u základních měníš počet " +
-            "přes + a −. Barvy balíku se počítají ze zemí. Filtr typů nabízí i tribaly (Elf, Knight…). " +
-            "Decklist jde exportovat.",
+        "Gesta na kartě ve sbírce",
+        "• Ťuk na náhled → detail (textace, cena, počet kusů).\n• Podržení náhledu → velká karta se zlatým rámečkem; swipem doleva/doprava listuješ celým seznamem.\n• Swipe řádku doprava přes půlku → vybereš balík a karta se přidá.\n• Ikona ⇄ → změna edice (obrázek i cena); přepíše se i v balících.\n• Podržení textu řádku 2,5 s → smazání (s potvrzením).\n• Ve Wishlistu/Draftu/Playgroundu swipe přesune kartu do sbírky.",
     ),
     GuideStep(
-        Icons.Filled.Hub,
-        "Synergie",
-        "Vyhodnotí, jak se karty hodí do daného balíku, označí ty, co nesedí, a navrhne výměny " +
-            "i další karty — podle velitele (EDHREC) nebo podle barev a témat balíku.",
+        Icons.AutoMirrored.Filled.MenuBook,
+        "Gatherer a rulings",
+        "Ikona knížky u karty:\n• Ťuknutí → oficiální rulings (výklady pravidel) ve scrollovacím okně.\n• Podržení 3 s (plní se kolečko) → otevře kartu na Gathereru, oficiálním webu Wizards of the Coast, s kompletními informacemi.\n\nZ okna s rulings se dá na Gatherer přejít i tlačítkem.",
+    ),
+    GuideStep(
+        Icons.Filled.Inventory2,
+        "Balíky",
+        "+ Nový balík: vyber formát — Commander, Jednokarťák, Standard (60 karet, max 4 kopie), Draft, Sealed nebo Volný.\n\nV detailu balíku:\n• Panel základních zemí: ťukni na symbol many (+1) nebo −.\n• Vše = všechno podle abecedy, Land/Spell = rozdělené.\n• V hlavičce počet karet, barvy a celková cena.\n• Korunkou určíš velitele, podržením řádku kartu odebereš.\n• Menu ⋮: export decklistu, přejmenování, smazání.",
+    ),
+    GuideStep(
+        Icons.Filled.SwapHoriz,
+        "Draft a Sealed",
+        "Limited balík se staví z poolu, ne ze sbírky:\n1. V rádci balíku „Vyfotit karty“ — karty z boosterů jdou rovnou do poolu.\n2. Sekce Pool: + přesune kartu do balíku, koš ji z poolu odstraní.\n3. Rádce hlídá 40 karet, ~17 zemí, 15–17 tvorů, removal, křivku; doporučí 2 barvy, nejlepší karty a tlačítkem rozdělí základní země.\n4. „Pool do sbírky“ na konci přidá vše do sbírky naráz.\n\n„Jak se hraje“ vysvětlí průběh formátu i pick order.",
     ),
     GuideStep(
         Icons.Filled.AutoAwesome,
-        "Anti Marcipán",
-        "Rádce při hře. Pomůže s rozhodnutím nad balíkem a pravidly.",
+        "Rádce",
+        "Vyber balík a Anti Marcipán ho prozkoumá: mana curve (sloupce podle mana value, tvorové vs. ostatní, průměrná MV), počty zemí, rampu, dobírání, removal a dá konkrétní rady. Navržené karty mají obrázek — ťukni pro detail.",
+    ),
+    GuideStep(
+        Icons.Filled.Favorite,
+        "Počítadlo životů",
+        "Ikona počítadla v horní liště. Stav se drží, i když odejdeš jinam.\n\n• Ťuk levá/pravá půlka −1/+1, podržení −5/+5. ☠ jed: ťuk +1, podržení −1.\n• Kulaté tlačítko uprostřed = nastavení: hráči 2–6, životy 20/30/40, den/noc, celá obrazovka, nezhasínání + úspora baterie, reset.\n• Režim tahů: „Konec tahu“, čas tahu v rohu, křivka doporučeného času (blikání + vibrace po překročení).\n• Historie životů: graf a záznamy; ↶ vrátí hru k libovolnému záznamu.",
     ),
     GuideStep(
         Icons.Filled.Settings,
         "Nastavení",
-        "Jazyk překladu karet, aktualizace aplikace přímo z GitHubu a záloha/obnova dat. " +
-            "Tohoto průvodce si tu můžeš kdykoli pustit znovu.",
+        "Aktualizace aplikace z GitHubu, záloha a obnova dat, vzhled a tento průvodce. Ceny karet se obnovují samy (nejvýš jednou za 12 h) ze Scryfallu.",
     ),
 )
 
@@ -99,8 +136,9 @@ fun GuideOverlay(onClose: () -> Unit) {
         properties = DialogProperties(usePlatformDefaultWidth = true),
     ) {
         androidx.compose.material3.Surface(
-            shape = MaterialTheme.shapes.large,
-            tonalElevation = 6.dp,
+            shape = androidx.compose.foundation.shape.RoundedCornerShape(28.dp),
+            color = androidx.compose.ui.graphics.Color(0xFF231C45),
+            border = androidx.compose.foundation.BorderStroke(1.5.dp, GoldBorderBrush),
         ) {
             Column(
                 Modifier.fillMaxWidth().padding(24.dp),
@@ -125,11 +163,22 @@ fun GuideOverlay(onClose: () -> Unit) {
                     textAlign = TextAlign.Center,
                 )
                 Spacer(Modifier.height(8.dp))
+                Column(
+                    Modifier.heightIn(max = 340.dp)
+                        .verticalScroll(androidx.compose.foundation.rememberScrollState(index)),
+                ) {
+                    Text(
+                        step.body,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.88f),
+                        textAlign = TextAlign.Start,
+                    )
+                }
                 Text(
-                    step.body,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
-                    textAlign = TextAlign.Center,
+                    "${index + 1} / ${GUIDE_STEPS.size}",
+                    Modifier.padding(top = 8.dp),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.primary,
                 )
                 Spacer(Modifier.height(20.dp))
 
