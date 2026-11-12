@@ -22,6 +22,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.foundation.clickable
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -300,14 +302,14 @@ private fun CenterButton(modifier: Modifier, onClick: () -> Unit) {
                 Brush.radialGradient(listOf(Color(0xFF3A2E66), Color(0xFF15102A)))
             )
             .border(2.5.dp, com.example.antimarcipan.ui.GoldBorderBrush, androidx.compose.foundation.shape.CircleShape)
-            .combinedClickable(onClick = onClick),
+            .clickable(onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
         when (dn) {
             1 -> Text("☀", fontSize = 28.sp, color = Color(0xFFFFD86B))
             2 -> Text("☾", fontSize = 28.sp, color = Color(0xFFAFC3FF))
             else -> Icon(
-                androidx.compose.material.icons.Icons.Filled.Settings,
+                Icons.Filled.Settings,
                 contentDescription = "Nastavení hry",
                 tint = Color(0xFFF3E7C4),
                 modifier = Modifier.size(30.dp),
