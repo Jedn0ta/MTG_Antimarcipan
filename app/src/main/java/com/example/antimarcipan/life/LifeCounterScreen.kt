@@ -81,6 +81,7 @@ object LifeState {
         count = p.getInt("count", 4)
         startLife = p.getInt("start", 20)
         dayNight = p.getInt("dayNight", 0)
+        keepOn = p.getBoolean("keepOn", true)
         curve = p.getInt("curve", 0).coerceIn(0, TIME_CURVES.lastIndex)
         players.forEachIndexed { i, pl ->
             pl.life = p.getInt("life$i", startLife)
@@ -90,7 +91,7 @@ object LifeState {
 
     fun save(ctx: Context) {
         val e = ctx.getSharedPreferences("life_counter", Context.MODE_PRIVATE).edit()
-        e.putInt("count", count).putInt("start", startLife).putInt("dayNight", dayNight).putInt("curve", curve)
+        e.putInt("count", count).putInt("start", startLife).putInt("dayNight", dayNight).putBoolean("keepOn", keepOn).putInt("curve", curve)
         players.forEachIndexed { i, pl -> e.putInt("life$i", pl.life).putInt("poison$i", pl.poison) }
         e.apply()
     }
@@ -104,6 +105,8 @@ object LifeState {
     // ---- Režim tahů ----
     /** Hráči potvrzují konec tahu tlačítkem; měří se čas a zaznamenává historie životů. */
     var turnMode by mutableStateOf(false)
+    /** Nevypínat obrazovku (spořič) — výchozí zapnuto. */
+    var keepOn by mutableStateOf(true)
     /** Křivka doporučeného času tahu (index do TIME_CURVES). */
     var curve by mutableIntStateOf(0)
     /** Pro aktuální tah už se upozornilo (vibrace). */
@@ -233,8 +236,12 @@ fun LifeCounterScreen() {
     LifeState.load(ctx)
     val view = LocalView.current
     DisposableEffect(Unit) {
-        view.keepScreenOn = true
         onDispose { view.keepScreenOn = false; LifeState.save(ctx) }
+    }
+    val keepOn = LifeState.keepOn
+    DisposableEffect(keepOn) {
+        view.keepScreenOn = keepOn
+        onDispose { }
     }
     LaunchedEffect(LifeState.turnMode) {
         while (LifeState.turnMode) {
@@ -571,6 +578,11 @@ private fun LifeMenu(onDismiss: () -> Unit, save: () -> Unit) {
                         style = MaterialTheme.typography.bodySmall,
                     )
                 }
+                com.example.antimarcipan.ui.GoldChip(
+                    selected = LifeState.keepOn,
+                    onClick = { LifeState.keepOn = !LifeState.keepOn; save() },
+                    label = { Text(if (LifeState.keepOn) "Obrazovka nezhasíná ✓" else "Obrazovka může zhasnout") },
+                )
                 com.example.antimarcipan.ui.GoldChip(
                     selected = LifeState.fullscreen,
                     onClick = { LifeState.fullscreen = !LifeState.fullscreen; onDismiss() },
