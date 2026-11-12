@@ -8,6 +8,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
@@ -82,6 +86,7 @@ fun AdvisorScreen(
             )
             !state.analyzed -> EmptyState("Počítám…", "Chvilku strpení.")
             else -> LazyColumn(Modifier.fillMaxSize()) {
+                if (state.curve.any { it.first + it.second > 0 }) item { ManaCurveCard(state) }
                 items(state.tips) { tip ->
                     TipCard(tip)
                 }
@@ -111,6 +116,78 @@ private fun TipCard(tip: AdvisorTip) {
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
                 )
+            }
+        }
+    }
+}
+
+
+/** Mana curve balíku: sloupce podle mana value, tvorové vs. ostatní kouzla. */
+@Composable
+private fun ManaCurveCard(state: AdvisorUiState) {
+    val maxV = state.curve.maxOf { it.first + it.second }.coerceAtLeast(1)
+    val creature = androidx.compose.ui.graphics.Color(0xFFE2BC62)
+    val other = androidx.compose.ui.graphics.Color(0xFF8C73D9)
+    androidx.compose.material3.Card(
+        Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, com.example.antimarcipan.ui.GoldBorderBrush),
+    ) {
+        Column(Modifier.padding(14.dp)) {
+            Text("Mana curve", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
+            Text(
+                "Průměrná MV %.2f · kouzel %d · zemí %d".format(
+                    state.avgMv, state.curve.sumOf { it.first + it.second }, state.lands,
+                ),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.75f),
+            )
+            androidx.compose.foundation.layout.Row(
+                Modifier.fillMaxWidth().height(150.dp).padding(top = 12.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalAlignment = Alignment.Bottom,
+            ) {
+                state.curve.forEachIndexed { i, (cr, ot) ->
+                    val total = cr + ot
+                    Column(
+                        Modifier.weight(1f).fillMaxHeight(),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Bottom,
+                    ) {
+                        if (total > 0) Text("$total", style = MaterialTheme.typography.labelSmall)
+                        val frac = total.toFloat() / maxV
+                        if (total > 0) Column(
+                            Modifier.fillMaxWidth().fillMaxHeight(frac * 0.82f)
+                                .clip(androidx.compose.foundation.shape.RoundedCornerShape(topStart = 6.dp, topEnd = 6.dp)),
+                        ) {
+                            if (ot > 0) androidx.compose.foundation.layout.Box(
+                                Modifier.fillMaxWidth().weight(ot.toFloat()).background(other)
+                            )
+                            if (cr > 0) androidx.compose.foundation.layout.Box(
+                                Modifier.fillMaxWidth().weight(cr.toFloat()).background(creature)
+                            )
+                        }
+                    }
+                }
+            }
+            androidx.compose.foundation.layout.Row(
+                Modifier.fillMaxWidth().padding(top = 4.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                (0..7).forEach { i ->
+                    Text(
+                        if (i == 7) "7+" else "$i",
+                        Modifier.weight(1f),
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                        style = MaterialTheme.typography.labelMedium,
+                    )
+                }
+            }
+            androidx.compose.foundation.layout.Row(
+                Modifier.padding(top = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(14.dp),
+            ) {
+                Text("■ Tvorové", color = creature, style = MaterialTheme.typography.labelMedium)
+                Text("■ Ostatní kouzla", color = other, style = MaterialTheme.typography.labelMedium)
             }
         }
     }
