@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -63,6 +64,8 @@ object LifeState {
     /** 0 = nic, 1 = den, 2 = noc */
     var dayNight by mutableIntStateOf(0)
     val players = List(6) { LifePlayer(20) }
+    /** Celá obrazovka — skryje horní lištu aplikace i systémové lišty. */
+    var fullscreen by mutableStateOf(false)
     private var loaded = false
 
     fun load(ctx: Context) {
@@ -113,43 +116,24 @@ fun LifeCounterScreen() {
         view.keepScreenOn = true
         onDispose { view.keepScreenOn = false; LifeState.save(ctx) }
     }
+    val fs = LifeState.fullscreen
+    DisposableEffect(fs) {
+        val window = (ctx as? android.app.Activity)?.window
+        val ctl = window?.let { androidx.core.view.WindowCompat.getInsetsController(it, view) }
+        if (fs) {
+            ctl?.systemBarsBehavior = androidx.core.view.WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            ctl?.hide(androidx.core.view.WindowInsetsCompat.Type.systemBars())
+        } else ctl?.show(androidx.core.view.WindowInsetsCompat.Type.systemBars())
+        onDispose { ctl?.show(androidx.core.view.WindowInsetsCompat.Type.systemBars()) }
+    }
+    androidx.activity.compose.BackHandler(enabled = fs) { LifeState.fullscreen = false }
     val n = LifeState.count
     val save = { LifeState.save(ctx) }
 
     Column(Modifier.fillMaxSize().background(Color(0xFF0E0B1C))) {
-        // Ovládání: rozbalovací výběry, den/noc, reset
-        Row(
-            Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 6.dp),
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Dropdown("Hráči: $n", (2..6).map { "$it hráči" to it }, Modifier.weight(1f)) {
-                LifeState.count = it; save()
-            }
-            Dropdown("Životy: ${LifeState.startLife}", listOf(20, 30, 40).map { "$it životů" to it }, Modifier.weight(1f)) {
-                LifeState.startLife = it; LifeState.reset(); save()
-            }
-            val dn = LifeState.dayNight
-            androidx.compose.material3.OutlinedButton(
-                onClick = { LifeState.dayNight = (dn + 1) % 3; save() },
-                contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp),
-                border = androidx.compose.foundation.BorderStroke(1.dp, com.example.antimarcipan.ui.GoldBorderBrush),
-            ) {
-                Text(
-                    when (dn) { 1 -> "☀ Den"; 2 -> "☾ Noc"; else -> "☀/☾" },
-                    color = when (dn) { 1 -> Color(0xFFFFD86B); 2 -> Color(0xFFAFC3FF); else -> Color(0xFFEAD9A8) },
-                )
-            }
-            androidx.compose.material3.Button(
-                onClick = { LifeState.reset(); save() },
-                contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp),
-            ) {
-                Icon(Icons.Filled.Refresh, contentDescription = null)
-                Text(" Reset")
-            }
-        }
-
-        // Rozložení hráčů kolem stolu
+        // Rozložení hráčů kolem stolu + kulaté tlačítko nastavení uprostřed
+        var showMenu by remember { mutableStateOf(false) }
+        Box(Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize().padding(4.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             if (n == 2) {
                 Tile(0, 180f, Modifier.weight(1f).fillMaxWidth(), save)
@@ -166,6 +150,9 @@ fun LifeCounterScreen() {
                 }
             }
         }
+        CenterButton(Modifier.align(Alignment.Center)) { showMenu = true }
+        }
+        if (showMenu) LifeMenu(onDismiss = { showMenu = false }, save = save)
     }
 }
 
@@ -299,4 +286,87 @@ private fun <T> Dropdown(label: String, options: List<Pair<String, T>>, modifier
             }
         }
     }
+}
+
+/** Kulaté zlaté tlačítko uprostřed mezi hráči — otevře nastavení hry. */
+@Composable
+private fun CenterButton(modifier: Modifier, onClick: () -> Unit) {
+    val dn = LifeState.dayNight
+    Box(
+        modifier
+            .size(62.dp)
+            .clip(androidx.compose.foundation.shape.CircleShape)
+            .background(
+                Brush.radialGradient(listOf(Color(0xFF3A2E66), Color(0xFF15102A)))
+            )
+            .border(2.5.dp, com.example.antimarcipan.ui.GoldBorderBrush, androidx.compose.foundation.shape.CircleShape)
+            .combinedClickable(onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        when (dn) {
+            1 -> Text("☀", fontSize = 28.sp, color = Color(0xFFFFD86B))
+            2 -> Text("☾", fontSize = 28.sp, color = Color(0xFFAFC3FF))
+            else -> Icon(
+                androidx.compose.material.icons.Icons.Filled.Settings,
+                contentDescription = "Nastavení hry",
+                tint = Color(0xFFF3E7C4),
+                modifier = Modifier.size(30.dp),
+            )
+        }
+    }
+}
+
+@Composable
+private fun LifeMenu(onDismiss: () -> Unit, save: () -> Unit) {
+    com.example.antimarcipan.ui.GoldDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Nastavení hry") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text("Počet hráčů", style = MaterialTheme.typography.labelLarge)
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    (2..6).forEach { k ->
+                        com.example.antimarcipan.ui.GoldChip(
+                            selected = LifeState.count == k,
+                            onClick = { LifeState.count = k; save() },
+                            label = { Text("$k") },
+                        )
+                    }
+                }
+                Text("Počáteční životy (spustí novou hru)", style = MaterialTheme.typography.labelLarge)
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    listOf(20, 30, 40).forEach { l ->
+                        com.example.antimarcipan.ui.GoldChip(
+                            selected = LifeState.startLife == l,
+                            onClick = { LifeState.startLife = l; LifeState.reset(); save() },
+                            label = { Text("$l") },
+                        )
+                    }
+                }
+                Text("Den / noc", style = MaterialTheme.typography.labelLarge)
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    listOf("Vypnuto" to 0, "☀ Den" to 1, "☾ Noc" to 2).forEach { (t, v) ->
+                        com.example.antimarcipan.ui.GoldChip(
+                            selected = LifeState.dayNight == v,
+                            onClick = { LifeState.dayNight = v; save() },
+                            label = { Text(t) },
+                        )
+                    }
+                }
+                com.example.antimarcipan.ui.GoldChip(
+                    selected = LifeState.fullscreen,
+                    onClick = { LifeState.fullscreen = !LifeState.fullscreen; onDismiss() },
+                    label = { Text(if (LifeState.fullscreen) "Ukončit celou obrazovku" else "Celá obrazovka") },
+                )
+                androidx.compose.material3.Button(
+                    onClick = { LifeState.reset(); save(); onDismiss() },
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Icon(Icons.Filled.Refresh, contentDescription = null)
+                    Text("  Reset — nová hra")
+                }
+            }
+        },
+        confirmButton = { TextButton(onClick = onDismiss) { Text("Zavřít") } },
+    )
 }

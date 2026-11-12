@@ -88,6 +88,7 @@ fun AntimarcipanApp() {
         // tmavém pozadí není vidět. Držíme světlý obsah.
         contentColor = MaterialTheme.colorScheme.onSurface,
         topBar = {
+          if (!(onLife && com.example.antimarcipan.life.LifeState.fullscreen))
           androidx.compose.foundation.layout.Column {
             TopAppBar(
                 modifier = Modifier.background(BarGradient),
