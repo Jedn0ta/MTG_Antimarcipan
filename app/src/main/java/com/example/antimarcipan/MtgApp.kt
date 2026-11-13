@@ -24,6 +24,7 @@ class AppContainer(app: Application) {
     val synergyRepository = SynergyRepository(db.collectionDao())
     val updateRepository = UpdateRepository(app)
     val backupRepository = BackupRepository(app, db)
+    val friendDao = db.friendDao()
 }
 
 class MtgApp : Application(), ImageLoaderFactory {

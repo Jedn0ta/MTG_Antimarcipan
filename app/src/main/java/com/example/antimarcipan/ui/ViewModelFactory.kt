@@ -49,6 +49,14 @@ val AppViewModelFactory: ViewModelProvider.Factory = viewModelFactory {
         )
     }
     initializer {
+        com.example.antimarcipan.friends.FriendsViewModel(
+            app().container.friendDao,
+            app().container.deckRepository,
+            app().container.collectionRepository,
+            app().applicationContext,
+        )
+    }
+    initializer {
         ManualAddViewModel(app().container.collectionRepository, app().container.deckRepository)
     }
 }

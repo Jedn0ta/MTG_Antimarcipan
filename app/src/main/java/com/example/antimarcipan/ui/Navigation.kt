@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -45,6 +46,7 @@ import com.example.antimarcipan.synergy.SynergyScreen
 private const val SETTINGS_ROUTE = "settings"
 private const val MANUAL_ROUTE = "manual_add"
 private const val LIFE_ROUTE = "life_counter"
+private const val FRIENDS_ROUTE = "friends"
 
 private enum class Dest(
     val route: String,
@@ -72,11 +74,13 @@ fun AntimarcipanApp() {
     val route = current?.route
     val onManual = route == MANUAL_ROUTE
     val onLife = route == LIFE_ROUTE
-    val isSubScreen = onManual || onLife
+    val onFriends = route == FRIENDS_ROUTE
+    val isSubScreen = onManual || onLife || onFriends
 
     val title = when {
         onManual -> "Přidat ručně"
         onLife -> "Počítadlo životů"
+        onFriends -> "Přátelé"
         else -> Dest.entries.firstOrNull { d ->
             current?.hierarchy?.any { it.route == d.route } == true
         }?.label ?: "Antimarcipán"
@@ -121,6 +125,9 @@ fun AntimarcipanApp() {
                 },
                 actions = {
                     if (!isSubScreen) {
+                        IconButton(onClick = { navController.navigate(FRIENDS_ROUTE) { launchSingleTop = true } }) {
+                            Icon(androidx.compose.material.icons.Icons.Filled.Group, contentDescription = "Přátelé")
+                        }
                         IconButton(onClick = { navController.navigate(LIFE_ROUTE) { launchSingleTop = true } }) {
                             Icon(painterResource(com.example.antimarcipan.R.drawable.ic_life_counter), contentDescription = "Počítadlo životů")
                         }
@@ -193,6 +200,10 @@ fun AntimarcipanApp() {
             }
         },
     ) { padding ->
+        val friendsInbox by com.example.antimarcipan.friends.FriendsInbox.pending.collectAsState()
+        androidx.compose.runtime.LaunchedEffect(friendsInbox) {
+            if (friendsInbox != null) navController.navigate(FRIENDS_ROUTE) { launchSingleTop = true }
+        }
         val shortcut by AppShortcuts.pending.collectAsState()
         androidx.compose.runtime.LaunchedEffect(shortcut) {
             val dest = when (shortcut) {
@@ -233,6 +244,7 @@ fun AntimarcipanApp() {
             composable(Dest.Synergy.route) { com.example.antimarcipan.advisor.AdvisorHubScreen() }
             composable(Dest.Settings.route) { SettingsScreen() }
             composable(MANUAL_ROUTE) { ManualAddScreen() }
+            composable(FRIENDS_ROUTE) { com.example.antimarcipan.friends.FriendsScreen() }
             composable(LIFE_ROUTE) { com.example.antimarcipan.life.LifeCounterScreen() }
         }
     }
