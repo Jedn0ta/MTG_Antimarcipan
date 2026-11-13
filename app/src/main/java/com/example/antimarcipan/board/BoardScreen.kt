@@ -61,6 +61,7 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
+import kotlinx.coroutines.launch
 
 private val dateFmt = SimpleDateFormat("EEE d. M. H:mm", Locale("cs"))
 private val timeFmt = SimpleDateFormat("d. M. H:mm", Locale("cs"))
@@ -77,19 +78,26 @@ private fun nameColor(pub: String): Color {
 @Composable
 fun BoardScreen() {
     val ctx = LocalContext.current
-    val vm: BoardViewModel = viewModel(factory = viewModelFactory { initializer { BoardViewModel(ctx.applicationContext) } })
+    val vm = Board
+    Board.init(ctx)
     val groups by vm.groups.collectAsStateWithLifecycle()
     val current by vm.current.collectAsStateWithLifecycle()
     val posts by vm.posts.collectAsStateWithLifecycle()
     val status by vm.relayStatus.collectAsStateWithLifecycle()
     val inbox by BoardInbox.pending.collectAsStateWithLifecycle()
 
-    DisposableEffect(Unit) { vm.start(); onDispose { vm.stop() } }
+    val unread by vm.unread.collectAsStateWithLifecycle()
+    // Na obrazovce = přečteno
+    DisposableEffect(Unit) { vm.start(); vm.visible = true; onDispose { vm.visible = false } }
+    LaunchedEffect(current, posts.size) { current?.let { vm.markRead(it) } }
+    val accepted by BoardInbox.accepted.collectAsStateWithLifecycle()
+    LaunchedEffect(accepted) { accepted?.let { if (vm.joinGroup(it)) Toast.makeText(ctx, "Připojeno ke skupině", Toast.LENGTH_SHORT).show(); BoardInbox.accepted.value = null } }
 
     var showNew by remember { mutableStateOf(false) }
     var showJoin by remember { mutableStateOf<String?>(null) }
     var showMeet by remember { mutableStateOf(false) }
     var confirmLeave by remember { mutableStateOf(false) }
+    var showInvite by remember { mutableStateOf(false) }
     var text by remember { mutableStateOf("") }
 
     LaunchedEffect(inbox) { inbox?.let { showJoin = it; BoardInbox.pending.value = null } }
@@ -109,7 +117,11 @@ fun BoardScreen() {
         Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp), verticalAlignment = Alignment.CenterVertically) {
             Row(Modifier.weight(1f).horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 groups.forEach { g ->
-                    com.example.antimarcipan.ui.GoldChip(selected = current?.secretHex == g.secretHex, onClick = { vm.select(g) }, label = { Text(g.name) })
+                    val u = unread[g.tag] ?: 0
+                    com.example.antimarcipan.ui.GoldChip(
+                        selected = current?.secretHex == g.secretHex, onClick = { vm.select(g) },
+                        label = { Text(if (u > 0 && current?.secretHex != g.secretHex) "${g.name} ($u)" else g.name) },
+                    )
                 }
                 com.example.antimarcipan.ui.GoldChip(selected = false, onClick = { showNew = true }, label = { Text("+ Skupina") })
             }
@@ -134,13 +146,7 @@ fun BoardScreen() {
             val g = current!!
             Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                 Text(g.name, Modifier.weight(1f), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
-                IconButton(onClick = {
-                    val send = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(
-                        Intent.EXTRA_TEXT,
-                        "Pozvánka do skupiny „${g.name}“ v appce Antimarcipán (otevři v appce → Přátelé → Nástěnka):\n\n${g.invite}",
-                    )
-                    ctx.startActivity(Intent.createChooser(send, "Pozvat do skupiny").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
-                }) { Icon(Icons.Filled.Share, contentDescription = "Pozvat") }
+                IconButton(onClick = { showInvite = true }) { Icon(Icons.Filled.Share, contentDescription = "Pozvat přátele") }
                 TextButton(onClick = {
                     val cm = ctx.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
                     showJoin = cm.primaryClip?.getItemAt(0)?.coerceToText(ctx)?.toString().orEmpty()
@@ -213,6 +219,7 @@ fun BoardScreen() {
             dismissButton = { TextButton(onClick = { confirmLeave = false }) { Text("Zrušit") } },
         )
     }
+    if (showInvite) current?.let { g -> InviteDialog(g) { showInvite = false } }
     if (showMeet) MeetDialog(onDismiss = { showMeet = false }) { title, whenMs, place, note ->
         vm.createMeetup(title, whenMs, place, note); showMeet = false
     }
@@ -290,5 +297,49 @@ private fun MeetDialog(onDismiss: () -> Unit, onCreate: (String, Long, String, S
         },
         confirmButton = { TextButton(enabled = title.isNotBlank(), onClick = { onCreate(title, whenMs, place, note) }) { Text("Zveřejnit") } },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Zrušit") } },
+    )
+}
+
+
+/** Pozvat přátele: přímo přes Wi-Fi (potvrdí ve své appce) nebo poslat pozvánku sdílením. */
+@Composable
+private fun InviteDialog(g: BoardGroup, onDismiss: () -> Unit) {
+    val ctx = LocalContext.current
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
+    val lanOn by com.example.antimarcipan.friends.LanShare.running.collectAsStateWithLifecycle()
+    val peers by com.example.antimarcipan.friends.LanShare.peers.collectAsStateWithLifecycle()
+    val sent = remember { androidx.compose.runtime.mutableStateListOf<String>() }
+    GoldDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Pozvat do „${g.name}“") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("Přátelé na této Wi-Fi", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+                if (!lanOn) TextButton(onClick = { com.example.antimarcipan.friends.LanShare.enable(ctx, true) }) { Text("Zapnout viditelnost na Wi-Fi") }
+                else if (peers.isEmpty()) Text("Hledám… (kamarád musí mít appku otevřenou a zapnutou viditelnost na Wi-Fi)", style = MaterialTheme.typography.bodySmall)
+                peers.forEach { p ->
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("📶 ${p.name}", Modifier.weight(1f))
+                        if (p.name in sent) Text("Pozváno ✓", color = Color(0xFF8FD6A0))
+                        else TextButton(onClick = {
+                            scope.launch {
+                                val ok = com.example.antimarcipan.friends.LanShare.sendInvite(p, g.invite, g.name).isSuccess
+                                if (ok) sent += p.name else Toast.makeText(ctx, "Nepodařilo se poslat", Toast.LENGTH_SHORT).show()
+                            }
+                        }) { Text("Pozvat") }
+                    }
+                }
+                androidx.compose.material3.HorizontalDivider()
+                Text("Nebo pošli pozvánku zprávou (WhatsApp, Quick Share…). Kamarád ji otevře v appce a potvrdí.", style = MaterialTheme.typography.bodySmall)
+                OutlinedButton(onClick = {
+                    val send = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(
+                        Intent.EXTRA_TEXT,
+                        "Pozvánka do skupiny „${g.name}“ v appce Antimarcipán (sdílej do appky nebo zkopíruj a otevři Nástěnku):\n\n${g.invite}",
+                    )
+                    ctx.startActivity(Intent.createChooser(send, "Pozvat do skupiny").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                }, modifier = Modifier.fillMaxWidth()) { Text("Poslat pozvánku zprávou") }
+            }
+        },
+        confirmButton = { TextButton(onClick = onDismiss) { Text("Hotovo") } },
     )
 }

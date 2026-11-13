@@ -41,6 +41,21 @@ object LanShare {
     private val resolveQueue = ConcurrentLinkedQueue<NsdServiceInfo>()
     @Volatile private var resolving = false
 
+    private fun prefs(c: Context) = c.getSharedPreferences("friends", Context.MODE_PRIVATE)
+
+    /** Viditelnost na Wi-Fi (pamatuje se; běží, dokud je appka v popředí). */
+    fun enable(context: Context, on: Boolean) {
+        prefs(context).edit().putBoolean("lan", on).apply()
+        if (on) start(context, prefs(context).getString("myName", "") ?: "") else stop()
+    }
+
+    fun isEnabled(context: Context) = prefs(context).getBoolean("lan", false)
+
+    /** Volá aktivita při návratu do popředí. */
+    fun resume(context: Context) { if (isEnabled(context)) start(context, prefs(context).getString("myName", "") ?: "") }
+
+    suspend fun sendInvite(peer: LanPeer, invite: String, groupName: String): Result<Unit> = raw(peer.host, peer.port, header() + invite)
+
     fun start(context: Context, myName: String) {
         if (running.value) return
         running.value = true
@@ -70,7 +85,7 @@ object LanShare {
                         }
                         when {
                             text.startsWith("AMACK1:") -> acks.value = text.removePrefix("AMACK1:")
-                            "AMDECK1:" in text -> incoming.value = incoming.value + LanIncoming(from, host, port, text)
+                            "AMDECK1:" in text || "AMGROUP1:" in text -> incoming.value = incoming.value + LanIncoming(from, host, port, text)
                         }
                     }
                     runCatching { s.close() }

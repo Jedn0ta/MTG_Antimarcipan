@@ -177,14 +177,15 @@ class RelayPool(
 
     private fun report() = onStatus(synchronized(open) { open.size }, relays.size)
 
-    /** Odběr událostí se štítkem skupiny (za posledních 60 dní). */
-    fun subscribe(tag: String) {
+    /** Odběr událostí se štítky skupin (za posledních 60 dní). */
+    fun subscribe(tags: List<String>) {
+        if (tags.isEmpty()) return
         val since = System.currentTimeMillis() / 1000 - 60L * 24 * 3600
         val filter = buildJsonObject {
             put("kinds", buildJsonArray { add(JsonPrimitive(AM_KIND)) })
-            put("#t", buildJsonArray { add(JsonPrimitive(tag)) })
+            put("#t", buildJsonArray { tags.forEach { add(JsonPrimitive(it)) } })
             put("since", since)
-            put("limit", 500)
+            put("limit", 1000)
         }.toString()
         subscription?.let { (old, _) -> sockets.values.forEach { it.send("[\"CLOSE\",\"$old\"]") } }
         val id = "am" + System.nanoTime().toString(36)

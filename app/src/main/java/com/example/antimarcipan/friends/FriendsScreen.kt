@@ -62,20 +62,35 @@ import com.example.antimarcipan.ui.GoldDialog
 import kotlinx.coroutines.launch
 
 /** Přátelé: sdílení balíků (bez serveru — přes Quick Share/Wi-Fi, messenger, schránku) a rádce proti jejich balíkům. */
+/** Příchozí balíky a pozvánky přes Wi-Fi — dialog se ukáže kdekoli v appce. */
 @Composable
-fun FriendsScreen() {
-    var tab by rememberSaveable { mutableStateOf(0) }
-    val boardInbox by com.example.antimarcipan.board.BoardInbox.pending.collectAsStateWithLifecycle()
-    LaunchedEffect(boardInbox) { if (boardInbox != null) tab = 1 }
+fun LanIncomingHost() {
     val ctx = LocalContext.current
     val vm: FriendsViewModel = viewModel(factory = AppViewModelFactory)
     val scope = rememberCoroutineScope()
-    // Hledání na Wi-Fi běží, dokud jsou otevření Přátelé (i při přepnutí na Nástěnku)
-    androidx.compose.runtime.DisposableEffect(Unit) { onDispose { LanShare.stop() } }
     val incoming by LanShare.incoming.collectAsStateWithLifecycle()
     val ack by LanShare.acks.collectAsStateWithLifecycle()
     LaunchedEffect(ack) { ack?.let { Toast.makeText(ctx, it, Toast.LENGTH_LONG).show(); LanShare.acks.value = null } }
-    incoming.firstOrNull()?.let { inc ->
+    incoming.firstOrNull()?.let outer@{ inc ->
+        // Pozvánka do skupiny nástěnky
+        BoardGroupFromInvite(inc.text)?.let { grp ->
+            GoldDialog(
+                onDismissRequest = {},
+                title = { Text("Pozvánka do skupiny") },
+                text = { Text("${inc.from} tě zve do skupiny „${grp.name}“ na Nástěnce. Po přijetí uvidíš zprávy a schůzky skupiny.") },
+                confirmButton = {
+                    TextButton(onClick = {
+                        com.example.antimarcipan.board.BoardInbox.accepted.value = inc.text
+                        com.example.antimarcipan.board.Board.init(ctx)
+                        com.example.antimarcipan.board.Board.joinGroup(inc.text)
+                        com.example.antimarcipan.board.BoardInbox.accepted.value = null
+                        scope.launch { LanShare.respond(inc, true, "skupina " + grp.name) }
+                    }) { Text("Přijmout") }
+                },
+                dismissButton = { TextButton(onClick = { scope.launch { LanShare.respond(inc, false, "skupina " + grp.name) } }) { Text("Odmítnout") } },
+            )
+            return@outer
+        }
         val deck = remember(inc) { DeckShareCodec.decode(inc.text) }
         if (deck == null) LaunchedEffect(inc) { LanShare.respond(inc, false, "?") }
         else GoldDialog(
@@ -97,15 +112,13 @@ fun FriendsScreen() {
             dismissButton = { TextButton(onClick = { scope.launch { LanShare.respond(inc, false, deck.name) } }) { Text("Odmítnout") } },
         )
     }
-    Column(Modifier.fillMaxSize()) {
-        Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            com.example.antimarcipan.ui.GoldChip(selected = tab == 0, onClick = { tab = 0 }, label = { Text("Přátelé") })
-            com.example.antimarcipan.ui.GoldChip(selected = tab == 1, onClick = { tab = 1 }, label = { Text("Nástěnka") })
-        }
-        Box(Modifier.weight(1f)) {
-            if (tab == 0) FriendsList() else com.example.antimarcipan.board.BoardScreen()
-        }
-    }
+}
+
+private fun BoardGroupFromInvite(t: String) = if ("AMGROUP1:" in t) com.example.antimarcipan.board.BoardGroup.fromInvite(t) else null
+
+@Composable
+fun FriendsScreen() {
+    FriendsList()
 }
 
 @Composable
@@ -171,15 +184,15 @@ private fun FriendsList(vm: FriendsViewModel = viewModel(factory = AppViewModelF
                         Text("Na této Wi-Fi", Modifier.weight(1f), style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
                         androidx.compose.material3.Switch(
                             checked = lanOn,
-                            onCheckedChange = { on -> if (on) LanShare.start(ctx, myName) else LanShare.stop() },
+                            onCheckedChange = { on -> LanShare.enable(ctx, on) },
                         )
                     }
                     if (!lanOn) Text(
-                        "Zapni a uvidíš kamarády, kteří mají Antimarcipán otevřený na Přátelích a jsou na stejné Wi-Fi. Balík pošleš přímo, bez internetu.",
+                        "Zapni a uvidíš kamarády s Antimarcipánem na stejné Wi-Fi (a oni tebe), dokud je appka otevřená. Balíky a pozvánky jdou přímo, bez internetu.",
                         style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                     ) else if (peers.isEmpty()) Row(verticalAlignment = Alignment.CenterVertically) {
                         androidx.compose.material3.CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp)
-                        Text("  Hledám… (kamarád musí mít otevřené Přátele a zapnuté hledání)", style = MaterialTheme.typography.bodySmall)
+                        Text("  Hledám… (kamarád musí mít appku otevřenou a zapnutou viditelnost)", style = MaterialTheme.typography.bodySmall)
                     }
                     peers.forEach { p ->
                         Row(verticalAlignment = Alignment.CenterVertically) {

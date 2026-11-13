@@ -33,4 +33,17 @@ class MainActivity : ComponentActivity() {
         super.onNewIntent(intent)
         com.example.antimarcipan.ui.AppShortcuts.handleIntent(intent)
     }
+
+    override fun onStart() {
+        super.onStart()
+        com.example.antimarcipan.friends.LanShare.resume(this)
+        com.example.antimarcipan.board.Board.init(this)
+        com.example.antimarcipan.board.Board.start()
+    }
+
+    override fun onStop() {
+        super.onStop()
+        com.example.antimarcipan.friends.LanShare.stop()
+        com.example.antimarcipan.board.Board.stop()
+    }
 }

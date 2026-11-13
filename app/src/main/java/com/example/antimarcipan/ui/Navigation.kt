@@ -6,6 +6,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Group
+import androidx.compose.material.icons.filled.Forum
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -47,6 +48,7 @@ private const val SETTINGS_ROUTE = "settings"
 private const val MANUAL_ROUTE = "manual_add"
 private const val LIFE_ROUTE = "life_counter"
 private const val FRIENDS_ROUTE = "friends"
+private const val BOARD_ROUTE = "board"
 
 private enum class Dest(
     val route: String,
@@ -75,12 +77,14 @@ fun AntimarcipanApp() {
     val onManual = route == MANUAL_ROUTE
     val onLife = route == LIFE_ROUTE
     val onFriends = route == FRIENDS_ROUTE
-    val isSubScreen = onManual || onLife || onFriends
+    val onBoard = route == BOARD_ROUTE
+    val isSubScreen = onManual || onLife || onFriends || onBoard
 
     val title = when {
         onManual -> "Přidat ručně"
         onLife -> "Počítadlo životů"
         onFriends -> "Přátelé"
+        onBoard -> "Nástěnka"
         else -> Dest.entries.firstOrNull { d ->
             current?.hierarchy?.any { it.route == d.route } == true
         }?.label ?: "Antimarcipán"
@@ -127,6 +131,15 @@ fun AntimarcipanApp() {
                     if (!isSubScreen) {
                         IconButton(onClick = { navController.navigate(FRIENDS_ROUTE) { launchSingleTop = true } }) {
                             Icon(androidx.compose.material.icons.Icons.Filled.Group, contentDescription = "Přátelé")
+                        }
+                        val unreadMap by com.example.antimarcipan.board.Board.unread.collectAsState()
+                        val unreadTotal = unreadMap.values.sum()
+                        IconButton(onClick = { navController.navigate(BOARD_ROUTE) { launchSingleTop = true } }) {
+                            androidx.compose.material3.BadgedBox(badge = {
+                                if (unreadTotal > 0) androidx.compose.material3.Badge { Text(if (unreadTotal > 99) "99+" else "$unreadTotal") }
+                            }) {
+                                Icon(androidx.compose.material.icons.Icons.Filled.Forum, contentDescription = "Nástěnka")
+                            }
                         }
                         IconButton(onClick = { navController.navigate(LIFE_ROUTE) { launchSingleTop = true } }) {
                             Icon(painterResource(com.example.antimarcipan.R.drawable.ic_life_counter), contentDescription = "Počítadlo životů")
@@ -204,8 +217,9 @@ fun AntimarcipanApp() {
         val boardInbox by com.example.antimarcipan.board.BoardInbox.pending.collectAsState()
         androidx.compose.runtime.LaunchedEffect(friendsInbox, boardInbox) {
             // Jen když na Přátelích ještě nejsme — jinak by se obrazovka znovu vytvořila a vypnula Wi-Fi hledání
-            if ((friendsInbox != null || boardInbox != null) && navController.currentDestination?.route != FRIENDS_ROUTE)
-                navController.navigate(FRIENDS_ROUTE) { launchSingleTop = true }
+            val target = if (boardInbox != null) BOARD_ROUTE else if (friendsInbox != null) FRIENDS_ROUTE else null
+            if (target != null && navController.currentDestination?.route != target)
+                navController.navigate(target) { launchSingleTop = true }
         }
         val shortcut by AppShortcuts.pending.collectAsState()
         androidx.compose.runtime.LaunchedEffect(shortcut) {
@@ -226,6 +240,7 @@ fun AntimarcipanApp() {
                 launchSingleTop = true
             }
         }
+        com.example.antimarcipan.friends.LanIncomingHost()
         NavHost(
             navController = navController,
             startDestination = Dest.Scan.route,
@@ -248,6 +263,7 @@ fun AntimarcipanApp() {
             composable(Dest.Settings.route) { SettingsScreen() }
             composable(MANUAL_ROUTE) { ManualAddScreen() }
             composable(FRIENDS_ROUTE) { com.example.antimarcipan.friends.FriendsScreen() }
+            composable(BOARD_ROUTE) { com.example.antimarcipan.board.BoardScreen() }
             composable(LIFE_ROUTE) { com.example.antimarcipan.life.LifeCounterScreen() }
         }
     }

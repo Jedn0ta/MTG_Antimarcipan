@@ -1,11 +1,10 @@
 package com.example.antimarcipan.board
 
 import android.content.Context
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -26,23 +25,50 @@ data class Payload(
 
 data class Post(val id: String, val author: String, val createdAt: Long, val p: Payload, val mine: Boolean)
 
-/** Přijatá pozvánka do skupiny (ze sdílení) — čeká na potvrzení. */
-object BoardInbox { val pending = MutableStateFlow<String?>(null) }
+/** Přijatá pozvánka do skupiny (ze sdílení) — čeká na potvrzení na Nástěnce. */
+object BoardInbox {
+    val pending = MutableStateFlow<String?>(null)
+    /** Pozvánka už potvrzená (např. z Wi-Fi dialogu) — připojit bez dalšího ptaní. */
+    val accepted = MutableStateFlow<String?>(null)
+}
 
-class BoardViewModel(private val ctx: Context) : ViewModel() {
+/**
+ * Nástěnka — běží na úrovni aplikace (dokud je appka v popředí), aby se počítaly
+ * nepřečtené zprávy i mimo obrazovku Nástěnky.
+ */
+object Board {
     private val json = Json { ignoreUnknownKeys = true; encodeDefaults = false }
-    private val prefs = ctx.getSharedPreferences("board", Context.MODE_PRIVATE)
-    private val identity by lazy { NostrIdentity(ctx) }
-    val myPub: String get() = identity.pubHex
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private lateinit var ctx: Context
+    private val prefs get() = ctx.getSharedPreferences("board", Context.MODE_PRIVATE)
+    private var identity: NostrIdentity? = null
+    val myPub: String get() = identity?.pubHex ?: ""
 
-    val groups = MutableStateFlow(loadGroups())
-    val current = MutableStateFlow(groups.value.firstOrNull { it.secretHex == prefs.getString("current", null) } ?: groups.value.firstOrNull())
-    private val _posts = MutableStateFlow<List<Post>>(emptyList())
-    val posts: StateFlow<List<Post>> = _posts
+    val groups = MutableStateFlow<List<BoardGroup>>(emptyList())
+    val current = MutableStateFlow<BoardGroup?>(null)
+    /** Příspěvky podle štítku skupiny. */
+    private val byGroup = MutableStateFlow<Map<String, List<Post>>>(emptyMap())
+    val posts = MutableStateFlow<List<Post>>(emptyList())
     val relayStatus = MutableStateFlow(0 to DEFAULT_RELAYS.size)
+    /** Nepřečtené podle štítku skupiny. */
+    val unread = MutableStateFlow<Map<String, Int>>(emptyMap())
+    /** Nástěnka je právě na obrazovce (pak se vše hned značí jako přečtené). */
+    @Volatile var visible = false
 
     private val seen = HashSet<String>()
     private var pool: RelayPool? = null
+    private var initialized = false
+
+    fun init(context: Context) {
+        if (initialized) return
+        initialized = true
+        ctx = context.applicationContext
+        identity = NostrIdentity(ctx)
+        groups.value = loadGroups()
+        groups.value.forEach { loadCache(it) }
+        current.value = groups.value.firstOrNull { it.secretHex == prefs.getString("current", null) } ?: groups.value.firstOrNull()
+        refreshCurrent(); recountUnread()
+    }
 
     private fun myName(): String =
         ctx.getSharedPreferences("friends", Context.MODE_PRIVATE).getString("myName", "")?.ifBlank { null } ?: "Hráč"
@@ -54,61 +80,83 @@ class BoardViewModel(private val ctx: Context) : ViewModel() {
 
     private fun saveGroups() = prefs.edit().putString("groups", groups.value.joinToString("\n") { "${it.name.replace("\n", " ")}|${it.secretHex}" }).apply()
 
-    // ---- cache (offline zobrazení) ----
     private fun cacheKey(g: BoardGroup) = "cache_" + g.tag
     private fun loadCache(g: BoardGroup) {
-        seen.clear()
         val list = (prefs.getString(cacheKey(g), "") ?: "").lines().mapNotNull { l ->
             runCatching {
                 val parts = l.split("\t", limit = 4)
                 Post(parts[0], parts[1], parts[2].toLong(), json.decodeFromString(Payload.serializer(), parts[3]), parts[1] == myPub)
             }.getOrNull()
         }
-        list.forEach { seen += it.id }
-        _posts.value = list.sortedBy { it.createdAt }
+        synchronized(seen) { list.forEach { seen += it.id } }
+        byGroup.value = byGroup.value + (g.tag to list.sortedBy { it.createdAt })
     }
     private fun saveCache(g: BoardGroup) {
-        val keep = _posts.value.takeLast(400)
+        val keep = byGroup.value[g.tag].orEmpty().takeLast(400)
         prefs.edit().putString(cacheKey(g), keep.joinToString("\n") {
             "${it.id}\t${it.author}\t${it.createdAt}\t${json.encodeToString(Payload.serializer(), it.p)}"
         }).apply()
     }
 
+    private fun refreshCurrent() { posts.value = current.value?.let { byGroup.value[it.tag] }.orEmpty() }
+
+    // ---- nepřečtené ----
+    private fun lastRead(g: BoardGroup) = prefs.getLong("read_" + g.tag, 0L)
+    fun markRead(g: BoardGroup) {
+        val last = byGroup.value[g.tag]?.maxOfOrNull { it.createdAt } ?: (System.currentTimeMillis() / 1000)
+        prefs.edit().putLong("read_" + g.tag, last).apply()
+        recountUnread()
+    }
+    private fun recountUnread() {
+        unread.value = groups.value.associate { g ->
+            val lr = lastRead(g)
+            g.tag to byGroup.value[g.tag].orEmpty().count { !it.mine && it.createdAt > lr && it.p.y != "rsvp" }
+        }
+    }
+
+    // ---- připojení ----
     fun start() {
-        if (pool != null) return
-        pool = RelayPool(
-            DEFAULT_RELAYS,
-            onEvent = { ev -> onEvent(ev) },
-            onStatus = { c, t -> relayStatus.value = c to t },
-        ).also { it.connect() }
-        current.value?.let { select(it) }
+        if (!initialized || pool != null) return
+        pool = RelayPool(DEFAULT_RELAYS, onEvent = { onEvent(it) }, onStatus = { c, t -> relayStatus.value = c to t }).also {
+            it.connect()
+            resubscribe()
+        }
     }
 
     fun stop() { pool?.close(); pool = null; relayStatus.value = 0 to DEFAULT_RELAYS.size }
 
+    private fun resubscribe() { pool?.subscribe(groups.value.map { it.tag }) }
+
     fun select(g: BoardGroup) {
         current.value = g
         prefs.edit().putString("current", g.secretHex).apply()
-        loadCache(g)
-        pool?.subscribe(g.tag)
+        refreshCurrent()
+        if (visible) markRead(g)
     }
 
     private fun onEvent(ev: NostrEvent) {
-        val g = current.value ?: return
-        if (ev.kind != AM_KIND || ev.tags.none { it.size >= 2 && it[0] == "t" && it[1] == g.tag }) return
+        if (ev.kind != AM_KIND) return
+        val tag = ev.tags.firstOrNull { it.size >= 2 && it[0] == "t" }?.get(1) ?: return
+        val g = groups.value.firstOrNull { it.tag == tag } ?: return
         synchronized(seen) { if (!seen.add(ev.id)) return }
-        val plain = g.decrypt(ev.content) ?: return // ne-členové / poškozené
+        val plain = g.decrypt(ev.content) ?: return
         val p = runCatching { json.decodeFromString(Payload.serializer(), plain) }.getOrNull() ?: return
         val post = Post(ev.id, ev.pubkey, ev.createdAt, p, ev.pubkey == myPub)
-        _posts.value = (_posts.value + post).sortedBy { it.createdAt }
+        byGroup.value = byGroup.value + (g.tag to (byGroup.value[g.tag].orEmpty() + post).sortedBy { it.createdAt })
         saveCache(g)
+        if (current.value?.tag == g.tag) {
+            refreshCurrent()
+            if (visible) markRead(g)
+        }
+        recountUnread()
     }
 
     private fun publish(p: Payload) {
         val g = current.value ?: return
-        viewModelScope.launch(Dispatchers.Default) {
-            val ev = NostrEvent.create(identity, AM_KIND, listOf(listOf("t", g.tag)), g.encrypt(json.encodeToString(Payload.serializer(), p)))
-            onEvent(ev) // hned zobrazit u mě
+        val id = identity ?: return
+        scope.launch {
+            val ev = NostrEvent.create(id, AM_KIND, listOf(listOf("t", g.tag)), g.encrypt(json.encodeToString(Payload.serializer(), p)))
+            onEvent(ev)
             pool?.publish(ev)
         }
     }
@@ -120,21 +168,21 @@ class BoardViewModel(private val ctx: Context) : ViewModel() {
 
     fun createGroup(name: String) {
         val g = BoardGroup.new(name.ifBlank { "Herna" })
-        groups.value = groups.value + g; saveGroups(); select(g)
+        groups.value = groups.value + g; saveGroups(); resubscribe(); select(g)
     }
 
     fun joinGroup(invite: String): Boolean {
         val g = BoardGroup.fromInvite(invite) ?: return false
-        if (groups.value.none { it.secretHex == g.secretHex }) { groups.value = groups.value + g; saveGroups() }
+        if (groups.value.none { it.secretHex == g.secretHex }) { groups.value = groups.value + g; saveGroups(); resubscribe() }
         select(groups.value.first { it.secretHex == g.secretHex })
         return true
     }
 
     fun leaveGroup(g: BoardGroup) {
         groups.value = groups.value.filterNot { it.secretHex == g.secretHex }; saveGroups()
-        prefs.edit().remove(cacheKey(g)).apply()
-        groups.value.firstOrNull()?.let { select(it) } ?: run { current.value = null; _posts.value = emptyList() }
+        prefs.edit().remove(cacheKey(g)).remove("read_" + g.tag).apply()
+        byGroup.value = byGroup.value - g.tag
+        resubscribe(); recountUnread()
+        groups.value.firstOrNull()?.let { select(it) } ?: run { current.value = null; posts.value = emptyList() }
     }
-
-    override fun onCleared() { stop() }
 }
