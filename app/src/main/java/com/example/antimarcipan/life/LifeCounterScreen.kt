@@ -42,6 +42,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.ui.draw.clip
@@ -532,7 +533,7 @@ private fun CenterButton(modifier: Modifier, onClick: () -> Unit) {
             )
             .border(3.dp, com.example.antimarcipan.ui.GoldBorderBrush, androidx.compose.foundation.shape.CircleShape)
             .pointerInput(dn) {
-                if (dn != 0) androidx.compose.foundation.gestures.detectHorizontalDragGestures(
+                if (dn != 0) detectHorizontalDragGestures(
                     onDragStart = { drag = 0f },
                     onDragEnd = {
                         if (kotlin.math.abs(drag) > 40f) {
@@ -541,7 +542,7 @@ private fun CenterButton(modifier: Modifier, onClick: () -> Unit) {
                         }
                         drag = 0f
                     },
-                    onHorizontalDrag = { _, dx -> drag += dx },
+                    onHorizontalDrag = { _: androidx.compose.ui.input.pointer.PointerInputChange, dx: Float -> drag += dx },
                 )
             }
             .clickable(onClick = onClick),
@@ -565,111 +566,164 @@ private fun CenterButton(modifier: Modifier, onClick: () -> Unit) {
 }
 
 @Composable
-@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+private fun MenuSection(title: String, content: @Composable () -> Unit) {
+    Column(
+        Modifier.fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .background(Color.Black.copy(alpha = 0.22f))
+            .border(1.dp, Color(0x33F6DE9A), RoundedCornerShape(16.dp))
+            .padding(12.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Text(title, style = MaterialTheme.typography.labelLarge, color = Color(0xFFF6DE9A))
+        content()
+    }
+}
+
+/** Segmentový přepínač: stejně široká tlačítka v jedné řadě. */
+@Composable
+private fun <T> Segmented(options: List<Pair<String, T>>, selected: T, onSelect: (T) -> Unit) {
+    Row(
+        Modifier.fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .border(1.dp, com.example.antimarcipan.ui.GoldBorderBrush, RoundedCornerShape(12.dp)),
+    ) {
+        options.forEach { (label, v) ->
+            val sel = v == selected
+            Box(
+                Modifier.weight(1f)
+                    .background(if (sel) Color(0xFFE2BC62) else Color.Transparent)
+                    .clickable { onSelect(v) }
+                    .padding(vertical = 10.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    label,
+                    color = if (sel) Color(0xFF1E1633) else Color(0xFFEAD9A8),
+                    fontWeight = if (sel) FontWeight.Bold else FontWeight.Normal,
+                    maxLines = 1,
+                    fontSize = 14.sp,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun SwitchRow(label: String, hint: String?, checked: Boolean, onChange: (Boolean) -> Unit) {
+    Row(
+        Modifier.fillMaxWidth().clickable { onChange(!checked) },
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(label, style = MaterialTheme.typography.bodyMedium)
+            hint?.let {
+                Text(it, style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.6f))
+            }
+        }
+        androidx.compose.material3.Switch(
+            checked = checked,
+            onCheckedChange = onChange,
+            colors = androidx.compose.material3.SwitchDefaults.colors(
+                checkedThumbColor = Color(0xFF1E1633),
+                checkedTrackColor = Color(0xFFE2BC62),
+            ),
+        )
+    }
+}
+
+@Composable
 private fun LifeMenu(onDismiss: () -> Unit, save: () -> Unit) {
     var showHistory by remember { mutableStateOf(false) }
+    var confirmReset by remember { mutableStateOf(false) }
     if (showHistory) { HistoryDialog { showHistory = false }; return }
+    if (confirmReset) {
+        com.example.antimarcipan.ui.GoldDialog(
+            onDismissRequest = { confirmReset = false },
+            title = { Text("Nová hra?") },
+            text = { Text("Životy, jedy, časy i historie se vynulují.") },
+            confirmButton = { TextButton(onClick = { LifeState.reset(); save(); confirmReset = false; onDismiss() }) { Text("Reset") } },
+            dismissButton = { TextButton(onClick = { confirmReset = false }) { Text("Zrušit") } },
+        )
+        return
+    }
     com.example.antimarcipan.ui.GoldDialog(
         onDismissRequest = onDismiss,
         title = { Text("Nastavení hry") },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Text("Počet hráčů", style = MaterialTheme.typography.labelLarge)
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    (2..6).forEach { k ->
-                        com.example.antimarcipan.ui.GoldChip(
-                            selected = LifeState.count == k,
-                            onClick = { LifeState.count = k; save() },
-                            label = { Text("$k") },
-                        )
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                MenuSection("Hra") {
+                    Text("Hráči", style = MaterialTheme.typography.labelMedium)
+                    Segmented((2..6).map { "$it" to it }, LifeState.count) { LifeState.count = it; save() }
+                    Text("Počáteční životy (změna = nová hra)", style = MaterialTheme.typography.labelMedium)
+                    Segmented(listOf(20, 30, 40).map { "$it" to it }, LifeState.startLife) {
+                        if (it != LifeState.startLife) { LifeState.startLife = it; LifeState.reset(); save() }
                     }
                 }
-                Text("Počáteční životy (spustí novou hru)", style = MaterialTheme.typography.labelLarge)
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    listOf(20, 30, 40).forEach { l ->
-                        com.example.antimarcipan.ui.GoldChip(
-                            selected = LifeState.startLife == l,
-                            onClick = { LifeState.startLife = l; LifeState.reset(); save() },
-                            label = { Text("$l") },
-                        )
+                MenuSection("Den a noc") {
+                    Segmented(listOf("Vypnuto" to 0, "☀ Den" to 1, "☾ Noc" to 2), LifeState.dayNight) {
+                        LifeState.dayNight = it; save()
                     }
-                }
-                Text("Den / noc", style = MaterialTheme.typography.labelLarge)
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    listOf("Vypnuto" to 0, "☀ Den" to 1, "☾ Noc" to 2).forEach { (t, v) ->
-                        com.example.antimarcipan.ui.GoldChip(
-                            selected = LifeState.dayNight == v,
-                            onClick = { LifeState.dayNight = v; save() },
-                            label = { Text(t) },
-                        )
-                    }
-                }
-                Text("Režim tahů", style = MaterialTheme.typography.labelLarge)
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    com.example.antimarcipan.ui.GoldChip(
-                        selected = LifeState.turnMode,
-                        onClick = {
-                            LifeState.turnMode = !LifeState.turnMode
-                            if (LifeState.turnMode) LifeState.resetTurns()
-                        },
-                        label = { Text(if (LifeState.turnMode) "Zapnuto" else "Vypnuto") },
-                    )
-                    com.example.antimarcipan.ui.GoldChip(
-                        selected = false,
-                        onClick = { showHistory = true },
-                        label = { Text("Historie životů") },
+                    if (LifeState.dayNight != 0) Text(
+                        "Tip: den ↔ noc přepneš i swipem kolečka uprostřed.",
+                        style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.6f),
                     )
                 }
-                if (LifeState.turnMode) {
-                    Text(
-                        "Hráč na tahu ukončí tah tlačítkem na své dlaždici. V rohu běží čas tahu, u ostatních celkový čas.",
-                        style = MaterialTheme.typography.bodySmall,
-                    )
-                    Text("Doporučený čas tahu", style = MaterialTheme.typography.labelLarge)
-                    androidx.compose.foundation.layout.FlowRow(
-                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                MenuSection("Tahy") {
+                    SwitchRow(
+                        "Režim tahů",
+                        "Konec tahu tlačítkem, měření času, záznam do historie",
+                        LifeState.turnMode,
                     ) {
-                        TIME_CURVES.forEachIndexed { i, c ->
-                            com.example.antimarcipan.ui.GoldChip(
-                                selected = LifeState.curve == i,
-                                onClick = { LifeState.curve = i; LifeState.warned = false; save() },
-                                label = { Text(c.label) },
-                            )
-                        }
+                        LifeState.turnMode = it
+                        if (it) LifeState.resetTurns()
                     }
-                    val c = TIME_CURVES[LifeState.curve]
-                    if (c.baseSec > 0) Text(
-                        "1. kolo ${formatDuration(c.limitFor(1)!!)}, 5. kolo ${formatDuration(c.limitFor(5)!!)}, " +
-                            "10. kolo ${formatDuration(c.limitFor(10)!!)} (max ${formatDuration(c.maxSec * 1000L)}). " +
-                            "Po překročení dlaždice zabliká a telefon zavibruje.",
-                        style = MaterialTheme.typography.bodySmall,
-                    )
+                    if (LifeState.turnMode) {
+                        Text("Doporučený čas tahu", style = MaterialTheme.typography.labelMedium)
+                        Segmented(TIME_CURVES.mapIndexed { i, c -> (if (i == 0) "Bez" else c.label) to i }, LifeState.curve) {
+                            LifeState.curve = it; LifeState.warned = false; save()
+                        }
+                        val c = TIME_CURVES[LifeState.curve]
+                        if (c.baseSec > 0) Text(
+                            "1. kolo ${formatDuration(c.limitFor(1)!!)} · 5. kolo ${formatDuration(c.limitFor(5)!!)} · " +
+                                "10. kolo ${formatDuration(c.limitFor(10)!!)}. Po překročení blikání a vibrace.",
+                            style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.6f),
+                        )
+                    }
                 }
-                com.example.antimarcipan.ui.GoldChip(
-                    selected = LifeState.keepOn,
-                    onClick = { LifeState.keepOn = !LifeState.keepOn; save() },
-                    label = { Text(if (LifeState.keepOn) "Obrazovka nezhasíná ✓" else "Obrazovka může zhasnout") },
-                )
-                if (LifeState.keepOn) com.example.antimarcipan.ui.GoldChip(
-                    selected = LifeState.dimIdle,
-                    onClick = { LifeState.dimIdle = !LifeState.dimIdle; save() },
-                    label = { Text("Šetřit baterii: ztlumit po 1 min bez dotyku") },
-                )
-                com.example.antimarcipan.ui.GoldChip(
-                    selected = LifeState.fullscreen,
-                    onClick = { LifeState.fullscreen = !LifeState.fullscreen; onDismiss() },
-                    label = { Text(if (LifeState.fullscreen) "Ukončit celou obrazovku" else "Celá obrazovka") },
-                )
-                androidx.compose.material3.Button(
-                    onClick = { LifeState.reset(); save(); onDismiss() },
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    Icon(Icons.Filled.Refresh, contentDescription = null)
-                    Text("  Reset — nová hra")
+                MenuSection("Obrazovka") {
+                    SwitchRow("Nezhasínat obrazovku", null, LifeState.keepOn) { LifeState.keepOn = it; save() }
+                    if (LifeState.keepOn) SwitchRow(
+                        "Šetřit baterii",
+                        "Po 1 min bez dotyku ztlumit jas",
+                        LifeState.dimIdle,
+                    ) { LifeState.dimIdle = it; save() }
+                    SwitchRow(
+                        "Celá obrazovka",
+                        "Skryje lištu aplikace i systému",
+                        LifeState.fullscreen,
+                    ) { LifeState.fullscreen = it; if (it) onDismiss() }
+                }
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    androidx.compose.material3.OutlinedButton(
+                        onClick = { showHistory = true },
+                        modifier = Modifier.weight(1f),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, com.example.antimarcipan.ui.GoldBorderBrush),
+                    ) { Text("Historie", color = Color(0xFFEAD9A8)) }
+                    androidx.compose.material3.Button(
+                        onClick = { confirmReset = true },
+                        modifier = Modifier.weight(1f),
+                        colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFF8E2C3A), contentColor = Color.White,
+                        ),
+                    ) {
+                        Icon(Icons.Filled.Refresh, contentDescription = null)
+                        Text(" Nová hra")
+                    }
                 }
             }
         },
-        confirmButton = { TextButton(onClick = onDismiss) { Text("Zavřít") } },
+        confirmButton = { TextButton(onClick = onDismiss) { Text("Hotovo") } },
     )
 }
 
