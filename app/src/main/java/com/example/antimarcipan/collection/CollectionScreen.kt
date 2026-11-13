@@ -167,6 +167,8 @@ fun CollectionScreen(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(6.dp),
         ) {
+            // Levá část zabere vše zbylé místo, ikony jsou tak vždy u pravého okraje
+            Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             Text(
                 "$totalQty ks",
                 style = MaterialTheme.typography.labelLarge,
@@ -180,10 +182,9 @@ fun CollectionScreen(
                     color = androidx.compose.ui.graphics.Color(0xFF8FD6A0),
                     maxLines = 1,
                     overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f, fill = false),
                 )
             }
-            Spacer(Modifier.weight(1f))
+            }
             // Zobrazení (seznam/mřížka) hned vedle filtru
             IconButton(onClick = { settings.setCollectionGrid(!gridMode) }) {
                 Icon(
