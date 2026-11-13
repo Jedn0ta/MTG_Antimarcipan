@@ -654,7 +654,7 @@ private fun LifeMenu(onDismiss: () -> Unit, save: () -> Unit) {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 MenuSection("Hra") {
                     Text("Hráči", style = MaterialTheme.typography.labelMedium)
-                    Segmented((2..6).map { "$it" to it }, LifeState.count) { LifeState.count = it; save() }
+                    Segmented((2..6).map { "$it" to it }, LifeState.count) { LifeState.count = it; if (LifeState.active >= it) LifeState.active = 0; save() }
                     Text("Počáteční životy (změna = nová hra)", style = MaterialTheme.typography.labelMedium)
                     Segmented(listOf(20, 30, 40).map { "$it" to it }, LifeState.startLife) {
                         if (it != LifeState.startLife) { LifeState.startLife = it; LifeState.reset(); save() }
