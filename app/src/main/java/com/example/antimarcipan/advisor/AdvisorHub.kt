@@ -10,6 +10,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -365,6 +368,10 @@ private fun SampleHandTool(vm: AdvisorViewModel, onBack: () -> Unit) {
     var hand by remember { mutableStateOf<List<CollectionCard>>(emptyList()) }
     var drawn by remember { mutableIntStateOf(0) }
     var mulligans by remember { mutableIntStateOf(0) }
+    var simMode by rememberSaveable { mutableStateOf(false) }
+    var simRuns by rememberSaveable { mutableIntStateOf(1000) }
+    var sim by remember { mutableStateOf<SimResult?>(null) }
+    var simBusy by remember { mutableStateOf(false) }
 
     fun newHand(mull: Boolean) {
         val shuffled = library.shuffled()
@@ -392,6 +399,32 @@ private fun SampleHandTool(vm: AdvisorViewModel, onBack: () -> Unit) {
         }
         if (library.size < 7) {
             Text("Balík má méně než 7 karet.", Modifier.padding(16.dp))
+            return@Column
+        }
+        Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            com.example.antimarcipan.ui.GoldChip(selected = !simMode, onClick = { simMode = false }, label = { Text("Ruka") })
+            com.example.antimarcipan.ui.GoldChip(selected = simMode, onClick = { simMode = true }, label = { Text("Simulace") })
+        }
+        if (simMode) {
+            Column(Modifier.weight(1f).androidx_verticalScroll().padding(12.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text("Počet simulovaných her", style = MaterialTheme.typography.labelLarge)
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    listOf(1000, 10000, 50000).forEach { n ->
+                        com.example.antimarcipan.ui.GoldChip(selected = simRuns == n, onClick = { simRuns = n }, label = { Text("%,d".format(n).replace(',', ' ')) })
+                    }
+                }
+                Button(
+                    onClick = {
+                        simBusy = true
+                        scope.launch {
+                            sim = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) { HandSimulator.run(library, simRuns) }
+                            simBusy = false
+                        }
+                    },
+                    enabled = !simBusy, modifier = Modifier.fillMaxWidth(),
+                ) { Text(if (simBusy) "Simuluji…" else "Spustit simulaci") }
+                sim?.let { r -> SimResultView(r, library.size) }
+            }
             return@Column
         }
         val lands = hand.count { LimitedAdvisor.isLand(it) }
@@ -574,3 +607,65 @@ private fun ComboCard(c: com.example.antimarcipan.data.advisor.Combo) {
         }
     }
 }
+
+
+// ---------------------------------------------------------------- Výsledky simulace
+
+@Composable
+private fun SimResultView(r: SimResult, deckSize: Int) {
+    val gold = Color(0xFFE2BC62)
+    Text("Výsledek z ${"%,d".format(r.runs).replace(',', ' ')} her", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
+    // Vyhodnocení
+    HandSimulator.verdict(r, deckSize).forEach { Text("• $it", style = MaterialTheme.typography.bodySmall) }
+
+    // Graf: zemí v úvodní ruce
+    Text("Zemí v úvodní ruce", style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(top = 6.dp))
+    val maxP = r.landDist.maxOrNull()?.coerceAtLeast(0.01) ?: 1.0
+    Row(Modifier.fillMaxWidth().height(130.dp), verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        r.landDist.forEachIndexed { i, p ->
+            Column(Modifier.weight(1f).fillMaxHeightCompat(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Bottom) {
+                Text("%.0f".format(p * 100), style = MaterialTheme.typography.labelSmall)
+                Box(
+                    Modifier.fillMaxWidth().fillMaxHeightFraction((0.8 * p / maxP).toFloat())
+                        .clip(RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp))
+                        .background(if (i in 2..4) gold else Color(0xFF8C73D9))
+                )
+            }
+        }
+    }
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        (0..7).forEach { Text("$it", Modifier.weight(1f), style = MaterialTheme.typography.labelSmall, textAlign = androidx.compose.ui.text.style.TextAlign.Center) }
+    }
+    Text("% rukou · zlatě 2–4 země (ideál)", style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.6f))
+
+    StatBlock("Mulligan", listOf(
+        "Hratelná na 7" to r.keep7, "Hratelná do 6 (1 mulligan)" to r.keepBy6, "Hratelná do 5 (2 mulligany)" to r.keepBy5,
+    ))
+    StatBlock("Země včas (na tahu první)", r.landDrops.map { (t, p) -> "$t. země do $t. tahu" to p })
+    StatBlock("První zahrané kouzlo", r.firstPlay.map { (t, p) -> "nejpozději v $t. tahu" to p })
+    if (r.colorBy3.isNotEmpty()) StatBlock("Zdroj barvy do 3. tahu", r.colorBy3.map { (c, p) -> c to p })
+    Text(
+        "Zjednodušení: hratelná ruka = 2–4 země a kouzlo do 3 many; tahy počítají zemi za tah a kouzlo s MV ≤ zemím (bez ohledu na barvy).",
+        style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.5f),
+    )
+}
+
+@Composable
+private fun StatBlock(title: String, rows: List<Pair<String, Double>>) {
+    Text(title, style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(top = 8.dp))
+    rows.forEach { (label, p) ->
+        Row(Modifier.fillMaxWidth().padding(vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text(label, Modifier.weight(1.2f), style = MaterialTheme.typography.bodySmall)
+            Box(Modifier.weight(1f).height(10.dp).clip(RoundedCornerShape(5.dp)).background(Color.White.copy(alpha = 0.1f))) {
+                Box(Modifier.fillMaxWidthFraction(p.toFloat().coerceIn(0f, 1f)).height(10.dp).background(
+                    when { p >= 0.8 -> Color(0xFF5FD38A); p >= 0.6 -> Color(0xFFE2BC62); else -> Color(0xFFE0705A) }
+                ))
+            }
+            Text(" %.0f %%".format(p * 100), Modifier.width(48.dp), style = MaterialTheme.typography.labelMedium)
+        }
+    }
+}
+
+private fun Modifier.fillMaxHeightCompat(): Modifier = this.then(Modifier.fillMaxHeight())
+private fun Modifier.fillMaxHeightFraction(f: Float): Modifier = this.then(Modifier.fillMaxHeight(f))
+private fun Modifier.fillMaxWidthFraction(f: Float): Modifier = this.then(Modifier.fillMaxWidth(f))
