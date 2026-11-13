@@ -508,30 +508,58 @@ private fun <T> Dropdown(label: String, options: List<Pair<String, T>>, modifier
     }
 }
 
-/** Kulaté zlaté tlačítko uprostřed mezi hráči — otevře nastavení hry. */
+/**
+ * Kulaté zlaté tlačítko uprostřed mezi hráči — ťuk otevře nastavení.
+ * Při zapnutém dni/noci má po stranách šipky a swipem se přepne den ↔ noc.
+ */
 @Composable
 private fun CenterButton(modifier: Modifier, onClick: () -> Unit) {
     val dn = LifeState.dayNight
+    val ctx = LocalContext.current
+    var drag by remember { mutableStateOf(0f) }
     Box(
         modifier
-            .size(62.dp)
+            .size(80.dp)
             .clip(androidx.compose.foundation.shape.CircleShape)
             .background(
-                Brush.radialGradient(listOf(Color(0xFF3A2E66), Color(0xFF15102A)))
+                Brush.radialGradient(
+                    when (dn) {
+                        1 -> listOf(Color(0xFF6B5420), Color(0xFF1E1633))
+                        2 -> listOf(Color(0xFF243866), Color(0xFF110D24))
+                        else -> listOf(Color(0xFF3A2E66), Color(0xFF15102A))
+                    }
+                )
             )
-            .border(2.5.dp, com.example.antimarcipan.ui.GoldBorderBrush, androidx.compose.foundation.shape.CircleShape)
+            .border(3.dp, com.example.antimarcipan.ui.GoldBorderBrush, androidx.compose.foundation.shape.CircleShape)
+            .pointerInput(dn) {
+                if (dn != 0) androidx.compose.foundation.gestures.detectHorizontalDragGestures(
+                    onDragStart = { drag = 0f },
+                    onDragEnd = {
+                        if (kotlin.math.abs(drag) > 40f) {
+                            LifeState.dayNight = if (LifeState.dayNight == 1) 2 else 1
+                            LifeState.save(ctx)
+                        }
+                        drag = 0f
+                    },
+                    onHorizontalDrag = { _, dx -> drag += dx },
+                )
+            }
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
         when (dn) {
-            1 -> Text("☀", fontSize = 28.sp, color = Color(0xFFFFD86B))
-            2 -> Text("☾", fontSize = 28.sp, color = Color(0xFFAFC3FF))
+            1 -> Text("☀", fontSize = 36.sp, color = Color(0xFFFFD86B))
+            2 -> Text("☾", fontSize = 36.sp, color = Color(0xFFAFC3FF))
             else -> Icon(
                 Icons.Filled.Settings,
                 contentDescription = "Nastavení hry",
                 tint = Color(0xFFF3E7C4),
-                modifier = Modifier.size(30.dp),
+                modifier = Modifier.size(38.dp),
             )
+        }
+        if (dn != 0) {
+            Text("‹", Modifier.align(Alignment.CenterStart).padding(start = 7.dp), color = Color(0xFFF6DE9A), fontSize = 20.sp)
+            Text("›", Modifier.align(Alignment.CenterEnd).padding(end = 7.dp), color = Color(0xFFF6DE9A), fontSize = 20.sp)
         }
     }
 }
