@@ -201,8 +201,9 @@ fun AntimarcipanApp() {
         },
     ) { padding ->
         val friendsInbox by com.example.antimarcipan.friends.FriendsInbox.pending.collectAsState()
-        androidx.compose.runtime.LaunchedEffect(friendsInbox) {
-            if (friendsInbox != null) navController.navigate(FRIENDS_ROUTE) { launchSingleTop = true }
+        val boardInbox by com.example.antimarcipan.board.BoardInbox.pending.collectAsState()
+        androidx.compose.runtime.LaunchedEffect(friendsInbox, boardInbox) {
+            if (friendsInbox != null || boardInbox != null) navController.navigate(FRIENDS_ROUTE) { launchSingleTop = true }
         }
         val shortcut by AppShortcuts.pending.collectAsState()
         androidx.compose.runtime.LaunchedEffect(shortcut) {

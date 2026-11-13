@@ -63,7 +63,23 @@ import kotlinx.coroutines.launch
 
 /** Přátelé: sdílení balíků (bez serveru — přes Quick Share/Wi-Fi, messenger, schránku) a rádce proti jejich balíkům. */
 @Composable
-fun FriendsScreen(vm: FriendsViewModel = viewModel(factory = AppViewModelFactory)) {
+fun FriendsScreen() {
+    var tab by rememberSaveable { mutableStateOf(0) }
+    val boardInbox by com.example.antimarcipan.board.BoardInbox.pending.collectAsStateWithLifecycle()
+    LaunchedEffect(boardInbox) { if (boardInbox != null) tab = 1 }
+    Column(Modifier.fillMaxSize()) {
+        Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            com.example.antimarcipan.ui.GoldChip(selected = tab == 0, onClick = { tab = 0 }, label = { Text("Přátelé") })
+            com.example.antimarcipan.ui.GoldChip(selected = tab == 1, onClick = { tab = 1 }, label = { Text("Nástěnka") })
+        }
+        Box(Modifier.weight(1f)) {
+            if (tab == 0) FriendsList() else com.example.antimarcipan.board.BoardScreen()
+        }
+    }
+}
+
+@Composable
+private fun FriendsList(vm: FriendsViewModel = viewModel(factory = AppViewModelFactory)) {
     val ctx = LocalContext.current
     val friends by vm.friends.collectAsStateWithLifecycle()
     val decks by vm.friendDecks.collectAsStateWithLifecycle()
@@ -193,9 +209,9 @@ fun FriendsScreen(vm: FriendsViewModel = viewModel(factory = AppViewModelFactory
         item {
             Card(Modifier.fillMaxWidth().padding(top = 14.dp), colors = CardDefaults.cardColors(containerColor = Color.Black.copy(alpha = 0.2f))) {
                 Column(Modifier.padding(12.dp)) {
-                    Text("Připravujeme", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+                    Text("Nástěnka", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
                     Text(
-                        "Chat s přáteli a nástěnka na domlouvání schůzek. Vyžaduje přihlášení (např. Google) a online server — přijde v další etapě.",
+                        "Zprávy a domlouvání schůzek najdeš v záložce Nástěnka nahoře — skupiny s pozvánkou, bez účtu a bez serveru.",
                         style = MaterialTheme.typography.bodySmall,
                     )
                 }

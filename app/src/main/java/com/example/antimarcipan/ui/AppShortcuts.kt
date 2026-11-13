@@ -14,8 +14,10 @@ object AppShortcuts {
     /** Přijatý sdílený text (balík od kamaráda). */
     fun handleIntent(intent: android.content.Intent?) {
         if (intent?.action == android.content.Intent.ACTION_SEND) {
-            intent.getStringExtra(android.content.Intent.EXTRA_TEXT)?.takeIf { "AMDECK1:" in it }?.let {
-                com.example.antimarcipan.friends.FriendsInbox.pending.value = it
+            val t = intent.getStringExtra(android.content.Intent.EXTRA_TEXT) ?: return
+            when {
+                "AMDECK1:" in t -> com.example.antimarcipan.friends.FriendsInbox.pending.value = t
+                "AMGROUP1:" in t -> com.example.antimarcipan.board.BoardInbox.pending.value = t
             }
         } else handle(intent?.action)
     }
