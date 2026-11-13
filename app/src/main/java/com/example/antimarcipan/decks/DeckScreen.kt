@@ -107,6 +107,11 @@ fun DeckScreen(
     vm: DeckViewModel = viewModel(factory = AppViewModelFactory),
 ) {
     val selected by vm.selectedDeck.collectAsStateWithLifecycle()
+    // Otevření balíku z Rádce (navržený / limited balík)
+    val openReq by com.example.antimarcipan.advisor.AppNav.openDeck.collectAsStateWithLifecycle()
+    androidx.compose.runtime.LaunchedEffect(openReq) {
+        openReq?.let { vm.select(it); com.example.antimarcipan.advisor.AppNav.openDeck.value = null }
+    }
 
     if (selected == null) {
         DeckListView(vm)

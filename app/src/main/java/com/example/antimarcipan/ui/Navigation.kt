@@ -193,6 +193,13 @@ fun AntimarcipanApp() {
             }
         },
     ) { padding ->
+        val openDeck by com.example.antimarcipan.advisor.AppNav.openDeck.collectAsState()
+        androidx.compose.runtime.LaunchedEffect(openDeck) {
+            if (openDeck != null) navController.navigate(Dest.Decks.route) {
+                popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                launchSingleTop = true
+            }
+        }
         NavHost(
             navController = navController,
             startDestination = Dest.Scan.route,
