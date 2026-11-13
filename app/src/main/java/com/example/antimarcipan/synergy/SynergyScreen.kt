@@ -48,12 +48,16 @@ import com.example.antimarcipan.ui.EmptyState
 @Composable
 fun SynergyScreen(
     vm: SynergyViewModel = viewModel(factory = AppViewModelFactory),
+    advisorVm: com.example.antimarcipan.advisor.AdvisorViewModel = viewModel(factory = AppViewModelFactory),
+    onBack: (() -> Unit)? = null,
 ) {
+    val adv by advisorVm.state.collectAsStateWithLifecycle()
     val decks by vm.decks.collectAsStateWithLifecycle()
     val state by vm.state.collectAsStateWithLifecycle()
     var selectedDeckId by remember { mutableStateOf<Long?>(null) }
 
     Column(Modifier.fillMaxSize()) {
+        if (onBack != null) com.example.antimarcipan.advisor.HubBackRow("Analýza balíku", onBack)
         Row(
             Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())
                 .padding(horizontal = 12.dp, vertical = 8.dp),
@@ -62,7 +66,7 @@ fun SynergyScreen(
             decks.forEach { deck ->
                 com.example.antimarcipan.ui.GoldChip(
                     selected = selectedDeckId == deck.id,
-                    onClick = { selectedDeckId = deck.id; vm.analyzeDeck(deck.id) },
+                    onClick = { selectedDeckId = deck.id; vm.analyzeDeck(deck.id); advisorVm.analyzeDeck(deck.id) },
                     label = { Text(deck.name) },
                 )
             }
@@ -84,7 +88,14 @@ fun SynergyScreen(
             state.report != null -> {
                 val report = state.report!!
                 LazyColumn(Modifier.fillMaxSize()) {
+                    if (adv.curve.any { it.first + it.second > 0 }) item {
+                        com.example.antimarcipan.ui.ManaCurveCard(adv.curve, adv.avgMv, adv.lands)
+                    }
                     item { ThemeSummary(report.colors, report.topThemes, report.topTribes, report.topKeywords) }
+                    if (adv.tips.isNotEmpty()) {
+                        item { SectionTitle("Zdraví balíku") }
+                        items(adv.tips) { TipCard(it) }
+                    }
 
                     if (state.tips.isNotEmpty()) {
                         item { SectionTitle("Rady k balíku") }

@@ -211,7 +211,7 @@ fun AntimarcipanApp() {
             composable(Dest.Scan.route) { ScanScreen() }
             composable(Dest.Collection.route) { CollectionScreen() }
             composable(Dest.Decks.route) { DeckScreen() }
-            composable(Dest.Synergy.route) { SynergyScreen() }
+            composable(Dest.Synergy.route) { com.example.antimarcipan.advisor.AdvisorHubScreen() }
             composable(Dest.Settings.route) { SettingsScreen() }
             composable(MANUAL_ROUTE) { ManualAddScreen() }
             composable(LIFE_ROUTE) { com.example.antimarcipan.life.LifeCounterScreen() }

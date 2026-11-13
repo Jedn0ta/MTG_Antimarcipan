@@ -6,6 +6,9 @@ package com.example.antimarcipan.data
  */
 object KeywordGlossary {
 
+    /** Všechna hesla (pro slovníček v Rádci). */
+    val entries: Map<String, String> get() = GLOSSARY
+
     private val GLOSSARY: Map<String, String> = linkedMapOf(
         "flying" to "může být blokována jen stvořeními s flying nebo reach",
         "first strike" to "v boji uděluje zranění dřív než stvoření bez first strike",

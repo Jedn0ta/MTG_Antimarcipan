@@ -39,7 +39,7 @@ val AppViewModelFactory: ViewModelProvider.Factory = viewModelFactory {
         SynergyViewModel(app().container.synergyRepository, app().container.deckRepository)
     }
     initializer {
-        AdvisorViewModel(app().container.deckRepository)
+        AdvisorViewModel(app().container.deckRepository, app().container.collectionRepository)
     }
     initializer {
         SettingsViewModel(
