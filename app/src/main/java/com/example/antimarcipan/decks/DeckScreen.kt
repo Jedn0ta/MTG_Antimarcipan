@@ -56,6 +56,7 @@ import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.Style
 import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -410,7 +411,7 @@ private fun DeckDetailView(vm: DeckViewModel, deck: Deck) {
             }
             IconButton(onClick = { showCurve = !showCurve }) {
                 Icon(
-                    androidx.compose.material.icons.Icons.Filled.BarChart,
+                    Icons.Filled.BarChart,
                     contentDescription = if (showCurve) "Skrýt mana curve" else "Zobrazit mana curve",
                     tint = if (showCurve) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
                 )
