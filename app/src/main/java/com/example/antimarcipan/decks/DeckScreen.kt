@@ -281,6 +281,7 @@ private fun DeckDetailView(vm: DeckViewModel, deck: Deck) {
     var deckFilter by remember(deck.id) { mutableStateOf(com.example.antimarcipan.ui.filter.CardFilterState()) }
     var pendingRemove by remember { mutableStateOf<CollectionCard?>(null) }
     var showCurve by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
+    var basicsOpen by androidx.compose.runtime.saveable.rememberSaveable(deck.id) { mutableStateOf<Boolean?>(null) }
     var pendingPoolRemove by remember { mutableStateOf<Pair<CollectionCard, Int>?>(null) }
 
     val format = DeckFormat.from(deck.format)
@@ -414,19 +415,6 @@ private fun DeckDetailView(vm: DeckViewModel, deck: Deck) {
                     )
                 }
             }
-            IconButton(onClick = { showCurve = !showCurve }) {
-                Icon(
-                    Icons.Filled.BarChart,
-                    contentDescription = if (showCurve) "Skrýt mana curve" else "Zobrazit mana curve",
-                    tint = if (showCurve) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
-                )
-            }
-            IconButton(onClick = { settings.setDeckGrid(!gridMode) }) {
-                Icon(
-                    if (gridMode) Icons.AutoMirrored.Filled.ViewList else Icons.Filled.GridView,
-                    contentDescription = if (gridMode) "Seznam" else "Mřížka",
-                )
-            }
         }
 
         val visible = sectionBase.filter { deckFilter.matches(it.card) }
@@ -450,6 +438,11 @@ private fun DeckDetailView(vm: DeckViewModel, deck: Deck) {
         else allOthers.sortedBy { it.card.name.lowercase() }
         val othersLabel = if (allMode) "Vše" else "Spell"
         val showBasicPanel = sectionMode != DeckSectionMode.OTHERS
+        // Výchozí: rozbalené, dokud v balíku nejsou žádné základní země
+        val basicsExpanded = basicsOpen ?: deckCards.none { isBasicLand(it.card) }
+        val deckColorSet = deckCards.filter { !isLandCard(it.card) }
+            .flatMap { com.example.antimarcipan.decks.LimitedAdvisor.colors(it.card) }.toSet()
+            .ifEmpty { if (deckCards.any { !isLandCard(it.card) }) setOf("C") else emptySet() }
         val basicCounts = BASIC_TYPES.associate { (name, _) ->
             name to deckCards.filter { isBasicLand(it.card) && basicBaseName(it.card.name) == name }
                 .sumOf { it.deckQuantity }
@@ -479,10 +472,7 @@ private fun DeckDetailView(vm: DeckViewModel, deck: Deck) {
             vm.addBasicLands(deck.id, split)
         }
 
-        if (showCurve) {
-            val (dCurve, dAvg, _) = com.example.antimarcipan.ui.computeCurve(deckCards)
-            if (dCurve.any { it.first + it.second > 0 }) com.example.antimarcipan.ui.MiniManaCurve(dCurve, dAvg)
-        }
+        if (deckCards.any { !isLandCard(it.card) }) com.example.antimarcipan.ui.CurveBlind(deckCards)
         if (gridMode) {
             if (format.isLimited) LimitedAdvisorPanel(
                 format = format,
@@ -496,7 +486,7 @@ private fun DeckDetailView(vm: DeckViewModel, deck: Deck) {
                 onAddCard = addFromPool,
                 onApplyLands = applyLimitedLands,
             )
-            if (showBasicPanel) BasicLandPanel(basicCounts, onBasicInc, onBasicDec)
+            if (showBasicPanel) BasicLandPanel(basicCounts, onBasicInc, onBasicDec, basicsExpanded, { basicsOpen = !basicsExpanded }, deckColorSet)
             androidx.compose.runtime.CompositionLocalProvider(com.example.antimarcipan.ui.LocalCardList provides ((lands + others).map { it.card }), com.example.antimarcipan.ui.LocalCardRemoveAction provides ("Odebrat z balíku" to { c: CollectionCard -> pendingRemove = c })) {
             DeckGrid(
                 lands = lands,
@@ -537,7 +527,7 @@ private fun DeckDetailView(vm: DeckViewModel, deck: Deck) {
             if (showBasicPanel) {
                 val landTotal = lands.sumOf { it.deckQuantity } + basicCounts.values.sum()
                 item { SectionHeader("Land ($landTotal)") }
-                item { BasicLandPanel(basicCounts, onBasicInc, onBasicDec) }
+                item { BasicLandPanel(basicCounts, onBasicInc, onBasicDec, basicsExpanded, { basicsOpen = !basicsExpanded }, deckColorSet) }
             }
             if (lands.isNotEmpty()) {
                 item {
@@ -1012,7 +1002,14 @@ private fun BasicLandPanel(
     counts: Map<String, Int>,
     onInc: (String) -> Unit,
     onDec: (String) -> Unit,
+    expanded: Boolean = true,
+    onToggle: () -> Unit = {},
+    deckColors: Set<String> = emptySet(),
 ) {
+    var showAll by remember { mutableStateOf(false) }
+    // Chytré zobrazení: jen země v barvách balíku nebo ty, které už v balíku jsou
+    val relevant = BASIC_TYPES.filter { (name, mana) -> (counts[name] ?: 0) > 0 || mana in deckColors }
+    val types = if (showAll || relevant.isEmpty()) BASIC_TYPES else relevant
     Card(
         Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
         colors = androidx.compose.material3.CardDefaults.cardColors(
@@ -1021,14 +1018,30 @@ private fun BasicLandPanel(
         border = androidx.compose.foundation.BorderStroke(1.dp, com.example.antimarcipan.ui.GoldBorderBrush),
     ) {
         Column(Modifier.padding(horizontal = 6.dp, vertical = 10.dp)) {
-            Text(
-                "Základní země · ${counts.values.sum()}",
-                Modifier.padding(start = 6.dp, bottom = 6.dp),
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.primary,
-            )
-            Row(Modifier.fillMaxWidth()) {
-                BASIC_TYPES.forEach { (name, mana) ->
+            Row(
+                Modifier.fillMaxWidth().clickable(onClick = onToggle).padding(start = 6.dp, end = 6.dp, bottom = if (expanded) 6.dp else 0.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    "Základní země · ${counts.values.sum()}",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+                if (!expanded) {
+                    // Sbalené: jen nenulové počty se symboly
+                    BASIC_TYPES.filter { (counts[it.first] ?: 0) > 0 }.forEach { (name, mana) ->
+                        androidx.compose.foundation.Image(
+                            androidx.compose.ui.res.painterResource(manaRes(mana)), contentDescription = name,
+                            modifier = Modifier.padding(start = 8.dp).size(16.dp),
+                        )
+                        Text(" ${counts[name]}", style = MaterialTheme.typography.labelMedium)
+                    }
+                }
+                Spacer(Modifier.weight(1f))
+                Text(if (expanded) "▲" else "▼", color = MaterialTheme.colorScheme.primary)
+            }
+            if (expanded) Row(Modifier.fillMaxWidth()) {
+                types.forEach { (name, mana) ->
                     val n = counts[name] ?: 0
                     Column(
                         Modifier.weight(1f),
@@ -1079,6 +1092,14 @@ private fun BasicLandPanel(
                         }
                     }
                 }
+            }
+            if (expanded && relevant.isNotEmpty() && relevant.size < BASIC_TYPES.size) {
+                Text(
+                    if (showAll) "Jen barvy balíku" else "Ukázat všechny základní země",
+                    Modifier.padding(start = 6.dp, top = 4.dp).clickable { showAll = !showAll },
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.primary,
+                )
             }
         }
     }
