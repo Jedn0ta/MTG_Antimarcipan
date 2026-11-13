@@ -100,3 +100,42 @@ fun ManaCurveCard(curve: List<Pair<Int, Int>>, avgMv: Double, lands: Int, compac
         }
     }
 }
+
+
+/** Úsporná mana curve: nízké sloupce s počtem, popisky MV pod nimi, vpravo průměr. */
+@Composable
+fun MiniManaCurve(curve: List<Pair<Int, Int>>, avgMv: Double) {
+    val maxV = curve.maxOf { it.first + it.second }.coerceAtLeast(1)
+    val creature = androidx.compose.ui.graphics.Color(0xFFE2BC62)
+    val other = androidx.compose.ui.graphics.Color(0xFF8C73D9)
+    androidx.compose.foundation.layout.Row(
+        Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 2.dp),
+        verticalAlignment = Alignment.Bottom,
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        curve.forEachIndexed { i, (cr, ot) ->
+            val total = cr + ot
+            Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(if (total > 0) "$total" else "", style = MaterialTheme.typography.labelSmall, maxLines = 1)
+                Column(
+                    Modifier.fillMaxWidth().height((34f * total / maxV).dp.coerceAtLeast(if (total > 0) 3.dp else 0.dp))
+                        .clip(androidx.compose.foundation.shape.RoundedCornerShape(topStart = 3.dp, topEnd = 3.dp)),
+                ) {
+                    if (ot > 0) androidx.compose.foundation.layout.Box(Modifier.fillMaxWidth().weight(ot.toFloat()).background(other))
+                    if (cr > 0) androidx.compose.foundation.layout.Box(Modifier.fillMaxWidth().weight(cr.toFloat()).background(creature))
+                }
+                Text(
+                    if (i == 7) "7+" else "$i",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                )
+            }
+        }
+        Text(
+            "Ø %.1f".format(avgMv),
+            Modifier.padding(start = 6.dp, bottom = 14.dp),
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.primary,
+        )
+    }
+}

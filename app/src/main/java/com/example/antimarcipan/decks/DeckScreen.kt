@@ -274,6 +274,7 @@ private fun DeckDetailView(vm: DeckViewModel, deck: Deck) {
     var showTypeFilter by remember { mutableStateOf(false) }
     var deckFilter by remember(deck.id) { mutableStateOf(com.example.antimarcipan.ui.filter.CardFilterState()) }
     var pendingRemove by remember { mutableStateOf<CollectionCard?>(null) }
+    var showCurve by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
     var pendingPoolRemove by remember { mutableStateOf<Pair<CollectionCard, Int>?>(null) }
 
     val format = DeckFormat.from(deck.format)
@@ -407,6 +408,13 @@ private fun DeckDetailView(vm: DeckViewModel, deck: Deck) {
                     )
                 }
             }
+            IconButton(onClick = { showCurve = !showCurve }) {
+                Icon(
+                    androidx.compose.material.icons.Icons.Filled.BarChart,
+                    contentDescription = if (showCurve) "Skrýt mana curve" else "Zobrazit mana curve",
+                    tint = if (showCurve) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                )
+            }
             IconButton(onClick = { settings.setDeckGrid(!gridMode) }) {
                 Icon(
                     if (gridMode) Icons.AutoMirrored.Filled.ViewList else Icons.Filled.GridView,
@@ -465,9 +473,9 @@ private fun DeckDetailView(vm: DeckViewModel, deck: Deck) {
             vm.addBasicLands(deck.id, split)
         }
 
-        val (dCurve, dAvg, dLands) = com.example.antimarcipan.ui.computeCurve(deckCards)
-        if (dCurve.any { it.first + it.second > 0 }) {
-            com.example.antimarcipan.ui.ManaCurveCard(dCurve, dAvg, dLands, compact = true)
+        if (showCurve) {
+            val (dCurve, dAvg, _) = com.example.antimarcipan.ui.computeCurve(deckCards)
+            if (dCurve.any { it.first + it.second > 0 }) com.example.antimarcipan.ui.MiniManaCurve(dCurve, dAvg)
         }
         if (gridMode) {
             if (format.isLimited) LimitedAdvisorPanel(
