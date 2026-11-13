@@ -96,14 +96,6 @@ fun HubBackRow(title: String, onBack: () -> Unit) {
 @Composable
 private fun Hub(open: (Tool) -> Unit) {
     LazyColumn(Modifier.fillMaxSize(), contentPadding = androidx.compose.foundation.layout.PaddingValues(12.dp)) {
-        item {
-            Text(
-                "Anti Marcipán ti pomůže postavit, prověřit i zahrát balík.",
-                Modifier.padding(4.dp, 0.dp, 4.dp, 10.dp),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.75f),
-            )
-        }
         item { HubTile(Icons.Filled.Insights, "Analýza balíku", "Mana curve, země, ramp, dobírání, removal, synergie, co nesedí a co doplnit.") { open(Tool.ANALYZE) } }
         item { HubTile(Icons.Filled.Construction, "Postavit balík ze sbírky", "Vyber formát a barvy (nebo velitele) — navrhnu balík jen z karet, které máš.") { open(Tool.BUILD) } }
         item { HubTile(Icons.Filled.SwapHoriz, "Průvodce Draft / Sealed", "Krok za krokem: jak formát probíhá, pick order, focení poolu a stavba 40 karet.") { open(Tool.LIMITED) } }
@@ -144,6 +136,7 @@ private fun BuildTool(vm: AdvisorViewModel, onBack: () -> Unit) {
     var colors by remember { mutableStateOf(setOf<String>()) }
     var commander by remember { mutableStateOf<CollectionCard?>(null) }
     var name by rememberSaveable { mutableStateOf("") }
+    var cmdQuery by rememberSaveable { mutableStateOf("") }
     val commanders = remember(owned) { DeckBuilder.commanderCandidates(owned) }
     val suggested = remember(owned) { DeckBuilder.bestColors(owned) }
 
@@ -160,21 +153,41 @@ private fun BuildTool(vm: AdvisorViewModel, onBack: () -> Unit) {
             }
             if (format == BuildFormat.COMMANDER) {
                 item {
-                    Text("Velitel (z tvých legendárních tvorů)", style = MaterialTheme.typography.labelLarge)
+                    Text("Velitel (${commanders.size} legendárních tvorů)", style = MaterialTheme.typography.labelLarge)
                     if (commanders.isEmpty()) Text("Ve sbírce nemáš žádného legendárního tvora.", style = MaterialTheme.typography.bodySmall)
-                    Row(Modifier.horizontalScroll(rememberScrollState()).padding(vertical = 6.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        commanders.take(30).forEach { c ->
+                    else if (commanders.size > 6) OutlinedTextField(
+                        value = cmdQuery, onValueChange = { cmdQuery = it }, singleLine = true,
+                        label = { Text("Hledat velitele") },
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
+                    )
+                }
+                val shownCmd = commanders.filter { cmdQuery.isBlank() || it.name.contains(cmdQuery.trim(), true) }
+                // Mřížka po 3 (bez vnořeného lazy gridu)
+                items(shownCmd.chunked(3), key = { row -> row.joinToString { it.scryfallId } }) { row ->
+                    Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        row.forEach { c ->
+                            val sel = commander?.scryfallId == c.scryfallId
                             Column(
-                                Modifier.clip(RoundedCornerShape(10.dp))
-                                    .border(if (commander?.scryfallId == c.scryfallId) 2.dp else 0.dp, GoldBorderBrush, RoundedCornerShape(10.dp))
-                                    .clickable { commander = c; vm.clearBuild() }
-                                    .padding(4.dp),
+                                Modifier.weight(1f).clickable { commander = c; vm.clearBuild() },
                                 horizontalAlignment = Alignment.CenterHorizontally,
                             ) {
-                                com.example.antimarcipan.ui.CardThumb(c.thumbModel(), width = 64.dp, height = 89.dp)
-                                Text(c.name, style = MaterialTheme.typography.labelSmall, maxLines = 1, modifier = Modifier.size(width = 70.dp, height = 16.dp))
+                                Box {
+                                    com.example.antimarcipan.ui.CardThumb(c.thumbModel(), width = 100.dp, height = 140.dp)
+                                    if (sel) Box(
+                                        Modifier.align(Alignment.TopEnd).padding(4.dp).size(26.dp).clip(CircleShape)
+                                            .background(Color(0xFFE2BC62)),
+                                        contentAlignment = Alignment.Center,
+                                    ) { Text("✓", color = Color(0xFF1E1633), fontWeight = FontWeight.Bold) }
+                                }
+                                Text(
+                                    c.name, style = MaterialTheme.typography.labelSmall, maxLines = 2,
+                                    color = if (sel) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                                    fontWeight = if (sel) FontWeight.Bold else FontWeight.Normal,
+                                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                                )
                             }
                         }
+                        repeat(3 - row.size) { Box(Modifier.weight(1f)) }
                     }
                 }
             } else {
