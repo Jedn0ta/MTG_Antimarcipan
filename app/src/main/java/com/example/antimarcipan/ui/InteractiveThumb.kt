@@ -81,7 +81,15 @@ fun InteractiveThumb(
 
 @Composable
 fun CardInfoDialog(card: CollectionCard, onDismiss: () -> Unit) {
+    val remove = LocalCardRemoveAction.current
     com.example.antimarcipan.ui.GoldDialog(
+        dismissButton = remove?.let { (label, action) ->
+            {
+                TextButton(onClick = { onDismiss(); action(card) }) {
+                    Text(label, color = androidx.compose.ui.graphics.Color(0xFFFF8A8A))
+                }
+            }
+        },
         onDismissRequest = onDismiss,
         title = { Text(card.name) },
         text = {
@@ -114,6 +122,9 @@ fun CardInfoDialog(card: CollectionCard, onDismiss: () -> Unit) {
         confirmButton = { TextButton(onClick = onDismiss) { Text("Zavřít") } },
     )
 }
+
+/** Akce odstranění dostupná z detailu karty: (popisek tlačítka, akce). Akce jen otevře potvrzení. */
+val LocalCardRemoveAction = androidx.compose.runtime.staticCompositionLocalOf<Pair<String, (CollectionCard) -> Unit>?> { null }
 
 /** Seznam karet, ve kterém se nachází náhled — pro listování swipem v plném náhledu. */
 val LocalCardList = androidx.compose.runtime.staticCompositionLocalOf<List<CollectionCard>> { emptyList() }

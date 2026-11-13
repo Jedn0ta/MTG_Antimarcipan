@@ -274,6 +274,7 @@ private fun DeckDetailView(vm: DeckViewModel, deck: Deck) {
     var showTypeFilter by remember { mutableStateOf(false) }
     var deckFilter by remember(deck.id) { mutableStateOf(com.example.antimarcipan.ui.filter.CardFilterState()) }
     var pendingRemove by remember { mutableStateOf<CollectionCard?>(null) }
+    var pendingPoolRemove by remember { mutableStateOf<Pair<CollectionCard, Int>?>(null) }
 
     val format = DeckFormat.from(deck.format)
     // Barvy balíku dle zemí, které produkují manu
@@ -478,7 +479,7 @@ private fun DeckDetailView(vm: DeckViewModel, deck: Deck) {
                 onApplyLands = applyLimitedLands,
             )
             if (showBasicPanel) BasicLandPanel(basicCounts, onBasicInc, onBasicDec)
-            androidx.compose.runtime.CompositionLocalProvider(com.example.antimarcipan.ui.LocalCardList provides ((lands + others).map { it.card })) {
+            androidx.compose.runtime.CompositionLocalProvider(com.example.antimarcipan.ui.LocalCardList provides ((lands + others).map { it.card }), com.example.antimarcipan.ui.LocalCardRemoveAction provides ("Odebrat z balíku" to { c: CollectionCard -> pendingRemove = c })) {
             DeckGrid(
                 lands = lands,
                 others = others,
@@ -489,7 +490,7 @@ private fun DeckDetailView(vm: DeckViewModel, deck: Deck) {
             return@Column
         }
 
-        androidx.compose.runtime.CompositionLocalProvider(com.example.antimarcipan.ui.LocalCardList provides ((lands + others).map { it.card } + poolRows.map { it.card })) {
+        androidx.compose.runtime.CompositionLocalProvider(com.example.antimarcipan.ui.LocalCardList provides ((lands + others).map { it.card } + poolRows.map { it.card }), com.example.antimarcipan.ui.LocalCardRemoveAction provides ("Odebrat z balíku" to { c: CollectionCard -> pendingRemove = c })) {
         LazyColumn(Modifier.fillMaxSize()) {
             if (deckCards.isEmpty()) {
                 item {
@@ -597,7 +598,7 @@ private fun DeckDetailView(vm: DeckViewModel, deck: Deck) {
                     ) {
                         com.example.antimarcipan.ui.CardListInfo(card = row.card, modifier = Modifier.weight(1f))
                         Text("$free/${row.deckQuantity}", style = MaterialTheme.typography.labelMedium)
-                        IconButton(onClick = { vm.setPoolQty(deck.id, row.card.scryfallId, row.deckQuantity - 1) }) {
+                        IconButton(onClick = { pendingPoolRemove = row.card to row.deckQuantity }) {
                             Icon(Icons.Filled.Delete, contentDescription = "Odebrat z poolu")
                         }
                         IconButton(onClick = { addFromPool(row.card) }, enabled = free > 0) {
@@ -649,6 +650,15 @@ private fun DeckDetailView(vm: DeckViewModel, deck: Deck) {
         )
     }
 
+    pendingPoolRemove?.let { (card, q) ->
+        ConfirmDialog(
+            title = "Odebrat z poolu?",
+            message = "Odebrat 1 kus „${card.name}“ z poolu?",
+            confirmText = "Odebrat",
+            onConfirm = { vm.setPoolQty(deck.id, card.scryfallId, q - 1); pendingPoolRemove = null },
+            onDismiss = { pendingPoolRemove = null },
+        )
+    }
     pendingRemove?.let { card ->
         ConfirmDialog(
             title = "Odebrat z balíku?",
