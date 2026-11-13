@@ -57,7 +57,7 @@ private val GUIDE_STEPS = listOf(
     GuideStep(
         Icons.Filled.TouchApp,
         "Vítej v Antimarcipánu",
-        "Appka na skenování karet Magicu, správu sbírky, stavbu balíků a hraní. Ovládá se hlavně gesty, tak si je projdeme:\n\n• Ťuknutí na náhled karty → detail s textací.\n• Podržení náhledu → celá karta ve velkém, swipem listuješ dál.\n• Swipe řádku doprava přes půlku displeje → přidání do balíku.\n• Dlouhé podržení (2–3 s) se ukazuje plnícím se kolečkem — dělá „nebezpečnější“ akce jako mazání nebo otevření webu.\n\nPrůvodce kdykoli pustíš znovu v Nastavení.",
+        "Appka na skenování karet Magicu, správu sbírky, stavbu balíků a hraní. Ovládá se hlavně gesty, tak si je projdeme:\n\n• Ťuknutí na náhled karty → detail s textací.\n• Podržení náhledu → celá karta ve velkém, swipem listuješ dál.\n• Swipe řádku doprava přes půlku displeje → přidání do balíku.\n• Dlouhé podržení (2–3 s) se ukazuje plnícím se kolečkem — např. otevření Gathereru. Mazání je vždy jen z detailu karty a s potvrzením.\n\nPrůvodce kdykoli pustíš znovu v Nastavení.",
     ),
     GuideStep(
         Icons.Filled.CameraAlt,
@@ -87,7 +87,7 @@ private val GUIDE_STEPS = listOf(
     GuideStep(
         Icons.Filled.Style,
         "Gesta na kartě ve sbírce",
-        "• Ťuk na náhled → detail (textace, cena, počet kusů).\n• Podržení náhledu → velká karta se zlatým rámečkem; swipem doleva/doprava listuješ celým seznamem.\n• Swipe řádku doprava přes půlku → vybereš balík a karta se přidá.\n• Ikona ⇄ → změna edice (obrázek i cena); přepíše se i v balících.\n• Podržení textu řádku 2,5 s → smazání (s potvrzením).\n• Ve Wishlistu/Draftu/Playgroundu swipe přesune kartu do sbírky.",
+        "• Ťuk na náhled → detail (textace, cena, počet kusů).\n• Podržení náhledu → velká karta se zlatým rámečkem; swipem doleva/doprava listuješ celým seznamem.\n• Swipe řádku doprava přes půlku → vybereš balík a karta se přidá.\n• Ikona ⇄ → změna edice (obrázek i cena); přepíše se i v balících.\n• Smazání jen z detailu karty (ťuk na náhled → červené „Odstranit ze sbírky“), vždy s potvrzením.\n• Ve Wishlistu/Draftu/Playgroundu swipe přesune kartu do sbírky.",
     ),
     GuideStep(
         Icons.AutoMirrored.Filled.MenuBook,
@@ -97,7 +97,7 @@ private val GUIDE_STEPS = listOf(
     GuideStep(
         Icons.Filled.Inventory2,
         "Balíky",
-        "+ Nový balík: vyber formát — Commander, Jednokarťák, Standard (60 karet, max 4 kopie), Draft, Sealed nebo Volný.\n\nV detailu balíku:\n• Panel základních zemí: ťukni na symbol many (+1) nebo −.\n• Vše = všechno podle abecedy, Land/Spell = rozdělené.\n• V hlavičce počet karet, barvy a celková cena.\n• Korunkou určíš velitele, podržením řádku kartu odebereš.\n• Menu ⋮: export decklistu, přejmenování, smazání.",
+        "+ Nový balík: vyber formát — Commander, Jednokarťák, Standard (60 karet, max 4 kopie), Draft, Sealed nebo Volný.\n\nV detailu balíku:\n• Panel základních zemí: ťukni na symbol many (+1) nebo −.\n• Vše = všechno podle abecedy, Land/Spell = rozdělené.\n• V hlavičce počet karet, barvy a celková cena.\n• Korunkou určíš velitele. Kartu odebereš z detailu (ťuk na náhled → „Odebrat z balíku“) nebo podržením řádku — vždy s potvrzením.\n• Menu ⋮: export decklistu, přejmenování, smazání.",
     ),
     GuideStep(
         Icons.Filled.SwapHoriz,
