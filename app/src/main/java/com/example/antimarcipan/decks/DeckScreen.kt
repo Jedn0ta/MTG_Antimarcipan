@@ -465,6 +465,10 @@ private fun DeckDetailView(vm: DeckViewModel, deck: Deck) {
             vm.addBasicLands(deck.id, split)
         }
 
+        val (dCurve, dAvg, dLands) = com.example.antimarcipan.ui.computeCurve(deckCards)
+        if (dCurve.any { it.first + it.second > 0 }) {
+            com.example.antimarcipan.ui.ManaCurveCard(dCurve, dAvg, dLands, compact = true)
+        }
         if (gridMode) {
             if (format.isLimited) LimitedAdvisorPanel(
                 format = format,

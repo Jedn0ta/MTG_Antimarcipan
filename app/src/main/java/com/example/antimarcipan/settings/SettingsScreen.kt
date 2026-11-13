@@ -295,6 +295,38 @@ private fun AboutCard(sha: String) {
                 onClick = { showGuide = true },
                 modifier = Modifier.fillMaxWidth(),
             ) { Text("Spustit průvodce") }
+
+            // Log pádů
+            val ctx = androidx.compose.ui.platform.LocalContext.current
+            val logFile = java.io.File(ctx.filesDir, com.example.antimarcipan.MtgApp.CRASH_LOG)
+            var logText by remember { mutableStateOf(logFile.takeIf { it.exists() }?.readText()) }
+            if (logText.isNullOrBlank()) {
+                Text(
+                    "Log pádů: žádný pád nezaznamenán.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                )
+            } else {
+                Text(
+                    "Log pádů: zaznamenáno ${logText!!.split("=== ").count { it.isNotBlank() }} pádů. Zkopíruj ho a pošli vývojáři.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = androidx.compose.ui.graphics.Color(0xFFFF9A9A),
+                )
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Button(
+                        onClick = {
+                            val cm = ctx.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                            cm.setPrimaryClip(android.content.ClipData.newPlainText("Antimarcipán crash log", logText))
+                            android.widget.Toast.makeText(ctx, "Log zkopírován do schránky", android.widget.Toast.LENGTH_SHORT).show()
+                        },
+                        modifier = Modifier.weight(1f),
+                    ) { Text("Zkopírovat log") }
+                    androidx.compose.material3.OutlinedButton(
+                        onClick = { logFile.delete(); logText = null },
+                        modifier = Modifier.weight(1f),
+                    ) { Text("Smazat log") }
+                }
+            }
         }
     }
     if (showGuide) {

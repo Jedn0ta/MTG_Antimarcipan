@@ -32,6 +32,7 @@ class MtgApp : Application(), ImageLoaderFactory {
 
     override fun onCreate() {
         super.onCreate()
+        installCrashLogger()
         container = AppContainer(this)
     }
 
@@ -63,4 +64,25 @@ class MtgApp : Application(), ImageLoaderFactory {
                     .build()
             }
             .build()
+
+    /** Při pádu zapíše stack trace do souboru, aby šel zkopírovat v Nastavení → O aplikaci. */
+    private fun installCrashLogger() {
+        val previous = Thread.getDefaultUncaughtExceptionHandler()
+        Thread.setDefaultUncaughtExceptionHandler { thread, e ->
+            runCatching {
+                val sw = java.io.StringWriter()
+                e.printStackTrace(java.io.PrintWriter(sw))
+                val stamp = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.ROOT).format(java.util.Date())
+                java.io.File(filesDir, CRASH_LOG).appendText(
+                    "=== $stamp · verze ${BuildConfig.VERSION_NAME} · Android ${android.os.Build.VERSION.RELEASE} · " +
+                        "${android.os.Build.MANUFACTURER} ${android.os.Build.MODEL} · vlákno ${thread.name}\n$sw\n"
+                )
+            }
+            previous?.uncaughtException(thread, e)
+        }
+    }
+
+    companion object {
+        const val CRASH_LOG = "crash.log"
+    }
 }
