@@ -181,6 +181,12 @@ interface DeckDao {
     @Query("UPDATE deck_cards SET quantity = :qty WHERE deckId = :deckId AND scryfallId = :scryfallId")
     suspend fun setDeckCardQuantity(deckId: Long, scryfallId: String, qty: Int)
 
+    @Query("SELECT quantity FROM deck_cards WHERE deckId = :deckId AND scryfallId = :id")
+    suspend fun deckCardQty(deckId: Long, id: String): Int?
+
+    @Query("SELECT typeLine FROM collection_cards WHERE scryfallId = :id")
+    suspend fun cardTypeLine(id: String): String?
+
     /** produkovaná mana zemí v balíku (pro odvození barev podle zemí). */
     @Query(
         """

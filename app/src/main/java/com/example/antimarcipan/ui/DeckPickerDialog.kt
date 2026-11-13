@@ -31,7 +31,8 @@ fun DeckPickerDialog(
             if (decks.isEmpty()) {
                 Text("Zatím nemáš žádný balík. Založ ho v záložce Balíky.")
             } else {
-                Column(Modifier.verticalScroll(rememberScrollState())) {
+                // Bez vlastního scrollu — GoldDialog už scrolluje (vnořený scroll padal)
+                Column {
                     decks.forEach { deck ->
                         Text(
                             deck.name,

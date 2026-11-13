@@ -202,7 +202,7 @@ fun ScanScreen(
                 )
                 androidx.compose.material3.FilledIconButton(
                     onClick = { torch = !torch },
-                    modifier = Modifier.align(Alignment.TopEnd).padding(12.dp).size(52.dp).zIndex(2f),
+                    modifier = Modifier.align(Alignment.TopEnd).padding(top = 72.dp, end = 12.dp).size(52.dp).zIndex(2f),
                     colors = androidx.compose.material3.IconButtonDefaults.filledIconButtonColors(
                         containerColor = if (torch) androidx.compose.ui.graphics.Color(0xFFE2BC62)
                         else androidx.compose.ui.graphics.Color(0xAA1E1633),
@@ -253,7 +253,10 @@ fun ScanScreen(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                Row(
+                    Modifier.weight(1f).horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
                     com.example.antimarcipan.ui.GoldChip(
                         selected = !state.multiScan && !state.cornerMode,
                         onClick = { vm.setMultiScan(false) },
@@ -270,10 +273,15 @@ fun ScanScreen(
                         label = { Text("Multisken") },
                     )
                 }
-                androidx.compose.material3.FilledTonalButton(
+                androidx.compose.material3.FilledIconButton(
                     onClick = { scanning = false; vm.setMultiScan(false); vm.dismissCandidate() },
+                    modifier = Modifier.size(44.dp),
+                    colors = androidx.compose.material3.IconButtonDefaults.filledIconButtonColors(
+                        containerColor = androidx.compose.ui.graphics.Color(0xAA1E1633),
+                        contentColor = androidx.compose.ui.graphics.Color.White,
+                    ),
                 ) {
-                    Text("Vypnout")
+                    Icon(androidx.compose.material.icons.Icons.Filled.Close, contentDescription = "Vypnout skener")
                 }
             }
 
@@ -634,24 +642,25 @@ private fun CandidateCard(
             verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
             val pad = androidx.compose.foundation.layout.PaddingValues(horizontal = 6.dp)
+            // Dvě tlačítka na řádek, ať se nepřekrývají ani na úzkém displeji
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedButton(onClick = onDismiss, modifier = Modifier.weight(1f), contentPadding = pad) {
-                    Text("Skenovat dál", maxLines = 1, softWrap = false, style = MaterialTheme.typography.labelLarge)
+                Button(onClick = onAddCollection, modifier = Modifier.weight(1f), contentPadding = pad) {
+                    Text("Do sbírky", maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, style = MaterialTheme.typography.labelLarge)
                 }
-                OutlinedButton(onClick = onAddPlayground, modifier = Modifier.weight(1f), contentPadding = pad) {
-                    Text("Playground", maxLines = 1, softWrap = false, style = MaterialTheme.typography.labelLarge)
-                }
-                OutlinedButton(onClick = onAddWishlist, modifier = Modifier.weight(1f), contentPadding = pad) {
-                    Text("Wishlist", maxLines = 1, softWrap = false, style = MaterialTheme.typography.labelLarge)
+                OutlinedButton(onClick = { showDeckPicker = true }, modifier = Modifier.weight(1f), contentPadding = pad) {
+                    Text("Do balíku", maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, style = MaterialTheme.typography.labelLarge)
                 }
             }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedButton(onClick = { showDeckPicker = true }, modifier = Modifier.weight(1f), contentPadding = pad) {
-                    Text("Do balíku", maxLines = 1, softWrap = false, style = MaterialTheme.typography.labelLarge)
+                OutlinedButton(onClick = onAddWishlist, modifier = Modifier.weight(1f), contentPadding = pad) {
+                    Text("Wishlist", maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, style = MaterialTheme.typography.labelLarge)
                 }
-                Button(onClick = onAddCollection, modifier = Modifier.weight(1f), contentPadding = pad) {
-                    Text("Do sbírky", maxLines = 1, softWrap = false, style = MaterialTheme.typography.labelLarge)
+                OutlinedButton(onClick = onAddPlayground, modifier = Modifier.weight(1f), contentPadding = pad) {
+                    Text("Playground", maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, style = MaterialTheme.typography.labelLarge)
                 }
+            }
+            TextButton(onClick = onDismiss, modifier = Modifier.fillMaxWidth()) {
+                Text("Skenovat dál", style = MaterialTheme.typography.labelLarge)
             }
         }
     }

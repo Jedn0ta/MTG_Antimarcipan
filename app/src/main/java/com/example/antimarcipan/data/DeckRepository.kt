@@ -45,8 +45,22 @@ class DeckRepository(private val dao: DeckDao) {
 
     suspend fun deck(deckId: Long): Deck? = dao.findDeck(deckId)
 
-    suspend fun addCard(deckId: Long, scryfallId: String) =
-        dao.upsertDeckCard(DeckCard(deckId = deckId, scryfallId = scryfallId))
+    /**
+     * Přidá kartu do balíku. Když už tam je, zvýší počet (u singleton formátů
+     * nechá 1 kus). Nikdy nepřepíše/nevynuluje existující počet.
+     */
+    suspend fun addCard(deckId: Long, scryfallId: String) {
+        val existing = dao.deckCardQty(deckId, scryfallId)
+        if (existing == null) {
+            dao.upsertDeckCard(DeckCard(deckId = deckId, scryfallId = scryfallId, quantity = 1))
+            return
+        }
+        val fmt = dao.findDeck(deckId)?.format
+        val singleton = fmt == "COMMANDER" || fmt == "SINGLETON"
+        val basic = dao.cardTypeLine(scryfallId)?.contains("Basic", true) == true
+        if (singleton && !basic) return
+        dao.setDeckCardQuantity(deckId, scryfallId, existing + 1)
+    }
 
     suspend fun removeCard(deckId: Long, scryfallId: String) =
         dao.removeDeckCard(deckId, scryfallId)
