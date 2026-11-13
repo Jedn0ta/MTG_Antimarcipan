@@ -1121,6 +1121,7 @@ private fun DeckEntryRow(
             onLongHold = onLongRemove,
         )
         if (isBasic) {
+            com.example.antimarcipan.ui.GathererRulingsButton(entry.card.scryfallId, entry.card.name, entry.card.gathererUrl, iconSize = 20.dp)
             IconButton(onClick = { onChangeQty(entry.deckQuantity - 1) }, modifier = Modifier.size(36.dp)) {
                 Icon(Icons.Filled.Remove, contentDescription = "−")
             }

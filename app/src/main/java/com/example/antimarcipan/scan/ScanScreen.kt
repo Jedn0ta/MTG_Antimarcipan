@@ -581,6 +581,7 @@ private fun CandidateCard(
                         Modifier.weight(1f),
                         style = MaterialTheme.typography.titleMedium,
                     )
+                    com.example.antimarcipan.ui.GathererRulingsButton(candidate.id, candidate.name, candidate.relatedUris?.gatherer)
                 }
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     com.example.antimarcipan.ui.SetSymbol(candidate.set, size = 16.dp)
