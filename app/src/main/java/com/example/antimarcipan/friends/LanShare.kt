@@ -123,11 +123,12 @@ object LanShare {
     }
 
     suspend fun send(peer: LanPeer, text: String): Result<Unit> = withContext(Dispatchers.IO) {
-        runCatching {
+        runCatching<Unit> {
             Socket().use { s ->
                 s.connect(InetSocketAddress(peer.host, peer.port), 5000)
                 s.getOutputStream().apply { write(text.toByteArray(Charsets.UTF_8)); flush() }
             }
+            Unit
         }
     }
 }
