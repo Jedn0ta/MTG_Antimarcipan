@@ -79,6 +79,11 @@ fun FriendsScreen(vm: FriendsViewModel = viewModel(factory = AppViewModelFactory
     var editName by remember { mutableStateOf(false) }
     var addFriend by remember { mutableStateOf(false) }
     var deleteFriend by remember { mutableStateOf<Friend?>(null) }
+    val lanOn by LanShare.running.collectAsStateWithLifecycle()
+    val peers by LanShare.peers.collectAsStateWithLifecycle()
+    var sendTo by remember { mutableStateOf<LanPeer?>(null) }
+    // Hledání na Wi-Fi běží jen, dokud je obrazovka Přátel otevřená
+    androidx.compose.runtime.DisposableEffect(Unit) { onDispose { LanShare.stop() } }
 
     // Přijatý sdílený text (z jiné appky) → rovnou import
     LaunchedEffect(inbox) {
@@ -108,6 +113,37 @@ fun FriendsScreen(vm: FriendsViewModel = viewModel(factory = AppViewModelFactory
                     importText = cm.primaryClip?.getItemAt(0)?.coerceToText(ctx)?.toString().orEmpty()
                     showImport = true
                 }, modifier = Modifier.weight(1f)) { Text("Přijmout balík") }
+            }
+        }
+        item {
+            Card(
+                Modifier.fillMaxWidth().padding(bottom = 10.dp),
+                border = BorderStroke(1.dp, GoldBorderBrush),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.06f)),
+            ) {
+                Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("Na této Wi-Fi", Modifier.weight(1f), style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
+                        androidx.compose.material3.Switch(
+                            checked = lanOn,
+                            onCheckedChange = { on -> if (on) LanShare.start(ctx, myName) else LanShare.stop() },
+                        )
+                    }
+                    if (!lanOn) Text(
+                        "Zapni a uvidíš kamarády, kteří mají Antimarcipán otevřený na Přátelích a jsou na stejné Wi-Fi. Balík pošleš přímo, bez internetu.",
+                        style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                    ) else if (peers.isEmpty()) Row(verticalAlignment = Alignment.CenterVertically) {
+                        androidx.compose.material3.CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp)
+                        Text("  Hledám… (kamarád musí mít otevřené Přátele a zapnuté hledání)", style = MaterialTheme.typography.bodySmall)
+                    }
+                    peers.forEach { p ->
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text("📶 ${p.name}", Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
+                            if (friends.none { it.name.equals(p.name, true) }) TextButton(onClick = { vm.addFriend(p.name) }) { Text("+ Přítel") }
+                            Button(onClick = { sendTo = p }) { Text("Poslat") }
+                        }
+                    }
+                }
             }
         }
         item {
@@ -167,6 +203,32 @@ fun FriendsScreen(vm: FriendsViewModel = viewModel(factory = AppViewModelFactory
         }
     }
 
+    sendTo?.let { peer ->
+        GoldDialog(
+            onDismissRequest = { sendTo = null },
+            title = { Text("Poslat ${peer.name}") },
+            text = {
+                Column {
+                    if (myDecks.isEmpty()) Text("Nemáš žádný balík.")
+                    myDecks.forEach { d ->
+                        Text(
+                            d.name,
+                            Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).clickable {
+                                scope.launch {
+                                    val res = LanShare.send(peer, vm.shareText(d.id))
+                                    Toast.makeText(ctx, if (res.isSuccess) "Odesláno: ${d.name}" else "Nepodařilo se odeslat — jste na stejné Wi-Fi?", Toast.LENGTH_SHORT).show()
+                                    sendTo = null
+                                }
+                            }.padding(12.dp),
+                            style = MaterialTheme.typography.bodyLarge,
+                        )
+                        HorizontalDivider()
+                    }
+                }
+            },
+            confirmButton = { TextButton(onClick = { sendTo = null }) { Text("Zavřít") } },
+        )
+    }
     if (editName) {
         var n by remember { mutableStateOf(myName) }
         GoldDialog(
