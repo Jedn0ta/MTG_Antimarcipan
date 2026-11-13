@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut android:shortcutId="quick_scan" android:enabled="true"
+        android:icon="@drawable/sc_quick"
+        android:shortcutShortLabel="@string/sc_quick_short"
+        android:shortcutLongLabel="@string/sc_quick_long">
+        <intent android:action="com.example.antimarcipan.QUICK_SCAN"
+            android:targetPackage="com.example.antimarcipan"
+            android:targetClass="com.example.antimarcipan.MainActivity" />
+    </shortcut>
+    <shortcut android:shortcutId="scan" android:enabled="true"
+        android:icon="@drawable/sc_scan"
+        android:shortcutShortLabel="@string/sc_scan_short"
+        android:shortcutLongLabel="@string/sc_scan_long">
+        <intent android:action="com.example.antimarcipan.SCAN"
+            android:targetPackage="com.example.antimarcipan"
+            android:targetClass="com.example.antimarcipan.MainActivity" />
+    </shortcut>
+    <shortcut android:shortcutId="glossary" android:enabled="true"
+        android:icon="@drawable/sc_glossary"
+        android:shortcutShortLabel="@string/sc_glossary_short"
+        android:shortcutLongLabel="@string/sc_glossary_long">
+        <intent android:action="com.example.antimarcipan.GLOSSARY"
+            android:targetPackage="com.example.antimarcipan"
+            android:targetClass="com.example.antimarcipan.MainActivity" />
+    </shortcut>
+</shortcuts>

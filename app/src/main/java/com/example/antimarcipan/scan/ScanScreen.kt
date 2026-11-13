@@ -76,6 +76,16 @@ fun ScanScreen(
     var deniedOnce by remember { mutableStateOf(false) }
     // Fotoaparát se zapne až po stisku tlačítka
     var scanning by remember { mutableStateOf(false) }
+    val shortcut by com.example.antimarcipan.ui.AppShortcuts.pending.collectAsStateWithLifecycle()
+    androidx.compose.runtime.LaunchedEffect(shortcut) {
+        when (shortcut) {
+            com.example.antimarcipan.ui.AppShortcuts.QUICK_SCAN -> { vm.setQuickMode(true); scanning = true }
+            com.example.antimarcipan.ui.AppShortcuts.SCAN -> { vm.setQuickMode(false); vm.setMultiScan(false); scanning = true }
+            else -> return@LaunchedEffect
+        }
+        com.example.antimarcipan.ui.AppShortcuts.pending.value = null
+    }
+
     val launcher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { granted ->
@@ -85,6 +95,10 @@ fun ScanScreen(
     }
 
     val state by vm.state.collectAsStateWithLifecycle()
+    val quickId = state.candidate?.id
+    androidx.compose.runtime.LaunchedEffect(quickId) {
+        if (state.quickMode && quickId != null) vm.quickSave()
+    }
     val decks by vm.decks.collectAsStateWithLifecycle()
     val transLang by vm.translationLang.collectAsStateWithLifecycle()
 
@@ -274,7 +288,7 @@ fun ScanScreen(
                     )
                 }
                 androidx.compose.material3.FilledIconButton(
-                    onClick = { scanning = false; vm.setMultiScan(false); vm.dismissCandidate() },
+                    onClick = { scanning = false; vm.setMultiScan(false); vm.setQuickMode(false); vm.dismissCandidate() },
                     modifier = Modifier.size(44.dp),
                     colors = androidx.compose.material3.IconButtonDefaults.filledIconButtonColors(
                         containerColor = androidx.compose.ui.graphics.Color(0xAA1E1633),
@@ -581,7 +595,10 @@ private fun CandidateCard(
                         Modifier.weight(1f),
                         style = MaterialTheme.typography.titleMedium,
                     )
-                    com.example.antimarcipan.ui.GathererRulingsButton(candidate.id, candidate.name, candidate.relatedUris?.gatherer)
+                    com.example.antimarcipan.ui.GathererRulingsButton(
+                        candidate.id, candidate.name, candidate.relatedUris?.gatherer,
+                        autoOpen = state.quickMode,
+                    )
                 }
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     com.example.antimarcipan.ui.SetSymbol(candidate.set, size = 16.dp)

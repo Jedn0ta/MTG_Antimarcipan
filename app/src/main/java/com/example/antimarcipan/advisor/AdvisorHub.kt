@@ -25,6 +25,7 @@ import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Casino
 import androidx.compose.material.icons.filled.Construction
 import androidx.compose.material.icons.filled.Insights
+import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -72,6 +73,13 @@ private enum class Tool { HUB, ANALYZE, BUILD, LIMITED, HAND, COMBOS, GLOSSARY }
 @Composable
 fun AdvisorHubScreen(vm: AdvisorViewModel = viewModel(factory = AppViewModelFactory)) {
     var tool by rememberSaveable { mutableStateOf(Tool.HUB) }
+    val shortcut by com.example.antimarcipan.ui.AppShortcuts.pending.collectAsStateWithLifecycle()
+    LaunchedEffect(shortcut) {
+        if (shortcut == com.example.antimarcipan.ui.AppShortcuts.GLOSSARY) {
+            tool = Tool.GLOSSARY
+            com.example.antimarcipan.ui.AppShortcuts.pending.value = null
+        }
+    }
     androidx.activity.compose.BackHandler(enabled = tool != Tool.HUB) { tool = Tool.HUB }
     val back = { tool = Tool.HUB }
     when (tool) {
@@ -426,6 +434,12 @@ private fun SampleHandTool(vm: AdvisorViewModel, onBack: () -> Unit) {
 private fun GlossaryTool(onBack: () -> Unit) {
     var q by rememberSaveable { mutableStateOf("") }
     var czech by rememberSaveable { mutableStateOf(false) }
+    val ctx = androidx.compose.ui.platform.LocalContext.current
+    val voice = androidx.activity.compose.rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult()
+    ) { res ->
+        res.data?.getStringArrayListExtra(android.speech.RecognizerIntent.EXTRA_RESULTS)?.firstOrNull()?.let { q = it }
+    }
     val all = if (czech) com.example.antimarcipan.data.KeywordGlossary.entriesCz else com.example.antimarcipan.data.KeywordGlossary.entries
     val shown = all.entries.filter { q.isBlank() || it.key.contains(q.trim(), true) || it.value.contains(q.trim(), true) }
         .sortedBy { it.key }
@@ -435,6 +449,20 @@ private fun GlossaryTool(onBack: () -> Unit) {
             value = q, onValueChange = { q = it }, singleLine = true,
             label = { Text("Hledat (např. trample, ward)") },
             modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp),
+            trailingIcon = {
+                IconButton(onClick = {
+                    runCatching {
+                        voice.launch(
+                            android.content.Intent(android.speech.RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
+                                .putExtra(android.speech.RecognizerIntent.EXTRA_LANGUAGE_MODEL, android.speech.RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+                                .putExtra(android.speech.RecognizerIntent.EXTRA_LANGUAGE, if (czech) "cs-CZ" else "en-US")
+                                .putExtra(android.speech.RecognizerIntent.EXTRA_PROMPT, "Řekni vlastnost (např. trample)")
+                        )
+                    }.onFailure {
+                        android.widget.Toast.makeText(ctx, "Diktování není v telefonu dostupné", android.widget.Toast.LENGTH_SHORT).show()
+                    }
+                }) { Icon(Icons.Filled.Mic, contentDescription = "Diktovat") }
+            },
         )
         Row(Modifier.padding(horizontal = 12.dp, vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             com.example.antimarcipan.ui.GoldChip(selected = !czech, onClick = { czech = false }, label = { Text("English") })

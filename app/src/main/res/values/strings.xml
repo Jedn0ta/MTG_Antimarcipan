@@ -1,3 +1,9 @@
 <resources>
     <string name="app_name">Antimarcipán</string>
+    <string name="sc_quick_short">Rychlý sken</string>
+    <string name="sc_quick_long">Rychlý sken → rulings + Playground</string>
+    <string name="sc_scan_short">Sken</string>
+    <string name="sc_scan_long">Skenovat kartu</string>
+    <string name="sc_glossary_short">Slovníček</string>
+    <string name="sc_glossary_long">Slovníček vlastností</string>
 </resources>

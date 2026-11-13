@@ -193,6 +193,18 @@ fun AntimarcipanApp() {
             }
         },
     ) { padding ->
+        val shortcut by AppShortcuts.pending.collectAsState()
+        androidx.compose.runtime.LaunchedEffect(shortcut) {
+            val dest = when (shortcut) {
+                AppShortcuts.QUICK_SCAN, AppShortcuts.SCAN -> Dest.Scan.route
+                AppShortcuts.GLOSSARY -> Dest.Synergy.route
+                else -> null
+            }
+            if (dest != null) navController.navigate(dest) {
+                popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                launchSingleTop = true
+            }
+        }
         val openDeck by com.example.antimarcipan.advisor.AppNav.openDeck.collectAsState()
         androidx.compose.runtime.LaunchedEffect(openDeck) {
             if (openDeck != null) navController.navigate(Dest.Decks.route) {

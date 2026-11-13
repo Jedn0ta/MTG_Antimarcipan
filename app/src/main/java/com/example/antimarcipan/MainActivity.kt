@@ -13,6 +13,7 @@ import com.example.antimarcipan.ui.theme.AntimarcipanTheme
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        if (savedInstanceState == null) com.example.antimarcipan.ui.AppShortcuts.handle(intent?.action)
         // Vždy světlé ikony stavového řádku (aplikace má tmavé pozadí bez ohledu na režim telefonu)
         enableEdgeToEdge(
             statusBarStyle = androidx.activity.SystemBarStyle.dark(android.graphics.Color.TRANSPARENT),
@@ -26,5 +27,10 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    override fun onNewIntent(intent: android.content.Intent) {
+        super.onNewIntent(intent)
+        com.example.antimarcipan.ui.AppShortcuts.handle(intent.action)
     }
 }

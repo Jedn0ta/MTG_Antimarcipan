@@ -43,6 +43,8 @@ data class ScanUiState(
     val multiScan: Boolean = false,
     /** Hledání podle levého spodního rohu (číslo + edice) — pro cizojazyčné karty. */
     val cornerMode: Boolean = false,
+    /** Rychlý sken (z ikony aplikace): nalezená karta → Playground + rulings. */
+    val quickMode: Boolean = false,
     val pending: List<PendingScan> = emptyList(),
     /** Když != null, další naskenovaná karta nahradí tento slot (přenačtení). */
     val rescanSlot: Long? = null,
@@ -355,6 +357,22 @@ class ScanViewModel(
             deckRepo.addCard(deckId, card.id)
             val deckName = deckRepo.deck(deckId)?.name ?: "balíku"
             flashAdded("Přidáno do „$deckName“: ${card.name}")
+        }
+    }
+
+    fun setQuickMode(on: Boolean) {
+        _state.value = _state.value.copy(
+            quickMode = on, multiScan = false, cornerMode = false,
+            status = if (on) "Rychlý sken: namiř na jméno — karta se uloží do Playgroundu a ukážou se rulings" else _state.value.status,
+        )
+    }
+
+    /** Rychlý sken: ulož nalezenou kartu do Playgroundu, ale nech ji na obrazovce. */
+    fun quickSave() {
+        val card = _state.value.candidate ?: return
+        viewModelScope.launch {
+            repo.addToPlayground(card)
+            _state.value = _state.value.copy(status = "Uloženo do Playgroundu: ${card.name}")
         }
     }
 

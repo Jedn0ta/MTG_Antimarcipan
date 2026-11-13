@@ -37,9 +37,9 @@ fun gathererUrlFor(name: String): String =
  * Funguje kdekoli — ve sbírce, v balíku i u naskenované karty.
  */
 @Composable
-fun GathererRulingsButton(scryfallId: String, name: String, gathererUrl: String? = null, iconSize: Dp = 24.dp) {
+fun GathererRulingsButton(scryfallId: String, name: String, gathererUrl: String? = null, iconSize: Dp = 24.dp, autoOpen: Boolean = false) {
     val ctx = LocalContext.current
-    var show by remember { mutableStateOf(false) }
+    var show by remember(scryfallId) { mutableStateOf(autoOpen) }
     var progress by remember { mutableFloatStateOf(0f) }
     val url = gathererUrl?.takeIf { it.isNotBlank() } ?: gathererUrlFor(name)
     fun openGatherer() {
