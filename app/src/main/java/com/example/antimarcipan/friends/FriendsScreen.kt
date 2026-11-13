@@ -67,6 +67,36 @@ fun FriendsScreen() {
     var tab by rememberSaveable { mutableStateOf(0) }
     val boardInbox by com.example.antimarcipan.board.BoardInbox.pending.collectAsStateWithLifecycle()
     LaunchedEffect(boardInbox) { if (boardInbox != null) tab = 1 }
+    val ctx = LocalContext.current
+    val vm: FriendsViewModel = viewModel(factory = AppViewModelFactory)
+    val scope = rememberCoroutineScope()
+    // Hledání na Wi-Fi běží, dokud jsou otevření Přátelé (i při přepnutí na Nástěnku)
+    androidx.compose.runtime.DisposableEffect(Unit) { onDispose { LanShare.stop() } }
+    val incoming by LanShare.incoming.collectAsStateWithLifecycle()
+    val ack by LanShare.acks.collectAsStateWithLifecycle()
+    LaunchedEffect(ack) { ack?.let { Toast.makeText(ctx, it, Toast.LENGTH_LONG).show(); LanShare.acks.value = null } }
+    incoming.firstOrNull()?.let { inc ->
+        val deck = remember(inc) { DeckShareCodec.decode(inc.text) }
+        if (deck == null) LaunchedEffect(inc) { LanShare.respond(inc, false, "?") }
+        else GoldDialog(
+            onDismissRequest = {},
+            title = { Text("Příchozí balík") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text("${inc.from} ti posílá balík:", style = MaterialTheme.typography.bodyMedium)
+                    Text("„${deck.name}“ · ${deck.total} karet", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
+                    Text("Po přijetí se uloží k příteli ${inc.from}.", style = MaterialTheme.typography.bodySmall)
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    vm.importDeck(deck, inc.from.takeIf { it != "?" } ?: deck.owner) { n -> Toast.makeText(ctx, "Balík uložen k: $n", Toast.LENGTH_SHORT).show() }
+                    scope.launch { LanShare.respond(inc, true, deck.name) }
+                }) { Text("Přijmout") }
+            },
+            dismissButton = { TextButton(onClick = { scope.launch { LanShare.respond(inc, false, deck.name) } }) { Text("Odmítnout") } },
+        )
+    }
     Column(Modifier.fillMaxSize()) {
         Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             com.example.antimarcipan.ui.GoldChip(selected = tab == 0, onClick = { tab = 0 }, label = { Text("Přátelé") })
@@ -98,8 +128,7 @@ private fun FriendsList(vm: FriendsViewModel = viewModel(factory = AppViewModelF
     val lanOn by LanShare.running.collectAsStateWithLifecycle()
     val peers by LanShare.peers.collectAsStateWithLifecycle()
     var sendTo by remember { mutableStateOf<LanPeer?>(null) }
-    // Hledání na Wi-Fi běží jen, dokud je obrazovka Přátel otevřená
-    androidx.compose.runtime.DisposableEffect(Unit) { onDispose { LanShare.stop() } }
+
 
     // Přijatý sdílený text (z jiné appky) → rovnou import
     LaunchedEffect(inbox) {
@@ -232,7 +261,7 @@ private fun FriendsList(vm: FriendsViewModel = viewModel(factory = AppViewModelF
                             Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).clickable {
                                 scope.launch {
                                     val res = LanShare.send(peer, vm.shareText(d.id))
-                                    Toast.makeText(ctx, if (res.isSuccess) "Odesláno: ${d.name}" else "Nepodařilo se odeslat — jste na stejné Wi-Fi?", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(ctx, if (res.isSuccess) "Odesláno: ${d.name} — čeká na potvrzení" else "Nepodařilo se odeslat — jste na stejné Wi-Fi?", Toast.LENGTH_SHORT).show()
                                     sendTo = null
                                 }
                             }.padding(12.dp),

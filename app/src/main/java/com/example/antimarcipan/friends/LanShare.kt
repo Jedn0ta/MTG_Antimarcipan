@@ -14,6 +14,9 @@ import kotlin.concurrent.thread
 
 data class LanPeer(val name: String, val host: String, val port: Int)
 
+/** Příchozí balík přes Wi-Fi — čeká, až ho příjemce potvrdí nebo odmítne. */
+data class LanIncoming(val from: String, val host: String, val port: Int?, val text: String, val at: Long = System.currentTimeMillis())
+
 /**
  * Hledání přátel na stejné Wi-Fi (Android NSD / mDNS) a posílání balíků
  * přímo telefon → telefon přes lokální síť. Bez internetu a bez serveru.
@@ -24,6 +27,11 @@ object LanShare {
 
     val peers = MutableStateFlow<List<LanPeer>>(emptyList())
     val running = MutableStateFlow(false)
+    val incoming = MutableStateFlow<List<LanIncoming>>(emptyList())
+    /** Potvrzení od příjemce (zobrazí se odesílateli). */
+    val acks = MutableStateFlow<String?>(null)
+    private var myName: String = "Hráč"
+    private var myPort: Int = 0
 
     private var server: ServerSocket? = null
     private var nsd: NsdManager? = null
@@ -36,6 +44,7 @@ object LanShare {
     fun start(context: Context, myName: String) {
         if (running.value) return
         running.value = true
+        this.myName = myName.ifBlank { "Hráč" }
         peers.value = emptyList()
         val mgr = context.getSystemService(Context.NSD_SERVICE) as NsdManager
         nsd = mgr
@@ -43,14 +52,26 @@ object LanShare {
         // 1) Server: přijímá balíky od ostatních
         val ss = ServerSocket(0)
         server = ss
+        myPort = ss.localPort
         thread(name = "lan-share-server", isDaemon = true) {
             while (!ss.isClosed) {
                 val s = runCatching { ss.accept() }.getOrNull() ?: break
                 thread(isDaemon = true) {
                     runCatching {
                         s.soTimeout = 15000
-                        val text = s.getInputStream().readBytes().toString(Charsets.UTF_8)
-                        if ("AMDECK1:" in text) FriendsInbox.pending.value = text
+                        val raw = s.getInputStream().readBytes().toString(Charsets.UTF_8)
+                        val host = s.inetAddress?.hostAddress ?: ""
+                        var from = "?"; var port: Int? = null; var text = raw
+                        if (raw.startsWith("AMFROM1:")) {
+                            val head = raw.substringBefore("\n").removePrefix("AMFROM1:").split(":")
+                            from = runCatching { String(android.util.Base64.decode(head[0], android.util.Base64.NO_WRAP or android.util.Base64.URL_SAFE)) }.getOrDefault("?")
+                            port = head.getOrNull(1)?.toIntOrNull()
+                            text = raw.substringAfter("\n")
+                        }
+                        when {
+                            text.startsWith("AMACK1:") -> acks.value = text.removePrefix("AMACK1:")
+                            "AMDECK1:" in text -> incoming.value = incoming.value + LanIncoming(from, host, port, text)
+                        }
                     }
                     runCatching { s.close() }
                 }
@@ -122,13 +143,25 @@ object LanShare {
         running.value = false
     }
 
-    suspend fun send(peer: LanPeer, text: String): Result<Unit> = withContext(Dispatchers.IO) {
+    private fun header(): String =
+        "AMFROM1:" + android.util.Base64.encodeToString(myName.toByteArray(), android.util.Base64.NO_WRAP or android.util.Base64.URL_SAFE) + ":" + myPort + "\n"
+
+    private suspend fun raw(host: String, port: Int, text: String): Result<Unit> = withContext(Dispatchers.IO) {
         runCatching<Unit> {
             Socket().use { s ->
-                s.connect(InetSocketAddress(peer.host, peer.port), 5000)
+                s.connect(InetSocketAddress(host, port), 5000)
                 s.getOutputStream().apply { write(text.toByteArray(Charsets.UTF_8)); flush() }
             }
             Unit
         }
+    }
+
+    suspend fun send(peer: LanPeer, text: String): Result<Unit> = raw(peer.host, peer.port, header() + text)
+
+    /** Odpověď odesílateli: přijato / odmítnuto. */
+    suspend fun respond(inc: LanIncoming, accepted: Boolean, deckName: String) {
+        incoming.value = incoming.value - inc
+        val port = inc.port ?: return
+        raw(inc.host, port, header() + "AMACK1:" + (if (accepted) "✓ $myName přijal/a balík „$deckName“" else "✗ $myName odmítl/a balík „$deckName“"))
     }
 }

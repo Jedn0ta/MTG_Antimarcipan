@@ -203,7 +203,9 @@ fun AntimarcipanApp() {
         val friendsInbox by com.example.antimarcipan.friends.FriendsInbox.pending.collectAsState()
         val boardInbox by com.example.antimarcipan.board.BoardInbox.pending.collectAsState()
         androidx.compose.runtime.LaunchedEffect(friendsInbox, boardInbox) {
-            if (friendsInbox != null || boardInbox != null) navController.navigate(FRIENDS_ROUTE) { launchSingleTop = true }
+            // Jen když na Přátelích ještě nejsme — jinak by se obrazovka znovu vytvořila a vypnula Wi-Fi hledání
+            if ((friendsInbox != null || boardInbox != null) && navController.currentDestination?.route != FRIENDS_ROUTE)
+                navController.navigate(FRIENDS_ROUTE) { launchSingleTop = true }
         }
         val shortcut by AppShortcuts.pending.collectAsState()
         androidx.compose.runtime.LaunchedEffect(shortcut) {
