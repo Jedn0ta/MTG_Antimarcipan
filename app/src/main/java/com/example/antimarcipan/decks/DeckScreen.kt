@@ -401,6 +401,12 @@ private fun DeckDetailView(vm: DeckViewModel, deck: Deck) {
                 )
             }
             Spacer(Modifier.weight(1f))
+            IconButton(onClick = { settings.setDeckGrid(!gridMode) }) {
+                Icon(
+                    if (gridMode) Icons.AutoMirrored.Filled.ViewList else Icons.Filled.GridView,
+                    contentDescription = if (gridMode) "Seznam" else "Mřížka",
+                )
+            }
             androidx.compose.material3.BadgedBox(
                 badge = {
                     if (deckFilter.isActive) androidx.compose.material3.Badge { Text("${deckFilter.activeCount}") }
