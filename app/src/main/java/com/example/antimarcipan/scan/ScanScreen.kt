@@ -591,12 +591,7 @@ private fun CandidateCard(
                     )
                 }
                 Text(candidate.typeLine ?: "", style = MaterialTheme.typography.bodySmall)
-                candidate.oracleText?.takeIf { it.isNotBlank() }?.let {
-                    com.example.antimarcipan.ui.SymbolText(
-                        com.example.antimarcipan.data.KeywordGlossary.annotate(it) ?: it,
-                        MaterialTheme.typography.bodySmall,
-                    )
-                }
+                com.example.antimarcipan.ui.OracleText(candidate.oracleText, MaterialTheme.typography.bodySmall)
             }
         }
 

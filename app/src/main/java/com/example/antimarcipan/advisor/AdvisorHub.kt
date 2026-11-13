@@ -412,7 +412,8 @@ private fun SampleHandTool(vm: AdvisorViewModel, onBack: () -> Unit) {
 @Composable
 private fun GlossaryTool(onBack: () -> Unit) {
     var q by rememberSaveable { mutableStateOf("") }
-    val all = com.example.antimarcipan.data.KeywordGlossary.entries
+    var czech by rememberSaveable { mutableStateOf(false) }
+    val all = if (czech) com.example.antimarcipan.data.KeywordGlossary.entriesCz else com.example.antimarcipan.data.KeywordGlossary.entries
     val shown = all.entries.filter { q.isBlank() || it.key.contains(q.trim(), true) || it.value.contains(q.trim(), true) }
         .sortedBy { it.key }
     Column(Modifier.fillMaxSize()) {
@@ -422,6 +423,10 @@ private fun GlossaryTool(onBack: () -> Unit) {
             label = { Text("Hledat (např. trample, ward)") },
             modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp),
         )
+        Row(Modifier.padding(horizontal = 12.dp, vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            com.example.antimarcipan.ui.GoldChip(selected = !czech, onClick = { czech = false }, label = { Text("English") })
+            com.example.antimarcipan.ui.GoldChip(selected = czech, onClick = { czech = true }, label = { Text("Přeložit do češtiny") })
+        }
         LazyColumn(Modifier.fillMaxSize().padding(top = 6.dp)) {
             items(shown, key = { it.key }) { e ->
                 Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
@@ -488,12 +493,35 @@ private fun ComboCard(c: com.example.antimarcipan.data.advisor.Combo) {
         border = BorderStroke(1.dp, if (c.missing.isEmpty()) GoldBorderBrush else androidx.compose.ui.graphics.SolidColor(Color(0x55B9A7EC))),
     ) {
         Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            c.cards.forEach { n ->
-                val miss = n in c.missing
-                Text(
-                    (if (miss) "✗ " else "✓ ") + n + if (miss) "  — chybí" else "",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = if (miss) Color(0xFFFFA0A0) else MaterialTheme.colorScheme.onSurface,
+            Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                c.cards.forEach { n ->
+                    val miss = n in c.missing
+                    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.size(width = 76.dp, height = 140.dp)) {
+                        var big by remember { mutableStateOf(false) }
+                        Box(Modifier.clickable { big = true }) {
+                            com.example.antimarcipan.ui.CardThumb(
+                                com.example.antimarcipan.ui.scryfallImageByName(n, "small"), width = 70.dp, height = 98.dp,
+                            )
+                        }
+                        if (big) androidx.compose.ui.window.Dialog(onDismissRequest = { big = false }) {
+                            coil.compose.AsyncImage(
+                                model = com.example.antimarcipan.ui.scryfallImageByName(n), contentDescription = n,
+                                modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).border(2.dp, GoldBorderBrush, RoundedCornerShape(14.dp)),
+                            )
+                        }
+                        Text(
+                            (if (miss) "✗ " else "✓ ") + n,
+                            style = MaterialTheme.typography.labelSmall, maxLines = 2,
+                            color = if (miss) Color(0xFFFFA0A0) else MaterialTheme.colorScheme.onSurface,
+                        )
+                    }
+                }
+            }
+            c.missing.forEach { m ->
+                com.example.antimarcipan.ui.WishlistButton(
+                    m,
+                    "Kombo: " + c.cards.joinToString(" + ") + (if (c.results.isNotEmpty()) " → " + c.results.joinToString(", ") else ""),
+                    modifier = Modifier.fillMaxWidth(),
                 )
             }
             if (c.results.isNotEmpty()) Text(

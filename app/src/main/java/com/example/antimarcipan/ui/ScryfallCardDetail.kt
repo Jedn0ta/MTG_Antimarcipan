@@ -107,9 +107,7 @@ fun ScryfallCardDetailDialog(card: ScryfallCard, onDismiss: () -> Unit) {
                     if (faces.size > 1) Text(f.name, style = MaterialTheme.typography.titleSmall)
                     f.mana?.takeIf { it.isNotBlank() }?.let { ManaCost(it, symbolSize = 18) }
                     f.type?.let { Text(it, style = MaterialTheme.typography.bodyMedium) }
-                    KeywordGlossary.annotate(f.text)?.takeIf { it.isNotBlank() }?.let {
-                        SymbolText(it, MaterialTheme.typography.bodySmall)
-                    }
+                    OracleText(f.text, MaterialTheme.typography.bodySmall)
                 }
             }
         },

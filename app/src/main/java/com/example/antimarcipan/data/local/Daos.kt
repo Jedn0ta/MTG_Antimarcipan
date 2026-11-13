@@ -26,6 +26,9 @@ interface CollectionDao {
     @Query("UPDATE collection_cards SET priceUsd = :usd, priceEur = :eur WHERE scryfallId = :id")
     suspend fun updatePrices(id: String, usd: String?, eur: String?)
 
+    @Query("UPDATE collection_cards SET note = :note WHERE scryfallId = :id")
+    suspend fun setNote(id: String, note: String?)
+
     @Query("SELECT * FROM collection_cards WHERE playground = 1 ORDER BY addedAt DESC")
     fun observePlayground(): Flow<List<CollectionCard>>
 

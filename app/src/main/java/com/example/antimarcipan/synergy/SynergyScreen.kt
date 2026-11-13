@@ -204,6 +204,7 @@ private fun FitRow(fit: CardFit, replacements: List<String>? = null, images: Map
                             textAlign = TextAlign.Center,
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
                         )
+                        com.example.antimarcipan.ui.WishlistButton(name, "Náhrada za ${fit.card.name}", compact = true)
                     }
                 }
             }
@@ -217,9 +218,9 @@ private fun FitRow(fit: CardFit, replacements: List<String>? = null, images: Map
 private fun SuggestionImage(name: String, card: com.example.antimarcipan.data.scryfall.ScryfallCard?) {
     if (card != null) {
         // ťuk = detail karty s obrázkem a textací
-        com.example.antimarcipan.ui.ScryfallThumb(card, width = 40.dp, height = 56.dp)
+        com.example.antimarcipan.ui.ScryfallThumb(card, width = 48.dp, height = 67.dp)
     } else {
-        com.example.antimarcipan.ui.CardThumb(null, width = 40.dp, height = 56.dp)
+        com.example.antimarcipan.ui.CardThumb(com.example.antimarcipan.ui.scryfallImageByName(name, "small"), width = 48.dp, height = 67.dp)
     }
 }
 
@@ -276,6 +277,7 @@ private fun RecRow(rec: SynergyRecommendation, images: Map<String, com.example.a
                 else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
             )
         }
+        if (!rec.owned) com.example.antimarcipan.ui.WishlistButton(rec.name, "Návrh Rádce: ${rec.category}", compact = true)
     }
     HorizontalDivider()
 }

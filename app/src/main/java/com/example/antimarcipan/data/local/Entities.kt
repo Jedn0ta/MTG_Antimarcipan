@@ -36,6 +36,8 @@ data class CollectionCard(
     val wishlist: Boolean = false,
     /** Playground — prozkoumané karty (např. špatně rozpoznané nebo k prohlédnutí). */
     val playground: Boolean = false,
+    /** Poznámka ke kartě (např. ke kterému kombu ji chci na wishlistu). */
+    val note: String? = null,
     val addedAt: Long = System.currentTimeMillis(),
 )
 

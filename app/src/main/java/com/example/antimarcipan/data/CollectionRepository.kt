@@ -241,6 +241,19 @@ class CollectionRepository(
         else dao.upsert(e.copy(owned = true, quantity = qty))
     }
 
+    suspend fun setNote(scryfallId: String, note: String?) = dao.setNote(scryfallId, note?.trim()?.ifBlank { null })
+
+    /** Najde kartu podle jména a dá ji na wishlist s poznámkou. Vrací jméno karty. */
+    suspend fun addToWishlistByName(name: String, note: String?): Result<String> = runCatching {
+        val card = scryfall.cardByExactName(name.substringBefore(" //").trim())
+        addToWishlist(card)
+        if (!note.isNullOrBlank()) {
+            val prev = dao.findById(card.id)?.note
+            setNote(card.id, listOfNotNull(prev?.takeIf { it.isNotBlank() && !it.contains(note) }, note).joinToString("\n"))
+        }
+        card.name
+    }
+
     suspend fun addToWishlist(card: ScryfallCard) {
         val existing = dao.findById(card.id)
         if (existing == null) {

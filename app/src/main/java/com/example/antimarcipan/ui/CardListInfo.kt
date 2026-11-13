@@ -71,6 +71,15 @@ fun CardListInfo(
                     )
                 }
             }
+            card.note?.takeIf { it.isNotBlank() }?.let {
+                Text(
+                    "📝 " + it.lineSequence().first(),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = androidx.compose.ui.graphics.Color(0xFFB9A7EC),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 Text(
                     card.typeLine ?: "",

@@ -105,9 +105,17 @@ fun CardInfoDialog(card: CollectionCard, onDismiss: () -> Unit) {
                 )
                 card.typeLine?.let { Text(it, style = MaterialTheme.typography.bodyMedium) }
                 // Textace s vysvětlivkami samotných hesel + možnost překladu do češtiny
-                com.example.antimarcipan.data.KeywordGlossary.annotate(card.oracleText)
-                    ?.takeIf { it.isNotBlank() }
-                    ?.let { SymbolText(it, MaterialTheme.typography.bodySmall) }
+                OracleText(card.oracleText, MaterialTheme.typography.bodySmall)
+                var editNote by remember { mutableStateOf(false) }
+                if (!card.note.isNullOrBlank()) Text(
+                    "📝 " + card.note,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = androidx.compose.ui.graphics.Color(0xFFB9A7EC),
+                )
+                TextButton(onClick = { editNote = true }) {
+                    Text(if (card.note.isNullOrBlank()) "Přidat poznámku" else "Upravit poznámku", style = MaterialTheme.typography.labelMedium)
+                }
+                if (editNote) EditNoteDialog(card.scryfallId, card.note) { editNote = false }
                 Text(
                     buildString {
                         card.rarity?.let { append(it.replaceFirstChar { c -> c.uppercase() }) }
