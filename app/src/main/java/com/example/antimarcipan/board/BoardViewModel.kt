@@ -114,7 +114,7 @@ object Board {
     private fun recountUnread() {
         unread.value = groups.value.associate { g ->
             val lr = lastRead(g)
-            g.tag to byGroup.value[g.tag].orEmpty().count { !it.mine && it.createdAt > lr && it.p.y != "rsvp" }
+            g.tag to byGroup.value[g.tag].orEmpty().count { !it.mine && it.createdAt > lr && it.p.y in setOf("msg", "meet", "poll", "meta") }
         }
     }
 
