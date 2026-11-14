@@ -12,7 +12,7 @@ import kotlinx.serialization.json.Json
 /** Obsah příspěvku (šifrovaný v Nostr události). */
 @Serializable
 data class Payload(
-    /** msg | meet | rsvp */
+    /** msg | meet | rsvp | poll | vote | meta | del */
     val y: String,
     val n: String = "",
     val x: String = "",
@@ -21,6 +21,10 @@ data class Payload(
     val pl: String = "",
     val r: String = "",
     val g: String = "",
+    /** Možnosti ankety. */
+    val o: List<String> = emptyList(),
+    /** Anketa s více odpověďmi. */
+    val mu: Boolean = false,
 )
 
 data class Post(val id: String, val author: String, val createdAt: Long, val p: Payload, val mine: Boolean)
@@ -142,6 +146,7 @@ object Board {
         val plain = g.decrypt(ev.content) ?: return
         val p = runCatching { json.decodeFromString(Payload.serializer(), plain) }.getOrNull() ?: return
         val post = Post(ev.id, ev.pubkey, ev.createdAt, p, ev.pubkey == myPub)
+        if (p.y == "meta" && p.ti.isNotBlank()) applyRename(g, p.ti, ev.createdAt)
         byGroup.value = byGroup.value + (g.tag to (byGroup.value[g.tag].orEmpty() + post).sortedBy { it.createdAt })
         saveCache(g)
         if (current.value?.tag == g.tag) {
@@ -160,6 +165,29 @@ object Board {
             pool?.publish(ev)
         }
     }
+
+    private fun applyRename(g: BoardGroup, name: String, at: Long) {
+        val key = "meta_" + g.tag
+        if (at < prefs.getLong(key, 0L)) return
+        prefs.edit().putLong(key, at).apply()
+        groups.value = groups.value.map { if (it.secretHex == g.secretHex) it.copy(name = name) else it }
+        saveGroups()
+        if (current.value?.secretHex == g.secretHex) current.value = groups.value.first { it.secretHex == g.secretHex }
+    }
+
+    /** Přejmenuje skupinu pro všechny členy. */
+    fun renameGroup(name: String) { if (name.isNotBlank()) publish(Payload(y = "meta", n = myName(), ti = name.trim())) }
+
+    fun createPoll(question: String, options: List<String>, multi: Boolean) {
+        val opts = options.map { it.trim() }.filter { it.isNotEmpty() }
+        if (question.isNotBlank() && opts.size >= 2) publish(Payload(y = "poll", n = myName(), ti = question.trim(), o = opts, mu = multi))
+    }
+
+    /** Hlas v anketě: indexy zvolených možností (prázdné = zrušit hlas). */
+    fun vote(pollId: String, choices: Set<Int>) = publish(Payload(y = "vote", n = myName(), r = pollId, g = choices.sorted().joinToString(",")))
+
+    /** Smaže můj příspěvek (u všech se skryje). */
+    fun deletePost(id: String) = publish(Payload(y = "del", n = myName(), r = id))
 
     fun sendMessage(text: String) { if (text.isNotBlank()) publish(Payload(y = "msg", n = myName(), x = text.trim())) }
     fun createMeetup(title: String, whenMs: Long, place: String, note: String) =
