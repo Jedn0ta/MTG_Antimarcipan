@@ -54,6 +54,7 @@ import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.AllInclusive
 import androidx.compose.material.icons.filled.LooksOne
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material.icons.filled.Inventory2
@@ -1208,17 +1209,8 @@ private fun DeckEntryRow(
             modifier = Modifier.weight(1f),
             onLongHold = onLongRemove,
         )
-        if (isBasic) {
-            com.example.antimarcipan.ui.GathererRulingsButton(entry.card.scryfallId, entry.card.name, entry.card.gathererUrl, iconSize = 20.dp)
-            IconButton(onClick = { onChangeQty(entry.deckQuantity - 1) }, modifier = Modifier.size(36.dp)) {
-                Icon(Icons.Filled.Remove, contentDescription = "−")
-            }
-            Text("${entry.deckQuantity}", style = MaterialTheme.typography.titleMedium)
-            IconButton(onClick = { onChangeQty(entry.deckQuantity + 1) }, modifier = Modifier.size(36.dp)) {
-                Icon(Icons.Filled.Add, contentDescription = "+")
-            }
-        } else if (showCommander) {
-            IconButton(onClick = onCommander) {
+        if (showCommander && !isBasic) {
+            IconButton(onClick = onCommander, modifier = Modifier.size(40.dp)) {
                 Icon(
                     Icons.Filled.Star,
                     contentDescription = "Velitel",
@@ -1227,6 +1219,52 @@ private fun DeckEntryRow(
                 )
             }
         }
+        // Rulings (ťuk) / Gatherer (podržení)
+        com.example.antimarcipan.ui.GathererRulingsButton(entry.card.scryfallId, entry.card.name, entry.card.gathererUrl, iconSize = 20.dp)
+        // Akce s kartou
+        var menu by remember { mutableStateOf(false) }
+        var detail by remember { mutableStateOf(false) }
+        Box {
+            IconButton(onClick = { menu = true }, modifier = Modifier.size(40.dp)) {
+                Icon(Icons.Filled.MoreVert, contentDescription = "Možnosti karty")
+            }
+            androidx.compose.material3.DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
+                Text(
+                    "${entry.card.name} · ${entry.deckQuantity}×",
+                    Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
+                    style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary,
+                )
+                androidx.compose.material3.DropdownMenuItem(
+                    text = { Text("Přidat kus (+1)") },
+                    leadingIcon = { Icon(Icons.Filled.Add, null) },
+                    onClick = { onChangeQty(entry.deckQuantity + 1) },
+                )
+                androidx.compose.material3.DropdownMenuItem(
+                    text = { Text("Ubrat kus (−1)") },
+                    leadingIcon = { Icon(Icons.Filled.Remove, null) },
+                    enabled = entry.deckQuantity > 1,
+                    onClick = { onChangeQty(entry.deckQuantity - 1) },
+                )
+                androidx.compose.material3.DropdownMenuItem(
+                    text = { Text("Detail karty") },
+                    leadingIcon = { Icon(Icons.Filled.Info, null) },
+                    onClick = { menu = false; detail = true },
+                )
+                if (showCommander && !isBasic) androidx.compose.material3.DropdownMenuItem(
+                    text = { Text(if (isCommander) "Je velitel ✓" else "Nastavit jako velitele") },
+                    leadingIcon = { Icon(Icons.Filled.Star, null) },
+                    enabled = !isCommander,
+                    onClick = { menu = false; onCommander() },
+                )
+                androidx.compose.material3.HorizontalDivider()
+                androidx.compose.material3.DropdownMenuItem(
+                    text = { Text("Odebrat z balíku", color = Color(0xFFFF8A8A)) },
+                    leadingIcon = { Icon(Icons.Filled.Delete, null, tint = Color(0xFFFF8A8A)) },
+                    onClick = { menu = false; onLongRemove() },
+                )
+            }
+        }
+        if (detail) com.example.antimarcipan.ui.CardInfoDialog(entry.card) { detail = false }
     }
 }
 
