@@ -30,8 +30,23 @@ class CollectionViewModel(
     val decks: StateFlow<List<Deck>> = deckRepo.decks
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    val priceRefreshing = kotlinx.coroutines.flow.MutableStateFlow(false)
+    val priceUpdatedAt = kotlinx.coroutines.flow.MutableStateFlow(repo.lastPriceUpdate())
+
+    /** Ruční aktualizace cen ze Scryfallu. */
+    fun refreshPricesNow(onDone: (String) -> Unit) {
+        if (priceRefreshing.value) return
+        priceRefreshing.value = true
+        viewModelScope.launch {
+            val r = repo.refreshPrices(force = true)
+            priceRefreshing.value = false
+            priceUpdatedAt.value = repo.lastPriceUpdate()
+            onDone(r.fold({ "Ceny aktualizovány ($it karet)" }, { "Ceny se nepodařilo aktualizovat — internet?" }))
+        }
+    }
+
     init {
-        viewModelScope.launch { repo.refreshPrices() }
+        viewModelScope.launch { repo.refreshPrices(); priceUpdatedAt.value = repo.lastPriceUpdate() }
         // Dostáhne náhledy u karet, které je ještě nemají lokálně uložené.
         viewModelScope.launch { repo.backfillImages() }
     }

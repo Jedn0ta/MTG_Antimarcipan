@@ -43,6 +43,9 @@ class CollectionRepository(
      * stejnou kartu, vrátí rovnou ten konkrétní tisk — tedy správnou edici.
      */
     /** Obnoví ceny všech uložených karet (nejvýš jednou za 12 h, pokud není [force]). */
+    /** Kdy se naposledy aktualizovaly ceny (ms, 0 = nikdy). */
+    fun lastPriceUpdate(): Long = appContext.getSharedPreferences("prices", Context.MODE_PRIVATE).getLong("last", 0L)
+
     suspend fun refreshPrices(force: Boolean = false): Result<Int> = runCatching {
         val prefs = appContext.getSharedPreferences("prices", Context.MODE_PRIVATE)
         val last = prefs.getLong("last", 0L)

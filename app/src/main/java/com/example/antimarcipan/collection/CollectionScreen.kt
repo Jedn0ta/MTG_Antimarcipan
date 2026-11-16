@@ -53,6 +53,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TooltipBox
 import androidx.compose.material3.TooltipDefaults
@@ -161,53 +162,6 @@ fun CollectionScreen(
                 label = { Text("Playground") },
             )
         }
-        // Souhrn (počet + cena) a ikony zobrazení / filtru na vlastním řádku
-        Row(
-            Modifier.fillMaxWidth().padding(start = 12.dp, end = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-        ) {
-            // Levá část zabere vše zbylé místo, ikony jsou tak vždy u pravého okraje
-            Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text(
-                "$totalQty ks",
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
-                maxLines = 1,
-            )
-            com.example.antimarcipan.ui.totalPriceLabel(source.map { it to it.quantity.coerceAtLeast(1) })?.let {
-                Text(
-                    "· $it",
-                    style = MaterialTheme.typography.labelLarge,
-                    color = androidx.compose.ui.graphics.Color(0xFF8FD6A0),
-                    maxLines = 1,
-                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-                )
-            }
-            }
-            // Zobrazení (seznam/mřížka) hned vedle filtru
-            IconButton(onClick = { settings.setCollectionGrid(!gridMode) }) {
-                Icon(
-                    if (gridMode) Icons.AutoMirrored.Filled.ViewList else Icons.Filled.GridView,
-                    contentDescription = "Zobrazení",
-                )
-            }
-            androidx.compose.material3.BadgedBox(
-                badge = {
-                    if (fstate.isActive) androidx.compose.material3.Badge { Text("${fstate.activeCount}") }
-                },
-            ) {
-                IconButton(onClick = { showControls = true }) {
-                    Icon(
-                        Icons.Filled.Tune,
-                        contentDescription = "Filtr",
-                        tint = if (fstate.isActive) MaterialTheme.colorScheme.primary
-                        else MaterialTheme.colorScheme.onSurface,
-                    )
-                }
-            }
-        }
-
         if (showControls) {
             com.example.antimarcipan.ui.filter.CardFilterSheet(
                 options = filterOptions,
@@ -235,7 +189,7 @@ fun CollectionScreen(
             Box {
                 androidx.compose.material3.TextButton(onClick = { showSortMenu = true }) {
                     Icon(Icons.AutoMirrored.Filled.Sort, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Text(" " + filter.sortBy.label + if (filter.sortDesc) " ↓" else " ↑")
+                    Text(" " + filter.sortBy.label + if (filter.sortDesc) " ↓" else " ↑", maxLines = 1)
                 }
                 androidx.compose.material3.DropdownMenu(
                     expanded = showSortMenu,
@@ -256,6 +210,50 @@ fun CollectionScreen(
                     }
                 }
             }
+            IconButton(onClick = { settings.setCollectionGrid(!gridMode) }) {
+                Icon(if (gridMode) Icons.AutoMirrored.Filled.ViewList else Icons.Filled.GridView, contentDescription = "Zobrazení")
+            }
+            androidx.compose.material3.BadgedBox(badge = {
+                if (fstate.isActive) androidx.compose.material3.Badge { Text("${fstate.activeCount}") }
+            }) {
+                IconButton(onClick = { showControls = true }) {
+                    Icon(
+                        Icons.Filled.Tune, contentDescription = "Filtr",
+                        tint = if (fstate.isActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                    )
+                }
+            }
+        }
+
+        // Informační lišta: počet, cena a ruční aktualizace cen (ťuknutí)
+        val refreshing by vm.priceRefreshing.collectAsStateWithLifecycle()
+        val updatedAt by vm.priceUpdatedAt.collectAsStateWithLifecycle()
+        Row(
+            Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 2.dp)
+                .clip(androidx.compose.foundation.shape.RoundedCornerShape(10.dp))
+                .background(androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.18f))
+                .clickable(enabled = !refreshing) {
+                    vm.refreshPricesNow { Toast.makeText(context, it, Toast.LENGTH_SHORT).show() }
+                }
+                .padding(horizontal = 10.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text("$totalQty ks", style = MaterialTheme.typography.labelLarge)
+            com.example.antimarcipan.ui.totalPriceLabel(source.map { it to it.quantity.coerceAtLeast(1) })?.let {
+                Text("  ·  $it", style = MaterialTheme.typography.labelLarge, color = androidx.compose.ui.graphics.Color(0xFF8FD6A0), maxLines = 1)
+            }
+            Spacer(Modifier.weight(1f))
+            Text(
+                when {
+                    refreshing -> "aktualizuji…"
+                    updatedAt == 0L -> "ceny neaktuální"
+                    else -> "ceny " + android.text.format.DateUtils.getRelativeTimeSpanString(updatedAt, System.currentTimeMillis(), android.text.format.DateUtils.MINUTE_IN_MILLIS)
+                },
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+            )
+            if (refreshing) androidx.compose.material3.CircularProgressIndicator(Modifier.padding(start = 6.dp).size(14.dp), strokeWidth = 2.dp)
+            else Icon(Icons.Filled.Refresh, contentDescription = "Aktualizovat ceny", Modifier.padding(start = 6.dp).size(16.dp), tint = MaterialTheme.colorScheme.primary)
         }
 
         HorizontalDivider()
@@ -290,7 +288,7 @@ fun CollectionScreen(
                 else if (fstate.isActive) "Zkus upravit filtr." else "Naskenuj první kartu v záložce Sken.",
             )
         } else if (gridMode) {
-            androidx.compose.runtime.CompositionLocalProvider(com.example.antimarcipan.ui.LocalCardList provides (lands + spells), com.example.antimarcipan.ui.LocalCardRemoveAction provides (when { showPlayground -> "Odebrat z playgroundu"; showWishlist -> "Odebrat z wishlistu"; showDraft -> "Smazat z draftu"; else -> "Odstranit ze sbírky" } to { c: CollectionCard -> pendingDelete = c })) {
+            androidx.compose.runtime.CompositionLocalProvider(com.example.antimarcipan.ui.LocalCardList provides (if (section == 0) source else lands + spells), com.example.antimarcipan.ui.LocalCardRemoveAction provides (when { showPlayground -> "Odebrat z playgroundu"; showWishlist -> "Odebrat z wishlistu"; showDraft -> "Smazat z draftu"; else -> "Odstranit ze sbírky" } to { c: CollectionCard -> pendingDelete = c })) {
             androidx.compose.foundation.lazy.grid.LazyVerticalGrid(
                 columns = androidx.compose.foundation.lazy.grid.GridCells.Adaptive(90.dp),
                 modifier = Modifier.weight(1f),
@@ -298,15 +296,21 @@ fun CollectionScreen(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                collectionGridSection("Land (${lands.size})", lands)
-                collectionGridSection("Spell (${spells.size})", spells)
+                if (section == 0) collectionGridSection("Vše (${source.size})", source)
+                else {
+                    collectionGridSection("Land (${lands.size})", lands)
+                    collectionGridSection("Spell (${spells.size})", spells)
+                }
             }
             }
         } else {
-            androidx.compose.runtime.CompositionLocalProvider(com.example.antimarcipan.ui.LocalCardList provides (lands + spells), com.example.antimarcipan.ui.LocalCardRemoveAction provides (when { showPlayground -> "Odebrat z playgroundu"; showWishlist -> "Odebrat z wishlistu"; showDraft -> "Smazat z draftu"; else -> "Odstranit ze sbírky" } to { c: CollectionCard -> pendingDelete = c })) {
+            androidx.compose.runtime.CompositionLocalProvider(com.example.antimarcipan.ui.LocalCardList provides (if (section == 0) source else lands + spells), com.example.antimarcipan.ui.LocalCardRemoveAction provides (when { showPlayground -> "Odebrat z playgroundu"; showWishlist -> "Odebrat z wishlistu"; showDraft -> "Smazat z draftu"; else -> "Odstranit ze sbírky" } to { c: CollectionCard -> pendingDelete = c })) {
             LazyColumn(Modifier.weight(1f)) {
-                collectionListSection("Land (${lands.size})", lands, context, vm, onSwipe, onDelete) { pendingEdition = it }
-                collectionListSection("Spell (${spells.size})", spells, context, vm, onSwipe, onDelete) { pendingEdition = it }
+                if (section == 0) collectionListSection("Vše (${source.size})", source, context, vm, onSwipe, onDelete) { pendingEdition = it }
+                else {
+                    collectionListSection("Land (${lands.size})", lands, context, vm, onSwipe, onDelete) { pendingEdition = it }
+                    collectionListSection("Spell (${spells.size})", spells, context, vm, onSwipe, onDelete) { pendingEdition = it }
+                }
             }
             }
         }
