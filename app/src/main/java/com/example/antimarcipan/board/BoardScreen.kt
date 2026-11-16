@@ -57,6 +57,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -92,194 +94,43 @@ fun BoardScreen() {
     Board.init(ctx)
     val groups by vm.groups.collectAsStateWithLifecycle()
     val current by vm.current.collectAsStateWithLifecycle()
-    val posts by vm.posts.collectAsStateWithLifecycle()
-    val status by vm.relayStatus.collectAsStateWithLifecycle()
     val inbox by BoardInbox.pending.collectAsStateWithLifecycle()
-    val unread by vm.unread.collectAsStateWithLifecycle()
-    DisposableEffect(Unit) { vm.start(); vm.visible = true; onDispose { vm.visible = false } }
-    LaunchedEffect(current, posts.size) { current?.let { vm.markRead(it) } }
+    val status by vm.relayStatus.collectAsStateWithLifecycle()
+    DisposableEffect(Unit) { vm.start(); onDispose { vm.visible = false } }
 
+    // null = přehled skupin, jinak otevřená skupina
+    var openId by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf<String?>(null) }
     var showNew by remember { mutableStateOf(false) }
     var showJoin by remember { mutableStateOf<String?>(null) }
-    var showMeet by remember { mutableStateOf(false) }
-    var showPoll by remember { mutableStateOf(false) }
-    var showInvite by remember { mutableStateOf(false) }
-    var showMembers by remember { mutableStateOf(false) }
-    var showRename by remember { mutableStateOf(false) }
-    var confirmLeave by remember { mutableStateOf(false) }
-    var menu by remember { mutableStateOf(false) }
-    var attach by remember { mutableStateOf(false) }
-    var deleting by remember { mutableStateOf<Post?>(null) }
-    var text by remember { mutableStateOf("") }
-
     LaunchedEffect(inbox) { inbox?.let { showJoin = it; BoardInbox.pending.value = null } }
+    // Po založení / připojení otevřít skupinu
+    LaunchedEffect(current?.secretHex) { if (openId != null && current != null) openId = current!!.secretHex }
 
-    // Odvozená data
-    val deleted = posts.filter { it.p.y == "del" }.map { it.p.r to it.author }.toSet()
-    val visiblePosts = posts.filter { p -> (p.id to p.author) !in deleted }
-    val now = System.currentTimeMillis()
-    val rsvps = visiblePosts.filter { it.p.y == "rsvp" }.groupBy { it.p.r }
-        .mapValues { (_, l) -> l.groupBy { it.author }.mapValues { it.value.maxBy { p -> p.createdAt } }.values.toList() }
-    val votes = visiblePosts.filter { it.p.y == "vote" }.groupBy { it.p.r }
-        .mapValues { (_, l) -> l.groupBy { it.author }.mapValues { it.value.maxBy { p -> p.createdAt } }.values.toList() }
-    val upcoming = visiblePosts.filter { it.p.y == "meet" && it.p.w > now - 3 * 3600_000 }.sortedBy { it.p.w }
-    val feed = visiblePosts.filter { it.p.y in setOf("msg", "meet", "poll", "meta") }
-    val members = visiblePosts.groupBy { it.author }.map { (k, l) -> Triple(k, l.maxBy { it.createdAt }.p.n, l.maxOf { it.createdAt }) }
-        .sortedByDescending { it.third }
-
-    val listState = rememberLazyListState()
-    LaunchedEffect(feed.size, current) { if (feed.isNotEmpty()) listState.scrollToItem(listState.layoutInfo.totalItemsCount.coerceAtLeast(1) - 1) }
-
-    Column(Modifier.fillMaxSize()) {
-        // ── Výběr skupiny
-        Row(Modifier.fillMaxWidth().padding(start = 8.dp, end = 4.dp, top = 2.dp), verticalAlignment = Alignment.CenterVertically) {
-            Row(Modifier.weight(1f).horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                groups.forEach { g ->
-                    val u = unread[g.tag] ?: 0
-                    val sel = current?.secretHex == g.secretHex
-                    androidx.compose.material3.BadgedBox(badge = { if (u > 0 && !sel) androidx.compose.material3.Badge { Text("$u") } }) {
-                        com.example.antimarcipan.ui.GoldChip(selected = sel, onClick = { vm.select(g) }, label = { Text(g.name) })
-                    }
-                }
-                com.example.antimarcipan.ui.GoldChip(selected = false, onClick = { showNew = true }, label = { Text("+ Nová") })
-                com.example.antimarcipan.ui.GoldChip(selected = false, onClick = {
-                    val cm = ctx.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                    showJoin = cm.primaryClip?.getItemAt(0)?.coerceToText(ctx)?.toString().orEmpty()
-                }, label = { Text("Mám pozvánku") })
-            }
-            Box(Modifier.padding(start = 6.dp).size(8.dp).clip(CircleShape).background(if (status.first > 0) Color(0xFF5FD38A) else Color(0xFFD98324)))
-        }
-
-        val g = current
-        if (g == null) {
-            Column(
-                Modifier.fillMaxSize().padding(24.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterVertically),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                Text("💬", fontSize = androidx.compose.ui.unit.TextUnit(48f, androidx.compose.ui.unit.TextUnitType.Sp))
-                Text("Nástěnka", style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.primary)
-                Text(
-                    "Skupina pro vaši partu: zprávy, schůzky a ankety. Bez účtu a bez našeho serveru — šifrované, přečtou je jen pozvaní.",
-                    style = MaterialTheme.typography.bodyMedium, textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                )
-                androidx.compose.material3.Button(onClick = { showNew = true }, modifier = Modifier.fillMaxWidth()) { Text("Založit skupinu") }
-                OutlinedButton(onClick = {
-                    val cm = ctx.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                    showJoin = cm.primaryClip?.getItemAt(0)?.coerceToText(ctx)?.toString().orEmpty()
-                }, modifier = Modifier.fillMaxWidth()) { Text("Připojit se pozvánkou") }
-            }
-        } else {
-            // ── Hlavička skupiny
-            Card(
-                Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 6.dp),
-                border = BorderStroke(1.dp, GoldBorderBrush),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.08f)),
-            ) {
-                Row(Modifier.padding(start = 12.dp, end = 4.dp, top = 6.dp, bottom = 6.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Column(Modifier.weight(1f).clickable { showMembers = true }) {
-                        Text(g.name, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary, maxLines = 1)
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            members.take(5).forEach { (pub, name, _) -> Avatar(pub, name, 18) }
-                            Text(
-                                "  ${members.size} ${if (members.size == 1) "člen" else if (members.size in 2..4) "členové" else "členů"} · ${status.first}/${status.second} relaye",
-                                style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.6f),
-                            )
-                        }
-                    }
-                    androidx.compose.material3.FilledTonalButton(
-                        onClick = { showInvite = true },
-                        contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 12.dp),
-                    ) { Icon(Icons.Filled.PersonAdd, null, Modifier.size(18.dp)); Text(" Přidat") }
-                    Box {
-                        IconButton(onClick = { menu = true }) { Icon(Icons.Filled.MoreVert, contentDescription = "Možnosti skupiny") }
-                        androidx.compose.material3.DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
-                            androidx.compose.material3.DropdownMenuItem(text = { Text("Přejmenovat skupinu") }, onClick = { menu = false; showRename = true }, leadingIcon = { Icon(Icons.Filled.Edit, null) })
-                            androidx.compose.material3.DropdownMenuItem(text = { Text("Členové") }, onClick = { menu = false; showMembers = true }, leadingIcon = { Icon(Icons.Filled.Group, null) })
-                            androidx.compose.material3.DropdownMenuItem(text = { Text("Zkopírovat pozvánku") }, onClick = {
-                                menu = false
-                                (ctx.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager)
-                                    .setPrimaryClip(android.content.ClipData.newPlainText("Pozvánka", g.invite))
-                                Toast.makeText(ctx, "Pozvánka zkopírována", Toast.LENGTH_SHORT).show()
-                            }, leadingIcon = { Icon(Icons.Filled.ContentCopy, null) })
-                            androidx.compose.material3.DropdownMenuItem(text = { Text("Opustit skupinu", color = Color(0xFFFF8A8A)) }, onClick = { menu = false; confirmLeave = true }, leadingIcon = { Icon(Icons.AutoMirrored.Filled.ExitToApp, null, tint = Color(0xFFFF8A8A)) })
-                        }
-                    }
-                }
-            }
-
-            // ── Obsah
-            LazyColumn(Modifier.weight(1f).fillMaxWidth(), state = listState, contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 8.dp, vertical = 4.dp)) {
-                if (upcoming.isNotEmpty()) item(key = "upcoming") {
-                    Text("📌 Nadcházející", Modifier.padding(4.dp), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
-                    upcoming.forEach { m -> MeetCard(m, rsvps[m.id].orEmpty(), vm.myPub) { vm.rsvp(m.id, it) } }
-                }
-                if (feed.isEmpty()) item(key = "empty") {
-                    Column(Modifier.fillMaxWidth().padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("Zatím je tu ticho.", style = MaterialTheme.typography.bodyMedium)
-                        Text("Napiš první zprávu, naplánuj schůzku nebo založ anketu ＋", style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.6f))
-                    }
-                }
-                var lastDay = ""
-                var lastAuthor = ""
-                feed.forEach { p ->
-                    val day = dayFmt.format(Date(p.createdAt * 1000))
-                    if (day != lastDay) {
-                        lastDay = day; lastAuthor = ""
-                        item(key = "d$day") {
-                            Box(Modifier.fillMaxWidth().padding(vertical = 8.dp), contentAlignment = Alignment.Center) {
-                                Text(day, Modifier.clip(RoundedCornerShape(10.dp)).background(Color.Black.copy(alpha = 0.3f)).padding(horizontal = 10.dp, vertical = 3.dp),
-                                    style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.75f))
-                            }
-                        }
-                    }
-                    val showName = p.author != lastAuthor
-                    lastAuthor = if (p.p.y == "msg") p.author else ""
-                    item(key = p.id) {
-                        when (p.p.y) {
-                            "msg" -> MessageBubble(p, showName, onLongPress = { if (p.mine) deleting = p })
-                            "meet" -> SystemLine("📅 ${p.p.n} naplánoval/a: ${p.p.ti} · ${dateFmt.format(Date(p.p.w))}")
-                            "meta" -> SystemLine("✏️ ${p.p.n} přejmenoval/a skupinu na „${p.p.ti}“")
-                            "poll" -> PollCard(p, votes[p.id].orEmpty(), vm.myPub, onVote = { vm.vote(p.id, it) }, onLongPress = { if (p.mine) deleting = p })
-                        }
-                    }
-                }
-            }
-
-            // ── Psaní
-            Row(Modifier.fillMaxWidth().padding(horizontal = 6.dp, vertical = 6.dp), verticalAlignment = Alignment.Bottom) {
-                Box {
-                    IconButton(onClick = { attach = true }) {
-                        Icon(Icons.Filled.AddCircle, contentDescription = "Přidat schůzku nebo anketu", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(30.dp))
-                    }
-                    androidx.compose.material3.DropdownMenu(expanded = attach, onDismissRequest = { attach = false }) {
-                        androidx.compose.material3.DropdownMenuItem(text = { Text("📅  Schůzka") }, onClick = { attach = false; showMeet = true })
-                        androidx.compose.material3.DropdownMenuItem(text = { Text("📊  Anketa") }, onClick = { attach = false; showPoll = true })
-                    }
-                }
-                OutlinedTextField(
-                    text, { text = it }, Modifier.weight(1f),
-                    placeholder = { Text("Zpráva pro ${g.name}…") }, maxLines = 5,
-                    shape = RoundedCornerShape(22.dp),
-                )
-                IconButton(onClick = { vm.sendMessage(text); text = "" }, enabled = text.isNotBlank()) {
-                    Box(
-                        Modifier.size(42.dp).clip(CircleShape).background(if (text.isNotBlank()) MaterialTheme.colorScheme.primary else Color.White.copy(alpha = 0.12f)),
-                        contentAlignment = Alignment.Center,
-                    ) { Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Odeslat", tint = Color(0xFF1E1633)) }
-                }
-            }
-        }
+    val open = groups.firstOrNull { it.secretHex == openId }
+    if (open != null) {
+        androidx.activity.compose.BackHandler { openId = null }
+        LaunchedEffect(open.secretHex) { if (current?.secretHex != open.secretHex) vm.select(open) }
+        DisposableEffect(open.secretHex) { vm.visible = true; vm.markRead(open); onDispose { vm.visible = false } }
+        GroupView(open, status, onBack = { openId = null })
+    } else {
+        GroupList(
+            groups, status,
+            onOpen = { vm.select(it); openId = it.secretHex },
+            onNew = { showNew = true },
+            onJoin = {
+                val cm = ctx.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                showJoin = cm.primaryClip?.getItemAt(0)?.coerceToText(ctx)?.toString().orEmpty()
+            },
+        )
     }
 
-    // ── Dialogy
     if (showNew) {
         var n by remember { mutableStateOf("") }
         GoldDialog(
             onDismissRequest = { showNew = false },
             title = { Text("Nová skupina") },
             text = { OutlinedTextField(n, { n = it }, singleLine = true, label = { Text("Název (např. Herna u Petra)") }) },
-            confirmButton = { TextButton(onClick = { vm.createGroup(n); showNew = false; showInvite = true }) { Text("Založit a pozvat") } },
+            confirmButton = { TextButton(onClick = { vm.createGroup(n); showNew = false; openId = vm.current.value?.secretHex }) { Text("Založit") } },
             dismissButton = { TextButton(onClick = { showNew = false }) { Text("Zrušit") } },
         )
     }
@@ -297,22 +148,279 @@ fun BoardScreen() {
                 }
             },
             confirmButton = {
-                TextButton(enabled = inv != null, onClick = { if (vm.joinGroup(t)) Toast.makeText(ctx, "Připojeno", Toast.LENGTH_SHORT).show(); showJoin = null }) { Text("Připojit") }
+                TextButton(enabled = inv != null, onClick = {
+                    if (vm.joinGroup(t)) { Toast.makeText(ctx, "Připojeno", Toast.LENGTH_SHORT).show(); openId = vm.current.value?.secretHex }
+                    showJoin = null
+                }) { Text("Připojit") }
             },
             dismissButton = { TextButton(onClick = { showJoin = null }) { Text("Zrušit") } },
         )
     }
-    if (showRename) current?.let { g ->
+}
+
+// ───────────────────────────────────────────── Přehled skupin
+
+@Composable
+private fun GroupList(
+    groups: List<BoardGroup>,
+    status: Pair<Int, Int>,
+    onOpen: (BoardGroup) -> Unit,
+    onNew: () -> Unit,
+    onJoin: () -> Unit,
+) {
+    val all by Board.byGroup.collectAsStateWithLifecycle()
+    val unread by Board.unread.collectAsStateWithLifecycle()
+    androidx.compose.material3.Scaffold(
+        containerColor = Color.Transparent,
+        contentColor = MaterialTheme.colorScheme.onSurface,
+        floatingActionButton = {
+            androidx.compose.material3.ExtendedFloatingActionButton(
+                onClick = onNew,
+                icon = { Icon(Icons.Filled.AddCircle, null) },
+                text = { Text("Nová skupina") },
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = Color(0xFF1E1633),
+            )
+        },
+    ) { pad ->
+        LazyColumn(Modifier.fillMaxSize().padding(pad), contentPadding = androidx.compose.foundation.layout.PaddingValues(12.dp)) {
+            item {
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = 8.dp)) {
+                    Box(Modifier.size(8.dp).clip(CircleShape).background(if (status.first > 0) Color(0xFF5FD38A) else Color(0xFFD98324)))
+                    Text(
+                        if (status.first > 0) "  Online (${status.first}/${status.second} relaye)" else "  Připojuji…",
+                        Modifier.weight(1f), style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.6f),
+                    )
+                    TextButton(onClick = onJoin) { Text("Mám pozvánku") }
+                }
+            }
+            if (groups.isEmpty()) item {
+                Column(Modifier.fillMaxWidth().padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text("💬", fontSize = androidx.compose.ui.unit.TextUnit(48f, androidx.compose.ui.unit.TextUnitType.Sp))
+                    Text("Zatím žádná skupina", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
+                    Text(
+                        "Založ skupinu pro svou partu a pozvi přátele. Píšete si, plánujete schůzky a hlasujete — šifrovaně, bez účtu.",
+                        style = MaterialTheme.typography.bodySmall, textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                    )
+                }
+            }
+            items(groups, key = { it.secretHex }) { g ->
+                val posts = all[g.tag].orEmpty()
+                val last = posts.lastOrNull { it.p.y in setOf("msg", "meet", "poll", "meta") }
+                val u = unread[g.tag] ?: 0
+                val nextMeet = posts.filter { it.p.y == "meet" && it.p.w > System.currentTimeMillis() }.minByOrNull { it.p.w }
+                Row(
+                    Modifier.fillMaxWidth().padding(vertical = 4.dp).clip(RoundedCornerShape(16.dp))
+                        .background(Color(0xFF2B2252)).clickable { onOpen(g) }.padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Box(Modifier.size(48.dp).clip(CircleShape).background(nameColor(g.tag).copy(alpha = 0.9f)), contentAlignment = Alignment.Center) {
+                        Text(g.name.take(1).uppercase(), color = Color(0xFF1E1633), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleLarge)
+                    }
+                    Column(Modifier.weight(1f).padding(horizontal = 12.dp)) {
+                        Text(g.name, style = MaterialTheme.typography.titleSmall, fontWeight = if (u > 0) FontWeight.Bold else FontWeight.Normal, maxLines = 1)
+                        Text(
+                            last?.let { preview(it) } ?: "Zatím žádné zprávy",
+                            style = MaterialTheme.typography.bodySmall, maxLines = 1,
+                            color = if (u > 0) Color.White else Color.White.copy(alpha = 0.6f),
+                        )
+                        nextMeet?.let {
+                            Text("📅 ${it.p.ti} · ${dateFmt.format(Date(it.p.w))}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary, maxLines = 1)
+                        }
+                    }
+                    Column(horizontalAlignment = Alignment.End) {
+                        last?.let { Text(shortTime(it.createdAt), style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.5f)) }
+                        if (u > 0) Box(
+                            Modifier.padding(top = 4.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary).padding(horizontal = 7.dp, vertical = 2.dp),
+                        ) { Text("$u", color = Color(0xFF1E1633), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold) }
+                    }
+                }
+            }
+            item { Box(Modifier.size(80.dp)) }
+        }
+    }
+}
+
+private fun preview(p: Post): String = when (p.p.y) {
+    "msg" -> (if (p.mine) "Ty: " else "${p.p.n}: ") + p.p.x
+    "meet" -> "📅 ${p.p.n}: ${p.p.ti}"
+    "poll" -> "📊 ${p.p.n}: ${p.p.ti}"
+    "meta" -> "✏️ přejmenováno na ${p.p.ti}"
+    else -> ""
+}
+
+private fun shortTime(sec: Long): String {
+    val d = Date(sec * 1000)
+    val today = SimpleDateFormat("yyyyMMdd", Locale.ROOT).format(Date())
+    return if (SimpleDateFormat("yyyyMMdd", Locale.ROOT).format(d) == today) hourFmt.format(d) else SimpleDateFormat("d. M.", Locale("cs")).format(d)
+}
+
+// ───────────────────────────────────────────── Detail skupiny (Chat / Schůzky / Ankety)
+
+@Composable
+private fun GroupView(g: BoardGroup, status: Pair<Int, Int>, onBack: () -> Unit) {
+    val ctx = LocalContext.current
+    val vm = Board
+    val posts by vm.posts.collectAsStateWithLifecycle()
+    LaunchedEffect(posts.size) { vm.markRead(g) }
+
+    var tab by androidx.compose.runtime.saveable.rememberSaveable(g.secretHex) { mutableStateOf(0) }
+    var showMeet by remember { mutableStateOf(false) }
+    var showPoll by remember { mutableStateOf(false) }
+    var showInvite by remember { mutableStateOf(false) }
+    var showMembers by remember { mutableStateOf(false) }
+    var showRename by remember { mutableStateOf(false) }
+    var confirmLeave by remember { mutableStateOf(false) }
+    var menu by remember { mutableStateOf(false) }
+    var deleting by remember { mutableStateOf<Post?>(null) }
+    var replyTo by remember { mutableStateOf<Post?>(null) }
+    var msgMenu by remember { mutableStateOf<Post?>(null) }
+    var text by remember { mutableStateOf("") }
+
+    val deleted = posts.filter { it.p.y == "del" }.map { it.p.r to it.author }.toSet()
+    val vis = posts.filter { p -> (p.id to p.author) !in deleted }
+    val byId = vis.associateBy { it.id }
+    val now = System.currentTimeMillis()
+    val rsvps = vis.filter { it.p.y == "rsvp" }.groupBy { it.p.r }
+        .mapValues { (_, l) -> l.groupBy { it.author }.mapValues { it.value.maxBy { p -> p.createdAt } }.values.toList() }
+    val votes = vis.filter { it.p.y == "vote" }.groupBy { it.p.r }
+        .mapValues { (_, l) -> l.groupBy { it.author }.mapValues { it.value.maxBy { p -> p.createdAt } }.values.toList() }
+    val meets = vis.filter { it.p.y == "meet" }
+    val upcoming = meets.filter { it.p.w > now - 3 * 3600_000 }.sortedBy { it.p.w }
+    val past = meets.filter { it.p.w <= now - 3 * 3600_000 }.sortedByDescending { it.p.w }
+    val polls = vis.filter { it.p.y == "poll" }.sortedByDescending { it.createdAt }
+    val chat = vis.filter { it.p.y in setOf("msg", "meet", "poll", "meta") }
+    val members = vis.groupBy { it.author }.map { (k, l) -> Triple(k, l.maxBy { it.createdAt }.p.n, l.maxOf { it.createdAt }) }
+        .sortedByDescending { it.third }
+
+    Column(Modifier.fillMaxSize()) {
+        // Hlavička
+        Row(Modifier.fillMaxWidth().padding(end = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+            IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Zpět na skupiny") }
+            Box(Modifier.size(36.dp).clip(CircleShape).background(nameColor(g.tag).copy(alpha = 0.9f)), contentAlignment = Alignment.Center) {
+                Text(g.name.take(1).uppercase(), color = Color(0xFF1E1633), fontWeight = FontWeight.Bold)
+            }
+            Column(Modifier.weight(1f).padding(start = 10.dp).clickable { showMembers = true }) {
+                Text(g.name, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary, maxLines = 1)
+                Text(
+                    "${members.size} ${if (members.size == 1) "člen" else if (members.size in 2..4) "členové" else "členů"}" +
+                        if (status.first == 0) " · připojuji…" else "",
+                    style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.6f),
+                )
+            }
+            IconButton(onClick = { showInvite = true }) { Icon(Icons.Filled.PersonAdd, contentDescription = "Přidat přítele", tint = MaterialTheme.colorScheme.primary) }
+            Box {
+                IconButton(onClick = { menu = true }) { Icon(Icons.Filled.MoreVert, contentDescription = "Možnosti skupiny") }
+                androidx.compose.material3.DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
+                    androidx.compose.material3.DropdownMenuItem(text = { Text("Přejmenovat skupinu") }, onClick = { menu = false; showRename = true }, leadingIcon = { Icon(Icons.Filled.Edit, null) })
+                    androidx.compose.material3.DropdownMenuItem(text = { Text("Členové") }, onClick = { menu = false; showMembers = true }, leadingIcon = { Icon(Icons.Filled.Group, null) })
+                    androidx.compose.material3.DropdownMenuItem(text = { Text("Zkopírovat pozvánku") }, onClick = {
+                        menu = false
+                        (ctx.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager).setPrimaryClip(android.content.ClipData.newPlainText("Pozvánka", g.invite))
+                        Toast.makeText(ctx, "Pozvánka zkopírována", Toast.LENGTH_SHORT).show()
+                    }, leadingIcon = { Icon(Icons.Filled.ContentCopy, null) })
+                    androidx.compose.material3.DropdownMenuItem(text = { Text("Opustit skupinu", color = Color(0xFFFF8A8A)) }, onClick = { menu = false; confirmLeave = true }, leadingIcon = { Icon(Icons.AutoMirrored.Filled.ExitToApp, null, tint = Color(0xFFFF8A8A)) })
+                }
+            }
+        }
+        // Záložky
+        androidx.compose.material3.TabRow(
+            selectedTabIndex = tab, containerColor = Color.Transparent, contentColor = MaterialTheme.colorScheme.primary,
+        ) {
+            listOf("Chat", "Schůzky (${upcoming.size})", "Ankety (${polls.size})").forEachIndexed { i, t ->
+                androidx.compose.material3.Tab(selected = tab == i, onClick = { tab = i }, text = { Text(t, maxLines = 1) })
+            }
+        }
+
+        Box(Modifier.weight(1f).fillMaxWidth()) {
+            when (tab) {
+                0 -> ChatTab(chat, byId, votes, onLong = { msgMenu = it }, onVote = { id, c -> vm.vote(id, c) }, myPub = vm.myPub, nextMeet = upcoming.firstOrNull(), onOpenMeets = { tab = 1 })
+                1 -> LazyColumn(Modifier.fillMaxSize(), contentPadding = androidx.compose.foundation.layout.PaddingValues(10.dp)) {
+                    if (upcoming.isEmpty() && past.isEmpty()) item { EmptyHint("Žádné schůzky", "Naplánuj první — vyber den, čas a místo.") }
+                    if (upcoming.isNotEmpty()) item { SectionLabel("Nadcházející") }
+                    items(upcoming, key = { "u" + it.id }) { m -> MeetCard(m, rsvps[m.id].orEmpty(), vm.myPub) { vm.rsvp(m.id, it) } }
+                    if (past.isNotEmpty()) item { SectionLabel("Proběhlé") }
+                    items(past, key = { "p" + it.id }) { m -> Box(Modifier.alpha(0.6f)) { MeetCard(m, rsvps[m.id].orEmpty(), vm.myPub) { vm.rsvp(m.id, it) } } }
+                    item { Box(Modifier.size(80.dp)) }
+                }
+                else -> LazyColumn(Modifier.fillMaxSize(), contentPadding = androidx.compose.foundation.layout.PaddingValues(10.dp)) {
+                    if (polls.isEmpty()) item { EmptyHint("Žádné ankety", "Zeptej se party — formát, den, kdo co přinese…") }
+                    items(polls, key = { it.id }) { p -> PollCard(p, votes[p.id].orEmpty(), vm.myPub, onVote = { vm.vote(p.id, it) }, onLongPress = { if (p.mine) deleting = p }) }
+                    item { Box(Modifier.size(80.dp)) }
+                }
+            }
+            if (tab != 0) androidx.compose.material3.ExtendedFloatingActionButton(
+                onClick = { if (tab == 1) showMeet = true else showPoll = true },
+                icon = { Icon(if (tab == 1) Icons.Filled.Event else Icons.Filled.AddCircle, null) },
+                text = { Text(if (tab == 1) "Naplánovat" else "Nová anketa") },
+                containerColor = MaterialTheme.colorScheme.primary, contentColor = Color(0xFF1E1633),
+                modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp),
+            )
+        }
+
+        // Psaní (jen v chatu)
+        if (tab == 0) {
+            replyTo?.let { r ->
+                Row(
+                    Modifier.fillMaxWidth().padding(horizontal = 12.dp).clip(RoundedCornerShape(10.dp)).background(Color.Black.copy(alpha = 0.3f)).padding(8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Box(Modifier.size(3.dp, 28.dp).background(MaterialTheme.colorScheme.primary))
+                    Column(Modifier.weight(1f).padding(start = 8.dp)) {
+                        Text("Odpověď pro ${r.p.n}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+                        Text(r.p.x.ifBlank { r.p.ti }, style = MaterialTheme.typography.bodySmall, maxLines = 1)
+                    }
+                    IconButton(onClick = { replyTo = null }) { Icon(Icons.Filled.Close, contentDescription = "Zrušit odpověď") }
+                }
+            }
+            Row(Modifier.fillMaxWidth().padding(horizontal = 6.dp, vertical = 6.dp), verticalAlignment = Alignment.Bottom) {
+                var attach by remember { mutableStateOf(false) }
+                Box {
+                    IconButton(onClick = { attach = true }) {
+                        Icon(Icons.Filled.AddCircle, contentDescription = "Schůzka nebo anketa", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(30.dp))
+                    }
+                    androidx.compose.material3.DropdownMenu(expanded = attach, onDismissRequest = { attach = false }) {
+                        androidx.compose.material3.DropdownMenuItem(text = { Text("📅  Schůzka") }, onClick = { attach = false; showMeet = true })
+                        androidx.compose.material3.DropdownMenuItem(text = { Text("📊  Anketa") }, onClick = { attach = false; showPoll = true })
+                    }
+                }
+                OutlinedTextField(text, { text = it }, Modifier.weight(1f), placeholder = { Text("Zpráva…") }, maxLines = 5, shape = RoundedCornerShape(22.dp))
+                IconButton(onClick = { vm.sendMessage(text, replyTo?.id ?: ""); text = ""; replyTo = null }, enabled = text.isNotBlank()) {
+                    Box(
+                        Modifier.size(42.dp).clip(CircleShape).background(if (text.isNotBlank()) MaterialTheme.colorScheme.primary else Color.White.copy(alpha = 0.12f)),
+                        contentAlignment = Alignment.Center,
+                    ) { Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Odeslat", tint = Color(0xFF1E1633)) }
+                }
+            }
+        }
+    }
+
+    // Akce nad zprávou (podržení)
+    msgMenu?.let { p ->
+        GoldDialog(
+            onDismissRequest = { msgMenu = null },
+            title = { Text(p.p.n) },
+            text = {
+                Column {
+                    Text(p.p.x.ifBlank { p.p.ti }, style = MaterialTheme.typography.bodySmall, maxLines = 3)
+                    androidx.compose.material3.HorizontalDivider(Modifier.padding(vertical = 8.dp))
+                    MenuRow("↩  Odpovědět") { replyTo = p; msgMenu = null }
+                    MenuRow("⧉  Kopírovat text") {
+                        (ctx.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager).setPrimaryClip(android.content.ClipData.newPlainText("Zpráva", p.p.x))
+                        Toast.makeText(ctx, "Zkopírováno", Toast.LENGTH_SHORT).show(); msgMenu = null
+                    }
+                    if (p.mine) MenuRow("🗑  Smazat u všech", Color(0xFFFF8A8A)) { deleting = p; msgMenu = null }
+                }
+            },
+            confirmButton = { TextButton(onClick = { msgMenu = null }) { Text("Zavřít") } },
+        )
+    }
+    if (showRename) {
         var n by remember { mutableStateOf(g.name) }
         GoldDialog(
             onDismissRequest = { showRename = false },
             title = { Text("Přejmenovat skupinu") },
-            text = {
-                Column {
-                    OutlinedTextField(n, { n = it }, singleLine = true, label = { Text("Nový název") })
-                    Text("Změna se projeví všem členům.", style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(top = 6.dp))
-                }
-            },
+            text = { Column { OutlinedTextField(n, { n = it }, singleLine = true, label = { Text("Nový název") }); Text("Změna se projeví všem členům.", style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(top = 6.dp)) } },
             confirmButton = { TextButton(enabled = n.isNotBlank() && n != g.name, onClick = { vm.renameGroup(n); showRename = false }) { Text("Uložit") } },
             dismissButton = { TextButton(onClick = { showRename = false }) { Text("Zrušit") } },
         )
@@ -332,21 +440,19 @@ fun BoardScreen() {
                         }
                     }
                 }
-                Text("Členem je každý, kdo má pozvánku; v seznamu jsou ti, kdo už něco napsali.", style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.5f))
+                Text("Členem je každý s pozvánkou; v seznamu jsou ti, kdo už něco napsali.", style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.5f))
             }
         },
         confirmButton = { TextButton(onClick = { showMembers = false; showInvite = true }) { Text("Přidat přítele") } },
         dismissButton = { TextButton(onClick = { showMembers = false }) { Text("Zavřít") } },
     )
-    if (confirmLeave) current?.let { g ->
-        GoldDialog(
-            onDismissRequest = { confirmLeave = false },
-            title = { Text("Opustit skupinu?") },
-            text = { Text("Skupina „${g.name}“ zmizí z telefonu. Vrátit se můžeš znovu přes pozvánku.") },
-            confirmButton = { TextButton(onClick = { vm.leaveGroup(g); confirmLeave = false }) { Text("Opustit") } },
-            dismissButton = { TextButton(onClick = { confirmLeave = false }) { Text("Zrušit") } },
-        )
-    }
+    if (confirmLeave) GoldDialog(
+        onDismissRequest = { confirmLeave = false },
+        title = { Text("Opustit skupinu?") },
+        text = { Text("Skupina „${g.name}“ zmizí z telefonu. Vrátit se můžeš přes pozvánku.") },
+        confirmButton = { TextButton(onClick = { vm.leaveGroup(g); confirmLeave = false; onBack() }) { Text("Opustit") } },
+        dismissButton = { TextButton(onClick = { confirmLeave = false }) { Text("Zrušit") } },
+    )
     deleting?.let { p ->
         GoldDialog(
             onDismissRequest = { deleting = null },
@@ -356,11 +462,84 @@ fun BoardScreen() {
             dismissButton = { TextButton(onClick = { deleting = null }) { Text("Zrušit") } },
         )
     }
-    if (showInvite) current?.let { g -> InviteDialog(g) { showInvite = false } }
-    if (showMeet) MeetDialog(onDismiss = { showMeet = false }) { title, whenMs, place, note ->
-        vm.createMeetup(title, whenMs, place, note); showMeet = false
+    if (showInvite) InviteDialog(g) { showInvite = false }
+    if (showMeet) MeetDialog(onDismiss = { showMeet = false }) { title, whenMs, place, note -> vm.createMeetup(title, whenMs, place, note); showMeet = false; tab = 1 }
+    if (showPoll) PollDialog(onDismiss = { showPoll = false }) { q, opts, multi -> vm.createPoll(q, opts, multi); showPoll = false; tab = 2 }
+}
+
+@Composable
+private fun MenuRow(label: String, color: Color = Color.Unspecified, onClick: () -> Unit) {
+    Text(label, Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp)).clickable(onClick = onClick).padding(vertical = 12.dp, horizontal = 4.dp), color = color, style = MaterialTheme.typography.bodyLarge)
+}
+
+@Composable
+private fun SectionLabel(t: String) = Text(t, Modifier.padding(4.dp, 10.dp, 4.dp, 4.dp), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+
+@Composable
+private fun EmptyHint(title: String, sub: String) {
+    Column(Modifier.fillMaxWidth().padding(32.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(title, style = MaterialTheme.typography.titleSmall)
+        Text(sub, style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.6f), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
     }
-    if (showPoll) PollDialog(onDismiss = { showPoll = false }) { q, opts, multi -> vm.createPoll(q, opts, multi); showPoll = false }
+}
+
+@Composable
+private fun ChatTab(
+    chat: List<Post>,
+    byId: Map<String, Post>,
+    votes: Map<String, List<Post>>,
+    onLong: (Post) -> Unit,
+    onVote: (String, Set<Int>) -> Unit,
+    myPub: String,
+    nextMeet: Post?,
+    onOpenMeets: () -> Unit,
+) {
+    val listState = rememberLazyListState()
+    LaunchedEffect(chat.size) { if (chat.isNotEmpty()) listState.scrollToItem(listState.layoutInfo.totalItemsCount.coerceAtLeast(1) - 1) }
+    Column(Modifier.fillMaxSize()) {
+        // Připnutá nejbližší schůzka
+        nextMeet?.let { m ->
+            Row(
+                Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 4.dp).clip(RoundedCornerShape(12.dp))
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)).clickable(onClick = onOpenMeets).padding(10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text("📌", Modifier.padding(end = 8.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(m.p.ti, style = MaterialTheme.typography.labelLarge, maxLines = 1)
+                    Text(dateFmt.format(Date(m.p.w)) + if (m.p.pl.isNotBlank()) " · ${m.p.pl}" else "", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary, maxLines = 1)
+                }
+                Text("›", color = MaterialTheme.colorScheme.primary)
+            }
+        }
+        LazyColumn(Modifier.weight(1f).fillMaxWidth(), state = listState, contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 8.dp, vertical = 4.dp)) {
+            if (chat.isEmpty()) item { EmptyHint("Zatím je tu ticho", "Napiš první zprávu. Tlačítkem ⊕ přidáš schůzku nebo anketu.") }
+            var lastDay = ""
+            var lastAuthor = ""
+            chat.forEach { p ->
+                val day = dayFmt.format(Date(p.createdAt * 1000))
+                if (day != lastDay) {
+                    lastDay = day; lastAuthor = ""
+                    item(key = "d$day") {
+                        Box(Modifier.fillMaxWidth().padding(vertical = 8.dp), contentAlignment = Alignment.Center) {
+                            Text(day, Modifier.clip(RoundedCornerShape(10.dp)).background(Color.Black.copy(alpha = 0.3f)).padding(horizontal = 10.dp, vertical = 3.dp),
+                                style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.75f))
+                        }
+                    }
+                }
+                val showName = p.author != lastAuthor
+                lastAuthor = if (p.p.y == "msg") p.author else ""
+                item(key = p.id) {
+                    when (p.p.y) {
+                        "msg" -> MessageBubble(p, showName, quoted = byId[p.p.q], onLongPress = { onLong(p) })
+                        "meet" -> SystemLine("📅 ${p.p.n} naplánoval/a: ${p.p.ti} · ${dateFmt.format(Date(p.p.w))}")
+                        "meta" -> SystemLine("✏️ ${p.p.n} přejmenoval/a skupinu na „${p.p.ti}“")
+                        "poll" -> PollCard(p, votes[p.id].orEmpty(), myPub, onVote = { onVote(p.id, it) }, onLongPress = { onLong(p) })
+                    }
+                }
+            }
+        }
+    }
 }
 
 private val dayFmt = SimpleDateFormat("EEEE d. MMMM", Locale("cs"))
@@ -389,7 +568,7 @@ private fun SystemLine(t: String) {
 
 @OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
-private fun MessageBubble(p: Post, showName: Boolean, onLongPress: () -> Unit) {
+private fun MessageBubble(p: Post, showName: Boolean, quoted: Post? = null, onLongPress: () -> Unit) {
     Row(
         Modifier.fillMaxWidth().padding(top = if (showName) 6.dp else 1.dp),
         horizontalArrangement = if (p.mine) Arrangement.End else Arrangement.Start,
@@ -407,6 +586,15 @@ private fun MessageBubble(p: Post, showName: Boolean, onLongPress: () -> Unit) {
                 .padding(horizontal = 12.dp, vertical = 7.dp),
         ) {
             if (!p.mine && showName) Text(p.p.n, style = MaterialTheme.typography.labelMedium, color = nameColor(p.author), fontWeight = FontWeight.Bold)
+            if (p.p.q.isNotBlank()) Row(
+                Modifier.padding(vertical = 3.dp).clip(RoundedCornerShape(6.dp)).background(Color.Black.copy(alpha = 0.25f)).padding(6.dp),
+            ) {
+                Box(Modifier.size(2.dp, 26.dp).background(MaterialTheme.colorScheme.primary))
+                Column(Modifier.padding(start = 6.dp)) {
+                    Text(quoted?.p?.n ?: "…", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+                    Text(quoted?.let { it.p.x.ifBlank { it.p.ti } } ?: "zpráva byla smazána", style = MaterialTheme.typography.labelSmall, maxLines = 2, color = Color.White.copy(alpha = 0.75f))
+                }
+            }
             Text(p.p.x, style = MaterialTheme.typography.bodyMedium)
             Text(
                 hourFmt.format(Date(p.createdAt * 1000)), Modifier.align(Alignment.End),

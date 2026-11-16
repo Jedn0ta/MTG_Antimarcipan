@@ -25,6 +25,8 @@ data class Payload(
     val o: List<String> = emptyList(),
     /** Anketa s více odpověďmi. */
     val mu: Boolean = false,
+    /** Odpověď na příspěvek (id). */
+    val q: String = "",
 )
 
 data class Post(val id: String, val author: String, val createdAt: Long, val p: Payload, val mine: Boolean)
@@ -51,7 +53,7 @@ object Board {
     val groups = MutableStateFlow<List<BoardGroup>>(emptyList())
     val current = MutableStateFlow<BoardGroup?>(null)
     /** Příspěvky podle štítku skupiny. */
-    private val byGroup = MutableStateFlow<Map<String, List<Post>>>(emptyMap())
+    val byGroup = MutableStateFlow<Map<String, List<Post>>>(emptyMap())
     val posts = MutableStateFlow<List<Post>>(emptyList())
     val relayStatus = MutableStateFlow(0 to DEFAULT_RELAYS.size)
     /** Nepřečtené podle štítku skupiny. */
@@ -189,7 +191,7 @@ object Board {
     /** Smaže můj příspěvek (u všech se skryje). */
     fun deletePost(id: String) = publish(Payload(y = "del", n = myName(), r = id))
 
-    fun sendMessage(text: String) { if (text.isNotBlank()) publish(Payload(y = "msg", n = myName(), x = text.trim())) }
+    fun sendMessage(text: String, replyTo: String = "") { if (text.isNotBlank()) publish(Payload(y = "msg", n = myName(), x = text.trim(), q = replyTo)) }
     fun createMeetup(title: String, whenMs: Long, place: String, note: String) =
         publish(Payload(y = "meet", n = myName(), ti = title.trim(), w = whenMs, pl = place.trim(), x = note.trim()))
     fun rsvp(meetId: String, going: String) = publish(Payload(y = "rsvp", n = myName(), r = meetId, g = going))
