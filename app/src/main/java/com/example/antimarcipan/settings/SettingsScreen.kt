@@ -25,6 +25,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -163,6 +164,8 @@ fun SettingsScreen(
         )
 
         AppearanceCard(vm)
+
+        ThumbSizeCard()
 
 
 
@@ -389,5 +392,66 @@ private fun RowProgress(text: String) {
     ) {
         CircularProgressIndicator()
         Text(text, style = MaterialTheme.typography.bodySmall)
+    }
+}
+
+
+/** Velikost náhledů karet + živý náhled seznamu a mřížky. */
+@Composable
+private fun ThumbSizeCard() {
+    val ctx = androidx.compose.ui.platform.LocalContext.current
+    val container = remember { (ctx.applicationContext as com.example.antimarcipan.MtgApp).container }
+    val settings = container.appSettings
+    val listScale by settings.listThumb.collectAsStateWithLifecycle()
+    val gridScale by settings.gridThumb.collectAsStateWithLifecycle()
+    val cards by container.collectionRepository.cards.collectAsStateWithLifecycle(emptyList())
+    val sample = cards.take(6)
+    Card(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp)) {
+        Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text("Velikost náhledů karet", style = MaterialTheme.typography.titleMedium)
+
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("Seznam", Modifier.width(70.dp), style = MaterialTheme.typography.labelLarge)
+                androidx.compose.material3.Slider(
+                    value = listScale, onValueChange = { settings.setListThumb((it * 10).toInt() / 10f) },
+                    valueRange = 0.6f..1.8f, steps = 11, modifier = Modifier.weight(1f),
+                )
+                Text("${(listScale * 100).toInt()} %", Modifier.width(48.dp), style = MaterialTheme.typography.labelMedium)
+            }
+            // Náhled seznamu
+            androidx.compose.runtime.CompositionLocalProvider(
+                com.example.antimarcipan.ui.LocalThumbScale provides com.example.antimarcipan.ui.ThumbScale(listScale, gridScale)
+            ) {
+                Column(
+                    Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp))
+                        .background(androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.2f)).padding(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    if (sample.isEmpty()) Text("Náhled se ukáže, až budeš mít karty ve sbírce.", style = MaterialTheme.typography.bodySmall)
+                    sample.take(2).forEach { com.example.antimarcipan.ui.CardListInfo(card = it) }
+                }
+            }
+
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("Mřížka", Modifier.width(70.dp), style = MaterialTheme.typography.labelLarge)
+                androidx.compose.material3.Slider(
+                    value = gridScale, onValueChange = { settings.setGridThumb((it * 10).toInt() / 10f) },
+                    valueRange = 0.6f..1.8f, steps = 11, modifier = Modifier.weight(1f),
+                )
+                Text("${(gridScale * 100).toInt()} %", Modifier.width(48.dp), style = MaterialTheme.typography.labelMedium)
+            }
+            // Náhled mřížky
+            Row(
+                Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp))
+                    .background(androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.2f)).padding(8.dp)
+                    .horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                sample.forEach { c ->
+                    com.example.antimarcipan.ui.InteractiveThumb(c, width = (88 * gridScale).dp, height = (123 * gridScale).dp)
+                }
+            }
+            TextButton(onClick = { settings.setListThumb(1f); settings.setGridThumb(1f) }) { Text("Výchozí velikost") }
+        }
     }
 }

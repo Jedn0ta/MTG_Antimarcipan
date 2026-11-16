@@ -241,6 +241,11 @@ fun AntimarcipanApp() {
             }
         }
         com.example.antimarcipan.friends.LanIncomingHost()
+        val ctx0 = androidx.compose.ui.platform.LocalContext.current
+        val thumbSettings = androidx.compose.runtime.remember { (ctx0.applicationContext as com.example.antimarcipan.MtgApp).container.appSettings }
+        val tl by thumbSettings.listThumb.collectAsState()
+        val tg by thumbSettings.gridThumb.collectAsState()
+        androidx.compose.runtime.CompositionLocalProvider(LocalThumbScale provides ThumbScale(tl, tg)) {
         NavHost(
             navController = navController,
             startDestination = Dest.Scan.route,
@@ -265,6 +270,7 @@ fun AntimarcipanApp() {
             composable(FRIENDS_ROUTE) { com.example.antimarcipan.friends.FriendsScreen() }
             composable(BOARD_ROUTE) { com.example.antimarcipan.board.BoardScreen() }
             composable(LIFE_ROUTE) { com.example.antimarcipan.life.LifeCounterScreen() }
+        }
         }
     }
 }

@@ -61,6 +61,15 @@ class AppSettings(context: Context) {
     private val _collectionGrid = MutableStateFlow(prefs.getBoolean(KEY_COLLECTION_GRID, false))
     val collectionGrid: StateFlow<Boolean> = _collectionGrid.asStateFlow()
 
+    private val _listThumb = MutableStateFlow(prefs.getFloat("thumb_list", 1f))
+    /** Měřítko náhledů v seznamech (0.6–1.8). */
+    val listThumb: StateFlow<Float> = _listThumb.asStateFlow()
+    private val _gridThumb = MutableStateFlow(prefs.getFloat("thumb_grid", 1f))
+    /** Měřítko náhledů v mřížce (0.6–1.8). */
+    val gridThumb: StateFlow<Float> = _gridThumb.asStateFlow()
+    fun setListThumb(v: Float) { prefs.edit().putFloat("thumb_list", v).apply(); _listThumb.value = v }
+    fun setGridThumb(v: Float) { prefs.edit().putFloat("thumb_grid", v).apply(); _gridThumb.value = v }
+
     private val _deckGrid = MutableStateFlow(prefs.getBoolean(KEY_DECK_GRID, false))
     val deckGrid: StateFlow<Boolean> = _deckGrid.asStateFlow()
 

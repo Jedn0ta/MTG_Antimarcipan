@@ -290,7 +290,7 @@ fun CollectionScreen(
         } else if (gridMode) {
             androidx.compose.runtime.CompositionLocalProvider(com.example.antimarcipan.ui.LocalCardList provides (if (section == 0) source else lands + spells), com.example.antimarcipan.ui.LocalCardRemoveAction provides (when { showPlayground -> "Odebrat z playgroundu"; showWishlist -> "Odebrat z wishlistu"; showDraft -> "Smazat z draftu"; else -> "Odstranit ze sbírky" } to { c: CollectionCard -> pendingDelete = c })) {
             androidx.compose.foundation.lazy.grid.LazyVerticalGrid(
-                columns = androidx.compose.foundation.lazy.grid.GridCells.Adaptive(90.dp),
+                columns = androidx.compose.foundation.lazy.grid.GridCells.Adaptive((90 * com.example.antimarcipan.ui.LocalThumbScale.current.grid).dp),
                 modifier = Modifier.weight(1f),
                 contentPadding = androidx.compose.foundation.layout.PaddingValues(8.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -412,9 +412,15 @@ private fun LazyGridScope.collectionGridSection(title: String, cards: List<Colle
     item(span = { GridItemSpan(maxLineSpan) }, key = "gh-$title") { SectionHeaderC(title) }
     items(cards, key = { it.scryfallId }) { card ->
         Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-            com.example.antimarcipan.ui.InteractiveThumb(card, width = 88.dp, height = 123.dp)
+            ScaledGridThumb(card)
         }
     }
+}
+
+@Composable
+private fun ScaledGridThumb(card: CollectionCard) {
+    val g = com.example.antimarcipan.ui.LocalThumbScale.current.grid
+    com.example.antimarcipan.ui.InteractiveThumb(card, width = (88 * g).dp, height = (123 * g).dp)
 }
 
 @Composable

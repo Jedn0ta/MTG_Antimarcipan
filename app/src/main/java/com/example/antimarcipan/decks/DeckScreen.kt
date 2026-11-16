@@ -1006,7 +1006,7 @@ private fun DeckGrid(
     }
     val orderedLands = lands.sortedBy { if (isBasicLand(it.card)) 0 else 1 }
     LazyVerticalGrid(
-        columns = GridCells.Adaptive(84.dp),
+        columns = GridCells.Adaptive((84 * com.example.antimarcipan.ui.LocalThumbScale.current.grid).dp),
         modifier = Modifier.fillMaxSize(),
         contentPadding = androidx.compose.foundation.layout.PaddingValues(8.dp),
         horizontalArrangement = Arrangement.spacedBy(6.dp),
@@ -1032,7 +1032,8 @@ private fun DeckGrid(
 @Composable
 private fun DeckGridCell(entry: com.example.antimarcipan.data.local.DeckCardWithQty) {
     Box(contentAlignment = Alignment.TopEnd) {
-        com.example.antimarcipan.ui.InteractiveThumb(card = entry.card, width = 84.dp, height = 117.dp)
+        val g = com.example.antimarcipan.ui.LocalThumbScale.current.grid
+        com.example.antimarcipan.ui.InteractiveThumb(card = entry.card, width = (84 * g).dp, height = (117 * g).dp)
         if (entry.deckQuantity > 1) {
             Box(
                 Modifier

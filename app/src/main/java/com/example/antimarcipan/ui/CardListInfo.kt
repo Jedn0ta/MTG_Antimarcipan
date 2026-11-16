@@ -31,7 +31,8 @@ fun CardListInfo(
         horizontalArrangement = Arrangement.spacedBy(10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        InteractiveThumb(card, width = thumbWidth.dp, height = thumbHeight.dp)
+        val sc = LocalThumbScale.current.list
+        InteractiveThumb(card, width = (thumbWidth * sc).dp, height = (thumbHeight * sc).dp)
 
         val colMod = if (onLongHold != null) Modifier.weight(1f).longHold(2500L, onLongHold)
         else Modifier.weight(1f)
