@@ -6,7 +6,6 @@ import androidx.lifecycle.viewModelScope
 import com.example.antimarcipan.data.backup.BackupRepository
 import com.example.antimarcipan.data.settings.AppBackground
 import com.example.antimarcipan.data.settings.AppSettings
-import com.example.antimarcipan.data.settings.TranslationLang
 import com.example.antimarcipan.data.update.UpdateRepository
 import com.example.antimarcipan.data.update.UpdateStatus
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -36,19 +35,11 @@ class SettingsViewModel(
     val state: StateFlow<SettingsUiState> = _state.asStateFlow()
 
     /** Cílový jazyk překladu karet ve skenu. */
-    val translationLang: StateFlow<TranslationLang> = settings.translationLang
-
-    fun setTranslationLang(lang: TranslationLang) = settings.setTranslationLang(lang)
 
     /** Krajinné pozadí aplikace. */
     val background: StateFlow<AppBackground> = settings.background
 
     fun setBackground(bg: AppBackground) = settings.setBackground(bg)
-
-    /** API klíč pro AI překlad pravidel. */
-    val aiKey: StateFlow<String> = settings.aiKey
-
-    fun setAiKey(key: String) = settings.setAiKey(key)
 
     fun suggestedBackupName(): String = backup.suggestedFileName()
 

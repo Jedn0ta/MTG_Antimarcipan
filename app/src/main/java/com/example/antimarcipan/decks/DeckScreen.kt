@@ -235,31 +235,6 @@ private fun DeckListRow(
     }
 }
 
-@Composable
-private fun DeckCover(path: String?, size: androidx.compose.ui.unit.Dp) {
-    val shape = RoundedCornerShape(8.dp)
-    if (path != null) {
-        AsyncImage(
-            model = File(path),
-            contentDescription = null,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier.size(size).clip(shape),
-        )
-    } else {
-        Box(
-            Modifier.size(size).clip(shape)
-                .background(MaterialTheme.colorScheme.surfaceVariant),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(
-                Icons.Filled.Style,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-            )
-        }
-    }
-}
-
 // ---------------------------------------------------------------- detail
 
 @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
@@ -827,9 +802,6 @@ private fun formatIcon(format: DeckFormat): androidx.compose.ui.graphics.vector.
         DeckFormat.FREEFORM -> Icons.Filled.AllInclusive
     }
 
-private fun deckCountLabel(count: Int, min: Int): String =
-    if (min > 0) "$count/$min karet" else "$count karet"
-
 // ---- Kontextový filtr balíku (select-list) ----
 
 private val COLOR_LABELS = linkedMapOf(
@@ -854,140 +826,12 @@ private fun manaBucketOf(cmc: Double?): String {
     }
 }
 
-/**
- * Sestaví kategorie filtru z kontextu karet. Kategorie se ukáže jen když má
- * aspoň 2 hodnoty — u landů tak odpadnou tribaly i (jednotná) mana.
- * Klíč hodnoty je "Kategorie:hodnota", popisek se bere z value.
- */
-private fun buildDeckFilters(cards: List<CollectionCard>): LinkedHashMap<String, List<Pair<String, String>>> {
-    val types = linkedSetOf<String>()
-    val tribes = sortedSetOf<String>()
-    val colors = linkedSetOf<String>()
-    val buckets = linkedSetOf<String>()
-    cards.forEach { c ->
-        val line = c.typeLine
-        MAIN_TYPES.forEach { if (line?.contains(it, ignoreCase = true) == true) types.add(it) }
-        creatureSubtypesOf(c).forEach { tribes.add(it) }
-        c.colorIdentityList().forEach { colors.add(it) }
-        if (!(line?.contains("Land", ignoreCase = true) == true)) buckets.add(manaBucketOf(c.cmc))
-    }
-    val out = LinkedHashMap<String, List<Pair<String, String>>>()
-    if (types.size >= 2) out["Typ"] = types.map { "Typ:$it" to it }
-    if (tribes.size >= 2) out["Tribal"] = tribes.map { "Tribal:$it" to it }
-    if (colors.size >= 2) out["Barva"] = COLOR_LABELS.keys
-        .filter { it in colors }.map { "Barva:$it" to (COLOR_LABELS[it] ?: it) }
-    if (buckets.size >= 2) out["Mana"] = MANA_BUCKETS
-        .filter { it in buckets }.map { "Mana:$it" to it }
-    return out
-}
-
-private fun matchesDeckFilters(card: CollectionCard, selected: List<String>): Boolean {
-    if (selected.isEmpty()) return true
-    val byCat = selected.groupBy({ it.substringBefore(':') }, { it.substringAfter(':') })
-    return byCat.all { (cat, values) -> values.any { matchDeckValue(card, cat, it) } }
-}
-
 private fun matchDeckValue(card: CollectionCard, cat: String, value: String): Boolean = when (cat) {
     "Typ" -> card.typeLine?.contains(value, ignoreCase = true) == true
     "Tribal" -> creatureSubtypesOf(card).any { it.equals(value, ignoreCase = true) }
     "Barva" -> card.colorIdentityList().contains(value)
     "Mana" -> manaBucketOf(card.cmc) == value
     else -> true
-}
-
-@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
-@Composable
-private fun DeckFilterMenu(
-    expanded: Boolean,
-    categories: LinkedHashMap<String, List<Pair<String, String>>>,
-    selected: List<String>,
-    onToggle: (String) -> Unit,
-    onClear: () -> Unit,
-    onDismiss: () -> Unit,
-) {
-    if (!expanded) return
-    // Spodní panel: každá kategorie jako přehledná skupina dlaždic.
-    androidx.compose.material3.ModalBottomSheet(onDismissRequest = onDismiss) {
-        Column(
-            Modifier.fillMaxWidth().padding(horizontal = 16.dp)
-                .verticalScroll(androidx.compose.foundation.rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(14.dp),
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("Filtr", Modifier.weight(1f), style = MaterialTheme.typography.titleLarge)
-                if (selected.isNotEmpty()) {
-                    TextButton(onClick = onClear) { Text("Zrušit (${selected.size})") }
-                }
-            }
-            categories.forEach { (title, values) ->
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(
-                        title.uppercase(),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.primary,
-                    )
-                    if (title == "Barva") {
-                        // Barvy jako symboly many
-                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                            values.forEach { (key, label) ->
-                                val on = selected.contains(key)
-                                androidx.compose.foundation.Image(
-                                    painter = androidx.compose.ui.res.painterResource(manaRes(key.substringAfter(':'))),
-                                    contentDescription = label,
-                                    modifier = Modifier
-                                        .size(36.dp)
-                                        .clip(androidx.compose.foundation.shape.CircleShape)
-                                        .border(
-                                            if (on) 2.dp else 0.dp,
-                                            if (on) MaterialTheme.colorScheme.primary else Color.Transparent,
-                                            androidx.compose.foundation.shape.CircleShape,
-                                        )
-                                        .alpha(if (on) 1f else 0.4f)
-                                        .clickable { onToggle(key) },
-                                )
-                            }
-                        }
-                    } else {
-                        androidx.compose.foundation.layout.FlowRow(
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp),
-                        ) {
-                            values.forEach { (key, label) ->
-                                com.example.antimarcipan.ui.GoldChip(
-                                    selected = selected.contains(key),
-                                    onClick = { onToggle(key) },
-                                    label = { Text(label) },
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-            Button(
-                onClick = onDismiss,
-                modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
-            ) { Text("Hotovo") }
-        }
-    }
-}
-
-private fun deckTypeTokens(cards: List<CollectionCard>): List<String> {
-    val mains = linkedSetOf<String>()
-    val subtypes = linkedSetOf<String>()
-    cards.forEach { c ->
-        val line = c.typeLine ?: return@forEach
-        MAIN_TYPES.forEach { if (line.contains(it, ignoreCase = true)) mains.add(it) }
-        // Podtypy jen pro stvoření (tribaly: Elf, Knight, …)
-        if (line.contains("Creature", ignoreCase = true)) {
-            line.substringAfter("—", "").trim()
-                .split(" ")
-                .map { it.trim() }
-                .filter { it.length > 2 }
-                .forEach { subtypes.add(it) }
-        }
-    }
-    // Hlavní typy první, pak tribaly abecedně
-    return mains.toList() + subtypes.toList().sorted()
 }
 
 @Composable
@@ -1268,24 +1112,6 @@ private fun DeckEntryRow(
     }
 }
 
-/** Minimální info: kolik karet ještě doplnit do minimálního počtu. */
-@Composable
-private fun DeckNeed(format: DeckFormat, total: Int) {
-    val min = format.minCards
-    if (min == 0) {
-        Text("$total", style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f))
-        return
-    }
-    val need = (min - total).coerceAtLeast(0)
-    val ok = need == 0
-    Text(
-        if (ok) "$total ✓" else "$total · +$need",
-        style = MaterialTheme.typography.labelMedium,
-        color = if (ok) Color(0xFF2E9E5B) else Color(0xFFD98324),
-    )
-}
-
 @Composable
 private fun BasicLandsDialog(
     onDismiss: () -> Unit,
@@ -1477,101 +1303,8 @@ private fun ColorPicker(selected: Set<String>, onToggle: (String) -> Unit) {
 }
 
 @Composable
-private fun SwipeToRemove(onRequestRemove: () -> Unit, content: @Composable () -> Unit) {
-    val dismissState = rememberSwipeToDismissBoxState(
-        confirmValueChange = { value ->
-            if (value == SwipeToDismissBoxValue.EndToStart) {
-                onRequestRemove()
-            }
-            false // čeká na potvrzení
-        },
-    )
-    SwipeToDismissBox(
-        state = dismissState,
-        enableDismissFromStartToEnd = false,
-        backgroundContent = {
-            Box(
-                Modifier.fillMaxSize().clip(RoundedCornerShape(0.dp)),
-                contentAlignment = Alignment.CenterEnd,
-            ) {
-                Row(
-                    Modifier.padding(end = 20.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                ) {
-                    Icon(Icons.Filled.Delete, contentDescription = null, tint = Color(0xFFD95C5C))
-                    Text("Odebrat", color = Color(0xFFD95C5C))
-                }
-            }
-        },
-        content = { content() },
-    )
-}
-
-@Composable
 private fun SectionHeader(text: String) {
     com.example.antimarcipan.ui.OrnamentHeader(text)
-}
-
-@Composable
-private fun DeckCardRow(
-    card: CollectionCard,
-    isCommander: Boolean,
-    showCommander: Boolean,
-    onCommander: () -> Unit,
-    onRemove: () -> Unit,
-) {
-    Row(
-        Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        CardThumb(card.thumbModel())
-        Column(Modifier.weight(1f)) {
-            Text(card.name, style = MaterialTheme.typography.bodyMedium)
-            Text(
-                card.typeLine ?: "",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-            )
-        }
-        if (showCommander) {
-            IconButton(onClick = onCommander) {
-                Icon(
-                    Icons.Filled.Star,
-                    contentDescription = "Nastavit jako velitele",
-                    tint = if (isCommander) MaterialTheme.colorScheme.primary
-                    else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
-                )
-            }
-        }
-        IconButton(onClick = onRemove) {
-            Icon(Icons.Filled.Delete, contentDescription = "Odebrat z balíku")
-        }
-    }
-}
-
-@Composable
-private fun DuplicateWarning(names: List<String>) {
-    Card(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp)) {
-        Row(
-            Modifier.fillMaxWidth().padding(14.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalAlignment = Alignment.Top,
-        ) {
-            Icon(Icons.Filled.Warning, contentDescription = null, tint = Color(0xFFD98324))
-            Column {
-                Text("Duplicitní karty (${names.size})", style = MaterialTheme.typography.titleSmall)
-                Text(
-                    "Tyto karty jsou v balíku víckrát (různé edice). " +
-                        "V Commanderu/singletonu smí být jen jedna kopie: " +
-                        names.joinToString(", "),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
-                )
-            }
-        }
-    }
 }
 
 private fun shareDecklist(context: Context, deckName: String, cards: List<CollectionCard>) {
@@ -1628,7 +1361,6 @@ private fun DeckNameDialog(
         dismissButton = { TextButton(onClick = onDismiss) { Text("Zrušit") } },
     )
 }
-
 
 @Composable
 private fun DeckStat(label: String, n: Int) {

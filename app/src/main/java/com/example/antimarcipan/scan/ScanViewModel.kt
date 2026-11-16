@@ -2,13 +2,11 @@ package com.example.antimarcipan.scan
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.antimarcipan.data.CardTranslation
 import com.example.antimarcipan.data.CollectionRepository
 import com.example.antimarcipan.data.DeckRepository
 import com.example.antimarcipan.data.local.Deck
 import com.example.antimarcipan.data.scryfall.ScryfallCard
 import com.example.antimarcipan.data.settings.AppSettings
-import com.example.antimarcipan.data.settings.TranslationLang
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -51,8 +49,6 @@ data class ScanUiState(
     /** Probíhá hromadné sejmutí stolu. */
     val capturing: Boolean = false,
     /** Překlad textace aktuálního kandidáta do zvoleného jazyka. */
-    val translation: CardTranslation? = null,
-    val translating: Boolean = false,
 )
 
 class ScanViewModel(
@@ -68,7 +64,6 @@ class ScanViewModel(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     /** Aktuálně zvolený cílový jazyk překladu (z nastavení). */
-    val translationLang: StateFlow<TranslationLang> = settings.translationLang
 
     private var lastQuery: String = ""
     private var lastLookupAt = 0L
@@ -142,8 +137,6 @@ class ScanViewModel(
                         candidate = card,
                         looking = false,
                         status = editionLabel(card),
-                        translation = null,
-                        translating = false,
                     )
                 }
                 .onFailure {
@@ -178,22 +171,7 @@ class ScanViewModel(
         }
     }
 
-    /** Přeloží textaci kandidáta do jazyka zvoleného v nastavení. */
-    fun translateCandidate() {
-        val card = _state.value.candidate ?: return
-        if (_state.value.translating) return
-        val lang = settings.translationLang.value.code
-        _state.value = _state.value.copy(translating = true)
-        viewModelScope.launch {
-            repo.translate(card, lang)
-                .onSuccess { tr -> _state.value = _state.value.copy(translation = tr, translating = false) }
-                .onFailure { _state.value = _state.value.copy(translating = false) }
-        }
-    }
 
-    fun hideTranslation() {
-        _state.value = _state.value.copy(translation = null)
-    }
 
     /**
      * Multisken z fotky: rozpozná text na celé fotce (v plném rozlišení),
@@ -281,13 +259,6 @@ class ScanViewModel(
     fun confirmAllToCollection() {
         val items = _state.value.pending
         if (items.isEmpty()) return
-        PoolScanTarget.target.value?.let { t ->
-            viewModelScope.launch {
-                items.forEach { repo.ensureUnsorted(it.card); deckRepo.addToPool(t.deckId, it.card.id) }
-                finishBatch(items.size, "Do poolu „${t.deckName}“: ${items.size} karet")
-            }
-            return
-        }
         viewModelScope.launch {
             items.forEach { repo.addToCollection(it.card) }
             finishBatch(items.size, "Uloženo ${items.size} karet do sbírky")
@@ -335,14 +306,6 @@ class ScanViewModel(
 
     fun addToCollection() {
         val card = _state.value.candidate ?: return
-        PoolScanTarget.target.value?.let { t ->
-            viewModelScope.launch {
-                repo.ensureUnsorted(card)
-                deckRepo.addToPool(t.deckId, card.id)
-                flashAdded("Do poolu: ${card.name}")
-            }
-            return
-        }
         viewModelScope.launch {
             repo.addToCollection(card)
             flashAdded("Přidáno do sbírky: ${card.name}")
@@ -412,8 +375,6 @@ class ScanViewModel(
         _state.value = _state.value.copy(
             candidate = card,
             status = editionLabel(card),
-            translation = null,
-            translating = false,
         )
     }
 
@@ -423,8 +384,6 @@ class ScanViewModel(
             status = if (_state.value.multiScan) "Rozlož karty na stůl a vyfoť je"
             else "Namiř foťák na jméno karty",
             prints = emptyList(),
-            translation = null,
-            translating = false,
         )
         lastQuery = ""
     }
@@ -434,8 +393,6 @@ class ScanViewModel(
             candidate = null,
             status = msg,
             prints = emptyList(),
-            translation = null,
-            translating = false,
             confirmTick = _state.value.confirmTick + 1,
             confirmText = msg,
         )

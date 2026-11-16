@@ -100,29 +100,8 @@ fun ScanScreen(
         if (state.quickMode && quickId != null) vm.quickSave()
     }
     val decks by vm.decks.collectAsStateWithLifecycle()
-    val transLang by vm.translationLang.collectAsStateWithLifecycle()
 
-    val poolTarget by PoolScanTarget.target.collectAsStateWithLifecycle()
     Column(Modifier.fillMaxSize()) {
-    poolTarget?.let { t ->
-        androidx.compose.material3.Surface(
-            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.18f),
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            androidx.compose.foundation.layout.Row(
-                Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    "Skenuješ pool pro „${t.deckName}“ — uložené karty jdou do poolu, ne do sbírky.",
-                    Modifier.weight(1f),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.primary,
-                )
-                androidx.compose.material3.TextButton(onClick = { PoolScanTarget.target.value = null }) { Text("Hotovo") }
-            }
-        }
-    }
     Box(Modifier.fillMaxSize().weight(1f)) {
         if (!hasPermission) {
             Column(
@@ -319,7 +298,6 @@ fun ScanScreen(
                         CandidateCard(
                             state = state,
                             decks = decks,
-                            langLabel = transLang.label,
                             onDismiss = vm::dismissCandidate,
                             onAddCollection = vm::addToCollection,
                             onAddWishlist = vm::addToWishlist,
@@ -327,8 +305,6 @@ fun ScanScreen(
                             onAddDeck = vm::addToDeck,
                             onLoadPrints = vm::loadPrints,
                             onSelectPrint = vm::selectPrint,
-                            onTranslate = vm::translateCandidate,
-                            onHideTranslation = vm::hideTranslation,
                         )
                     } else {
                         // Jen tenký poloprůhledný proužek se stavem — nezakrývá záběr
@@ -564,7 +540,6 @@ private fun MultiScanReviewSheet(
 private fun CandidateCard(
     state: ScanUiState,
     decks: List<Deck>,
-    langLabel: String,
     onDismiss: () -> Unit,
     onAddCollection: () -> Unit,
     onAddWishlist: () -> Unit,
@@ -572,13 +547,10 @@ private fun CandidateCard(
     onAddDeck: (Long) -> Unit,
     onLoadPrints: () -> Unit,
     onSelectPrint: (com.example.antimarcipan.data.scryfall.ScryfallCard) -> Unit,
-    onTranslate: () -> Unit,
-    onHideTranslation: () -> Unit,
 ) {
     val candidate = state.candidate ?: return
     var showDeckPicker by remember { mutableStateOf(false) }
     var showEditions by remember { mutableStateOf(false) }
-    val translation = state.translation
 
     Card {
         Row(

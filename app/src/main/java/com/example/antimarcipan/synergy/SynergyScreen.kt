@@ -224,11 +224,6 @@ private fun SuggestionImage(name: String, card: com.example.antimarcipan.data.sc
     }
 }
 
-private fun scryfallImageUrl(name: String, version: String): String {
-    val enc = java.net.URLEncoder.encode(name, "UTF-8")
-    return "https://api.scryfall.com/cards/named?exact=$enc&format=image&version=$version"
-}
-
 @Composable
 private fun TipCard(tip: com.example.antimarcipan.data.advisor.AdvisorTip) {
     val icon = when (tip.level) {

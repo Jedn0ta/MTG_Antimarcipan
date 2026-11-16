@@ -114,15 +114,6 @@ fun EmptyState(title: String, subtitle: String, modifier: Modifier = Modifier) {
     }
 }
 
-@Composable
-fun ScreenTitle(text: String) {
-    Text(
-        text,
-        style = MaterialTheme.typography.headlineSmall,
-        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-    )
-}
-
 /** Ozdobný nadpis sekce: zlatý kosočtverec, text a mizející zlatá linka. */
 @Composable
 fun OrnamentHeader(text: String, modifier: Modifier = Modifier) {

@@ -5,22 +5,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
-/** Jazyk aplikace (a cíl překladu karet ve skenu). Čeština je výchozí. */
-enum class TranslationLang(val code: String, val label: String) {
-    CS("cs", "Čeština"),
-    EN("en", "Angličtina"),
-    DE("de", "Němčina"),
-    IT("it", "Italština"),
-    ES("es", "Španělština"),
-    KO("ko", "Korejština"),
-    JA("ja", "Japonština");
-
-    companion object {
-        fun fromCode(code: String?): TranslationLang =
-            entries.firstOrNull { it.code == code } ?: CS
-    }
-}
-
 /** Krajinná pozadí aplikace (5 barev MTG + pustina), volitelná v nastavení. */
 enum class AppBackground(val code: String, val label: String) {
     NONE("none", "Žádné"),
@@ -45,10 +29,6 @@ class AppSettings(context: Context) {
 
     private val prefs =
         context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-
-    private val _translationLang =
-        MutableStateFlow(TranslationLang.fromCode(prefs.getString(KEY_LANG, null)))
-    val translationLang: StateFlow<TranslationLang> = _translationLang.asStateFlow()
 
     private val _guideSeen = MutableStateFlow(prefs.getBoolean(KEY_GUIDE_SEEN, false))
     val guideSeen: StateFlow<Boolean> = _guideSeen.asStateFlow()
@@ -76,23 +56,9 @@ class AppSettings(context: Context) {
     private val _deckSection = MutableStateFlow(prefs.getString(KEY_DECK_SECTION, "ALL") ?: "ALL")
     val deckSection: StateFlow<String> = _deckSection.asStateFlow()
 
-    fun setTranslationLang(lang: TranslationLang) {
-        prefs.edit().putString(KEY_LANG, lang.code).apply()
-        _translationLang.value = lang
-    }
-
     fun setBackground(bg: AppBackground) {
         prefs.edit().putString(KEY_BACKGROUND, bg.code).apply()
         _background.value = bg
-    }
-
-    // API klíč pro kvalitní AI překlad pravidel (Claude). Prázdný = offline překlad.
-    private val _aiKey = MutableStateFlow(prefs.getString(KEY_AI_KEY, "") ?: "")
-    val aiKey: StateFlow<String> = _aiKey.asStateFlow()
-
-    fun setAiKey(key: String) {
-        prefs.edit().putString(KEY_AI_KEY, key.trim()).apply()
-        _aiKey.value = key.trim()
     }
 
     fun setCollectionGrid(on: Boolean) {
@@ -118,12 +84,10 @@ class AppSettings(context: Context) {
 
     private companion object {
         const val PREFS = "antimarcipan_settings"
-        const val KEY_LANG = "translation_lang"
         const val KEY_GUIDE_SEEN = "guide_seen"
         const val KEY_BACKGROUND = "app_background"
         const val KEY_COLLECTION_GRID = "collection_grid"
         const val KEY_DECK_GRID = "deck_grid"
         const val KEY_DECK_SECTION = "deck_section"
-        const val KEY_AI_KEY = "ai_translate_key"
     }
 }
