@@ -47,6 +47,8 @@ import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.automirrored.filled.ViewList
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.AllInclusive
@@ -285,6 +287,8 @@ private fun DeckDetailView(vm: DeckViewModel, deck: Deck) {
     var basicsOpen by androidx.compose.runtime.saveable.rememberSaveable(deck.id) { mutableStateOf<Boolean?>(null) }
     var pendingPoolRemove by remember { mutableStateOf<Pair<CollectionCard, Int>?>(null) }
     var showAddCards by remember { mutableStateOf(false) }
+    val infoPrefs = remember { context.getSharedPreferences("deck_ui", android.content.Context.MODE_PRIVATE) }
+    var showInfo by remember { mutableStateOf(infoPrefs.getBoolean("info", true)) }
 
     val format = DeckFormat.from(deck.format)
     // Barvy balíku dle zemí, které produkují manu
@@ -324,6 +328,13 @@ private fun DeckDetailView(vm: DeckViewModel, deck: Deck) {
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                 )
+                IconButton(onClick = { showInfo = !showInfo; infoPrefs.edit().putBoolean("info", showInfo).apply() }) {
+                    Icon(
+                        if (showInfo) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
+                        contentDescription = if (showInfo) "Skrýt přehled balíku" else "Zobrazit přehled balíku",
+                        tint = MaterialTheme.colorScheme.primary,
+                    )
+                }
                 Box {
                     IconButton(onClick = { showMenu = true }) {
                         Icon(Icons.Filled.MoreVert, contentDescription = "Akce")
@@ -361,6 +372,15 @@ private fun DeckDetailView(vm: DeckViewModel, deck: Deck) {
             val spellsN = flatCards.count { !isLandCard(it) }
             val creaturesN = flatCards.count { it.typeLine?.contains("Creature", true) == true }
             val landsN = flatCards.count { isLandCard(it) }
+            if (!showInfo) Text(
+                (if (min > 0) "$count / $min karet" else "$count karet") +
+                    (com.example.antimarcipan.ui.totalPriceLabel(deckCards.map { it.card to it.deckQuantity })?.let { " · $it" } ?: "") +
+                    " · ${format.label}",
+                Modifier.padding(start = 52.dp),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+            )
+            androidx.compose.animation.AnimatedVisibility(visible = showInfo) {
             androidx.compose.material3.Card(
                 Modifier.fillMaxWidth().padding(top = 4.dp),
                 border = androidx.compose.foundation.BorderStroke(1.dp, com.example.antimarcipan.ui.GoldBorderBrush),
@@ -416,6 +436,7 @@ private fun DeckDetailView(vm: DeckViewModel, deck: Deck) {
                         ) { Icon(Icons.Filled.Share, null, Modifier.size(18.dp)); Text(" Export") }
                     }
                 }
+            }
             }
         }
         HorizontalDivider()
