@@ -185,11 +185,14 @@ fun CollectionScreen(
                     label = { Text(label) },
                 )
             }
-            Spacer(Modifier.weight(1f))
-            Box {
-                androidx.compose.material3.TextButton(onClick = { showSortMenu = true }) {
+            // Řazení zabere zbylé místo; ikony vpravo mají vždy plnou velikost
+            Box(Modifier.weight(1f), contentAlignment = Alignment.CenterEnd) {
+                androidx.compose.material3.TextButton(
+                    onClick = { showSortMenu = true },
+                    contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 6.dp),
+                ) {
                     Icon(Icons.AutoMirrored.Filled.Sort, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Text(" " + filter.sortBy.label + if (filter.sortDesc) " ↓" else " ↑", maxLines = 1)
+                    Text(" " + filter.sortBy.label + if (filter.sortDesc) " ↓" else " ↑", maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
                 }
                 androidx.compose.material3.DropdownMenu(
                     expanded = showSortMenu,
@@ -210,15 +213,15 @@ fun CollectionScreen(
                     }
                 }
             }
-            IconButton(onClick = { settings.setCollectionGrid(!gridMode) }) {
-                Icon(if (gridMode) Icons.AutoMirrored.Filled.ViewList else Icons.Filled.GridView, contentDescription = "Zobrazení")
+            IconButton(onClick = { settings.setCollectionGrid(!gridMode) }, modifier = Modifier.size(44.dp)) {
+                Icon(if (gridMode) Icons.AutoMirrored.Filled.ViewList else Icons.Filled.GridView, contentDescription = "Zobrazení", modifier = Modifier.size(24.dp))
             }
             androidx.compose.material3.BadgedBox(badge = {
                 if (fstate.isActive) androidx.compose.material3.Badge { Text("${fstate.activeCount}") }
             }) {
-                IconButton(onClick = { showControls = true }) {
+                IconButton(onClick = { showControls = true }, modifier = Modifier.size(44.dp)) {
                     Icon(
-                        Icons.Filled.Tune, contentDescription = "Filtr",
+                        Icons.Filled.Tune, contentDescription = "Filtr", modifier = Modifier.size(24.dp),
                         tint = if (fstate.isActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
                     )
                 }
