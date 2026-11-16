@@ -61,6 +61,9 @@ import kotlinx.coroutines.delay
 class LifePlayer(life: Int) {
     var life by mutableIntStateOf(life)
     var poison by mutableIntStateOf(0)
+    /** Commander damage přijatý od jednotlivých hráčů (index = útočník). */
+    val cmd = androidx.compose.runtime.mutableStateListOf(0, 0, 0, 0, 0, 0)
+    val maxCmd: Int get() = cmd.maxOrNull() ?: 0
     var delta by mutableIntStateOf(0)
     var deltaTick by mutableIntStateOf(0)
     var totalMs by mutableStateOf(0L)
@@ -74,6 +77,10 @@ object LifeState {
     val players = List(6) { LifePlayer(20) }
     /** Celá obrazovka — skryje horní lištu aplikace i systémové lišty. */
     var fullscreen by mutableStateOf(false)
+    /** Zobrazovat počítadlo jedu (infect). */
+    var showPoison by mutableStateOf(true)
+    /** Zobrazovat commander damage. */
+    var showCmd by mutableStateOf(false)
     private var loaded = false
 
     fun load(ctx: Context) {
@@ -86,21 +93,28 @@ object LifeState {
         keepOn = p.getBoolean("keepOn", true)
         dimIdle = p.getBoolean("dimIdle", true)
         curve = p.getInt("curve", 0).coerceIn(0, TIME_CURVES.lastIndex)
+        showPoison = p.getBoolean("showPoison", true)
+        showCmd = p.getBoolean("showCmd", startLife >= 40)
         players.forEachIndexed { i, pl ->
             pl.life = p.getInt("life$i", startLife)
             pl.poison = p.getInt("poison$i", 0)
+            for (j in 0 until 6) pl.cmd[j] = p.getInt("cmd${i}_$j", 0)
         }
     }
 
     fun save(ctx: Context) {
         val e = ctx.getSharedPreferences("life_counter", Context.MODE_PRIVATE).edit()
         e.putInt("count", count).putInt("start", startLife).putInt("dayNight", dayNight).putBoolean("keepOn", keepOn).putBoolean("dimIdle", dimIdle).putInt("curve", curve)
-        players.forEachIndexed { i, pl -> e.putInt("life$i", pl.life).putInt("poison$i", pl.poison) }
+            .putBoolean("showPoison", showPoison).putBoolean("showCmd", showCmd)
+        players.forEachIndexed { i, pl -> 
+            e.putInt("life$i", pl.life).putInt("poison$i", pl.poison)
+            for (j in 0 until 6) e.putInt("cmd${i}_$j", pl.cmd[j])
+        }
         e.apply()
     }
 
     fun reset() {
-        players.forEach { it.life = startLife; it.poison = 0; it.delta = 0; it.totalMs = 0L }
+        players.forEach { it.life = startLife; it.poison = 0; for (j in 0 until 6) it.cmd[j] = 0; it.delta = 0; it.totalMs = 0L }
         dayNight = 0
         resetTurns()
     }
@@ -159,7 +173,7 @@ object LifeState {
             var next = e.player
             for (i in 1..count) {
                 val c = (e.player + i) % count
-                if (players[c].life > 0 && players[c].poison < 10) { next = c; break }
+                if (players[c].alive()) { next = c; break }
             }
             if (next <= e.player) turn = e.turn + 1 else turn = e.turn
             active = next
@@ -179,7 +193,7 @@ object LifeState {
         for (i in 1..count) {
             val c = (active + i) % count
             val p = players[c]
-            if (p.life > 0 && p.poison < 10) { next = c; break }
+            if (p.alive()) { next = c; break }
         }
         if (next <= active) turn++
         active = next
@@ -339,7 +353,9 @@ fun LifeCounterScreen() {
 private fun Tile(index: Int, rotation: Float, modifier: Modifier, save: () -> Unit) {
     val p = LifeState.players[index]
     val color = PLAYER_COLORS[index]
-    val dead = p.life <= 0 || p.poison >= 10
+    val dead = !p.alive()
+    var cmdOpen by remember { mutableStateOf(false) }
+    if (cmdOpen) CommanderDamageDialog(index, { cmdOpen = false }, save)
     val isStarter = LifeState.turnMode && LifeState.active == index
 
     fun change(d: Int) {
@@ -441,8 +457,9 @@ private fun Tile(index: Int, rotation: Float, modifier: Modifier, save: () -> Un
                     color = Color.White.copy(alpha = 0.8f),
                     style = MaterialTheme.typography.labelMedium,
                 )
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 // Jed: ťuk +1, podržet −1
-                Text(
+                if (LifeState.showPoison) Text(
                     "☠ ${p.poison}",
                     Modifier
                         .padding(top = 6.dp)
@@ -457,9 +474,58 @@ private fun Tile(index: Int, rotation: Float, modifier: Modifier, save: () -> Un
                     color = if (p.poison >= 10) Color(0xFFB6F2C4) else Color.White.copy(alpha = 0.9f),
                     fontSize = 22.sp, fontWeight = FontWeight.Bold,
                 )
+                if (LifeState.showCmd) Text(
+                    "⚔ ${p.maxCmd}",
+                    Modifier
+                        .padding(top = 6.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(Color.Black.copy(alpha = 0.35f))
+                        .clickable { cmdOpen = true }
+                        .border(1.dp, Color.White.copy(alpha = 0.25f), RoundedCornerShape(16.dp))
+                        .padding(horizontal = 22.dp, vertical = 10.dp),
+                    color = if (p.maxCmd >= 21) Color(0xFFFFB4B4) else Color.White.copy(alpha = 0.9f),
+                    fontSize = 22.sp, fontWeight = FontWeight.Bold,
+                )
+                }
             }
         }
     }
+}
+
+fun LifePlayer.alive(): Boolean = life > 0 && poison < 10 && maxCmd < 21
+
+/** Commander damage: kolik poškození dostal hráč od velitele každého soupeře. Mění i životy. */
+@Composable
+private fun CommanderDamageDialog(index: Int, onDismiss: () -> Unit, save: () -> Unit) {
+    val p = LifeState.players[index]
+    com.example.antimarcipan.ui.GoldDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Commander damage – Hráč ${index + 1}") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    "Poškození od velitele soupeře. Změna se odečte i ze životů. 21 od jednoho velitele = prohra.",
+                    style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.65f),
+                )
+                for (j in 0 until LifeState.count) {
+                    if (j == index) continue
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(Modifier.size(14.dp).clip(RoundedCornerShape(7.dp)).background(PLAYER_COLORS[j]))
+                        Text("  Hráč ${j + 1}", Modifier.weight(1f))
+                        TextButton(onClick = {
+                            if (p.cmd[j] > 0) { p.cmd[j]--; p.life++; save() }
+                        }) { Text("−", fontSize = 22.sp) }
+                        Text(
+                            "${p.cmd[j]}", fontSize = 20.sp, fontWeight = FontWeight.Bold,
+                            color = if (p.cmd[j] >= 21) Color(0xFFFFB4B4) else Color.White,
+                        )
+                        TextButton(onClick = { p.cmd[j]++; p.life--; save() }) { Text("+", fontSize = 22.sp) }
+                    }
+                }
+            }
+        },
+        confirmButton = { TextButton(onClick = onDismiss) { Text("Hotovo") } },
+    )
 }
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -658,6 +724,14 @@ private fun LifeMenu(onDismiss: () -> Unit, save: () -> Unit) {
                     Text("Počáteční životy (změna = nová hra)", style = MaterialTheme.typography.labelMedium)
                     Segmented(listOf(20, 30, 40).map { "$it" to it }, LifeState.startLife) {
                         if (it != LifeState.startLife) { LifeState.startLife = it; LifeState.reset(); save() }
+                    }
+                }
+                MenuSection("Počítadla") {
+                    SwitchRow("Jed (infect / poison)", "☠ ťuk +1, podržet −1; 10 = prohra", LifeState.showPoison) {
+                        LifeState.showPoison = it; save()
+                    }
+                    SwitchRow("Commander damage", "⚔ poškození od velitelů soupeřů; 21 = prohra", LifeState.showCmd) {
+                        LifeState.showCmd = it; save()
                     }
                 }
                 MenuSection("Den a noc") {

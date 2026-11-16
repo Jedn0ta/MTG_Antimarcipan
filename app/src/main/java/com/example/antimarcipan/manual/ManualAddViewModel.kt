@@ -89,4 +89,63 @@ class ManualAddViewModel(
             onDone("Přidáno do „$deckName“: ${card.name}")
         }
     }
+
+    // ---- Hromadný import seznamu ----
+    private val _importBusy = MutableStateFlow(false)
+    val importBusy: StateFlow<Boolean> = _importBusy.asStateFlow()
+
+    enum class Target { COLLECTION, WISHLIST, DECK }
+
+    /**
+     * Naimportuje seznam ve formátu „4 Lightning Bolt“, „4x Bolt“, „Bolt (M10) 146“.
+     * Prázdné řádky, komentáře a nadpisy (Sideboard, Deck…) přeskočí.
+     */
+    fun importList(text: String, target: Target, deckId: Long?, onDone: (String) -> Unit) {
+        val entries = parseCardList(text)
+        if (entries.isEmpty()) { onDone("Seznam je prázdný"); return }
+        viewModelScope.launch {
+            _importBusy.value = true
+            val (found, missing) = repo.resolveNames(entries.map { it.second })
+            var added = 0
+            for ((qty, name) in entries) {
+                val card = found[name.lowercase()] ?: continue
+                repeat(qty) {
+                    when (target) {
+                        Target.COLLECTION -> repo.addToCollection(card)
+                        Target.WISHLIST -> if (it == 0) repo.addToWishlist(card)
+                        Target.DECK -> { repo.addToCollection(card); deckId?.let { d -> deckRepo.addCard(d, card.id) } }
+                    }
+                }
+                added += qty
+            }
+            _importBusy.value = false
+            onDone(
+                "Přidáno $added karet" +
+                    if (missing.isEmpty()) "." else ". Nenalezeno (${missing.size}): " + missing.joinToString(", ")
+            )
+        }
+    }
+}
+
+/** Parsuje řádky seznamu na (počet, jméno). */
+fun parseCardList(text: String): List<Pair<Int, String>> {
+    val headers = setOf("deck", "sideboard", "commander", "companion", "maybeboard", "main", "mainboard")
+    val out = LinkedHashMap<String, Pair<Int, String>>()
+    for (raw in text.lines()) {
+        var line = raw.trim().removePrefix("SB:").trim()
+        if (line.isEmpty() || line.startsWith("//") || line.startsWith("#")) continue
+        if (line.lowercase().trimEnd(':') in headers) continue
+        var qty = 1
+        Regex("""^(\d+)\s*[xX×]?\s+(.+)$""").find(line)?.let {
+            qty = it.groupValues[1].toInt().coerceIn(1, 99); line = it.groupValues[2]
+        }
+        // odříznout edici „(M10) 146“, foil značky „*F*“
+        line = line.replace(Regex("""\s*\([A-Za-z0-9]{2,6}\)(\s+\S+)?\s*$"""), "")
+            .replace(Regex("""\s*\*[A-Z]+\*\s*$"""), "").trim()
+        if (line.length < 2) continue
+        val key = line.lowercase()
+        val prev = out[key]
+        out[key] = (prev?.first ?: 0) + qty to line
+    }
+    return out.values.toList()
 }

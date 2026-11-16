@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -43,6 +45,9 @@ fun ManualAddScreen(
     val state by vm.state.collectAsStateWithLifecycle()
     val decks by vm.decks.collectAsStateWithLifecycle()
     var deckPickerFor by remember { mutableStateOf<ScryfallCard?>(null) }
+    var showImport by remember { mutableStateOf(false) }
+    val importBusy by vm.importBusy.collectAsStateWithLifecycle()
+    var importResult by remember { mutableStateOf<String?>(null) }
 
     Column(Modifier.fillMaxSize()) {
         OutlinedTextField(
@@ -53,6 +58,14 @@ fun ManualAddScreen(
             leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
             singleLine = true,
         )
+        OutlinedButton(
+            onClick = { showImport = true },
+            enabled = !importBusy,
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp),
+        ) {
+            if (importBusy) CircularProgressIndicator(Modifier.padding(end = 8.dp).size(18.dp), strokeWidth = 2.dp)
+            Text(if (importBusy) "Importuji seznam…" else "Import seznamu karet (hromadně)")
+        }
         Text(
             "Pro karty, co nejdou naskenovat (fullarty, promo, tokeny).",
             Modifier.padding(horizontal = 16.dp),
@@ -116,6 +129,23 @@ fun ManualAddScreen(
         }
     }
 
+    if (showImport) ImportListDialog(
+        decks = decks,
+        onDismiss = { showImport = false },
+        onImport = { text, target, deckId ->
+            showImport = false
+            vm.importList(text, target, deckId) { importResult = it }
+        },
+    )
+    importResult?.let { msg ->
+        com.example.antimarcipan.ui.GoldDialog(
+            onDismissRequest = { importResult = null },
+            title = { Text("Import hotov") },
+            text = { Text(msg) },
+            confirmButton = { androidx.compose.material3.TextButton(onClick = { importResult = null }) { Text("OK") } },
+        )
+    }
+
     deckPickerFor?.let { card ->
         DeckPickerDialog(
             decks = decks,
@@ -128,4 +158,70 @@ fun ManualAddScreen(
             },
         )
     }
+}
+
+@Composable
+private fun ImportListDialog(
+    decks: List<com.example.antimarcipan.data.local.Deck>,
+    onDismiss: () -> Unit,
+    onImport: (String, ManualAddViewModel.Target, Long?) -> Unit,
+) {
+    val context = LocalContext.current
+    var text by remember { mutableStateOf("") }
+    var target by remember { mutableStateOf(ManualAddViewModel.Target.COLLECTION) }
+    var pickDeck by remember { mutableStateOf(false) }
+    if (pickDeck) {
+        DeckPickerDialog(decks = decks, onDismiss = { pickDeck = false }, onPick = { d ->
+            pickDeck = false
+            onImport(text, ManualAddViewModel.Target.DECK, d.id)
+        })
+        return
+    }
+    val count = remember(text) { parseCardList(text).sumOf { it.first } }
+    com.example.antimarcipan.ui.GoldDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Import seznamu") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    "Jedna karta na řádek, např. „4 Lightning Bolt“, „1x Sol Ring“. Funguje i export z Moxfield/Arena.",
+                    style = MaterialTheme.typography.bodySmall,
+                )
+                OutlinedTextField(
+                    value = text, onValueChange = { text = it },
+                    modifier = Modifier.fillMaxWidth().height(200.dp),
+                    placeholder = { Text("4 Lightning Bolt\n2 Counterspell\n1 Sol Ring") },
+                )
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    OutlinedButton(onClick = {
+                        val cm = context.getSystemService(android.content.ClipboardManager::class.java)
+                        cm?.primaryClip?.getItemAt(0)?.coerceToText(context)?.toString()?.let { text = it }
+                    }) { Text("Vložit ze schránky") }
+                }
+                Text("Kam přidat:", style = MaterialTheme.typography.labelMedium)
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    listOf(
+                        "Sbírka" to ManualAddViewModel.Target.COLLECTION,
+                        "Wishlist" to ManualAddViewModel.Target.WISHLIST,
+                        "Balík" to ManualAddViewModel.Target.DECK,
+                    ).forEach { (l, t) ->
+                        androidx.compose.material3.FilterChip(
+                            selected = target == t, onClick = { target = t }, label = { Text(l) },
+                        )
+                    }
+                }
+                Text("Rozpoznáno: $count karet", style = MaterialTheme.typography.labelSmall)
+            }
+        },
+        confirmButton = {
+            androidx.compose.material3.TextButton(
+                enabled = count > 0,
+                onClick = {
+                    if (target == ManualAddViewModel.Target.DECK) pickDeck = true
+                    else onImport(text, target, null)
+                },
+            ) { Text(if (target == ManualAddViewModel.Target.DECK) "Vybrat balík…" else "Importovat") }
+        },
+        dismissButton = { androidx.compose.material3.TextButton(onClick = onDismiss) { Text("Zrušit") } },
+    )
 }

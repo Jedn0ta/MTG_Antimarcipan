@@ -167,6 +167,38 @@ class CollectionRepository(
         }
     }
 
+    /**
+     * Hromadně dohledá karty podle jmen (Scryfall /cards/collection, po 75).
+     * Vrací nalezené karty v pořadí vstupu a seznam jmen, která se nenašla.
+     */
+    suspend fun resolveNames(names: List<String>): Pair<Map<String, ScryfallCard>, List<String>> {
+        val found = HashMap<String, ScryfallCard>()
+        val unique = names.map { it.trim() }.filter { it.isNotEmpty() }.distinctBy { it.lowercase() }
+        for (chunk in unique.chunked(75)) {
+            val res = runCatching {
+                scryfall.collection(
+                    com.example.antimarcipan.data.scryfall.CollectionRequest(
+                        chunk.map { com.example.antimarcipan.data.scryfall.NameIdentifier(it) }
+                    )
+                ).data
+            }.getOrDefault(emptyList())
+            for (n in chunk) {
+                val key = n.lowercase()
+                res.firstOrNull { c ->
+                    val cn = c.name.lowercase()
+                    cn == key || cn.substringBefore(" // ") == key
+                }?.let { found[key] = it }
+            }
+        }
+        // Co nenašlo přesné jméno, zkusit fuzzy po jednom.
+        for (n in unique) {
+            val key = n.lowercase()
+            if (key in found) continue
+            runCatching { scryfall.cardByFuzzyName(n) }.getOrNull()?.let { found[key] = it }
+        }
+        return found to unique.filter { it.lowercase() !in found }
+    }
+
     /** Uloží kartu jako „nezařazenou“ (není ve sbírce ani na wishlistu) — např. pool draftu. */
     suspend fun ensureUnsorted(card: ScryfallCard) {
         val e = dao.findById(card.id)
