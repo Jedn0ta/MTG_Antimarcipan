@@ -78,11 +78,11 @@ fun AdvisorScreen(
         when {
             decks.isEmpty() -> EmptyState(
                 "Žádné balíky",
-                "Vytvoř balík v záložce Balíky a Anti Marcipán ho rozebere.",
+                "Vytvoř balík v záložce Balíky a Grimoar ho rozebere.",
             )
             selectedDeckId == null -> EmptyState(
                 "Vyber balík",
-                "Anti Marcipán zkontroluje zem, ramp, draw, removal, křivku a dá rady do hry.",
+                "Grimoar zkontroluje zem, ramp, draw, removal, křivku a dá rady do hry.",
             )
             !state.analyzed -> EmptyState("Počítám…", "Chvilku strpení.")
             else -> LazyColumn(Modifier.fillMaxSize()) {

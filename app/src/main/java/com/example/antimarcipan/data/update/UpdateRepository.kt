@@ -78,7 +78,7 @@ class UpdateRepository(
     suspend fun download(url: String, onProgress: (Float) -> Unit): File =
         withContext(Dispatchers.IO) {
             val dir = File(context.cacheDir, "updates").apply { mkdirs() }
-            val outFile = File(dir, "antimarcipan-update.apk")
+            val outFile = File(dir, "grimoar-update.apk")
             if (outFile.exists()) outFile.delete()
 
             val request = Request.Builder().url(url).build()

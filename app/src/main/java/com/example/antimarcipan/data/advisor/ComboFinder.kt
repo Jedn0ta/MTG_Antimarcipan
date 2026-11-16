@@ -36,7 +36,7 @@ object ComboFinder {
     private val client = OkHttpClient.Builder()
         .connectTimeout(20, TimeUnit.SECONDS)
         .readTimeout(60, TimeUnit.SECONDS)
-        .addInterceptor { ch -> ch.proceed(ch.request().newBuilder().header("User-Agent", "Antimarcipan/0.1 (personal hobby app)").build()) }
+        .addInterceptor { ch -> ch.proceed(ch.request().newBuilder().header("User-Agent", "Grimoar/0.1 (personal hobby app)").build()) }
         .build()
     private val json = Json { ignoreUnknownKeys = true; isLenient = true }
 

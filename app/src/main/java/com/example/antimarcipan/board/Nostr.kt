@@ -24,7 +24,7 @@ import javax.crypto.Cipher
 import javax.crypto.spec.GCMParameterSpec
 import javax.crypto.spec.SecretKeySpec
 
-/** Druh událostí Antimarcipánu (vlastní, aby nezaplevelily běžné Nostr klienty). */
+/** Druh událostí Grimoaru (vlastní, aby nezaplevelily běžné Nostr klienty). */
 const val AM_KIND = 7373
 
 val DEFAULT_RELAYS = listOf(

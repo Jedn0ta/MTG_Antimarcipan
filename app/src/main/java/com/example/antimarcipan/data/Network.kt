@@ -25,7 +25,7 @@ object Network {
 
     private const val GITHUB_BASE = "https://api.github.com/"
 
-    private const val USER_AGENT = "Antimarcipan/0.1 (personal hobby app)"
+    private const val USER_AGENT = "Grimoar/0.1 (personal hobby app)"
 
     private val json = Json {
         ignoreUnknownKeys = true

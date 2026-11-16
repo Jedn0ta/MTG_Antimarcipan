@@ -51,7 +51,7 @@ jobs:
       - name: Upload APK as artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Antimarcipan-debug-apk
+          name: Grimoar-debug-apk
           path: app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
 
@@ -61,7 +61,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: latest-debug
-          name: Antimarcipán (debug)
+          name: Grimoar (debug)
           body: >
             Automaticky sestavené debug APK z posledního commitu.
             Stáhni soubor app-debug.apk níže a nainstaluj v telefonu

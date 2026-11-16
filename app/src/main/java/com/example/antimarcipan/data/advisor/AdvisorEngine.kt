@@ -12,7 +12,7 @@ data class AdvisorTip(
 )
 
 /**
- * "Anti Marcipán" — a rules-based advisor. It inspects a deck's composition
+ * "Grimoar" — a rules-based advisor. It inspects a deck's composition
  * and the commander, then produces tips you can use while playing: deck-health
  * warnings (too few lands, no ramp, thin on removal) plus in-game guidance
  * (mulligan targets, sequencing). Fully offline, no network needed.
@@ -36,7 +36,7 @@ object AdvisorEngine {
             return listOf(
                 AdvisorTip(
                     "Prázdný balík",
-                    "Přidej karty do balíku a Anti Marcipán ti řekne, co doladit.",
+                    "Přidej karty do balíku a Grimoar ti řekne, co doladit.",
                     TipLevel.TIP,
                 )
             )
@@ -144,7 +144,7 @@ object AdvisorEngine {
         }
         val cmdLine = commander?.let { " Veliteli (${it.name}) nachystej ramp, ať ho zahraješ včas." } ?: ""
         return AdvisorTip(
-            "Anti Marcipán radí při hře",
+            "Rádce Grimoaru radí při hře",
             "Mulligan drž ruku s $idealOpener a aspoň jedním raným playem. Sekvencuj: nejdřív ramp, pak card draw, interakci si drž na klíčové hrozby.$cmdLine",
             TipLevel.TIP,
         )

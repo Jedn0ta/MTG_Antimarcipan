@@ -46,7 +46,7 @@ class MtgApp : Application(), ImageLoaderFactory {
                     .addInterceptor { chain ->
                         chain.proceed(
                             chain.request().newBuilder()
-                                .header("User-Agent", "Antimarcipan/0.1 (personal hobby app)")
+                                .header("User-Agent", "Grimoar/0.1 (personal hobby app)")
                                 .header("Accept", "image/*,*/*;q=0.8")
                                 .build()
                         )

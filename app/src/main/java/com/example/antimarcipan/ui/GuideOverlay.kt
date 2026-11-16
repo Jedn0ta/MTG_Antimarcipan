@@ -748,7 +748,7 @@ private fun MockHistory() {
 private fun MockSettings() {
     Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Text("O aplikaci", fontSize = 12.sp, color = Gold)
-        Text("Antimarcipán · verze …", fontSize = 10.sp, color = Muted)
+        Text("Grimoar · verze …", fontSize = 10.sp, color = Muted)
         Text("Spustit průvodce", Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(Gold).padding(6.dp), textAlign = TextAlign.Center, fontSize = 11.sp, color = Ink)
         Text("Log pádů: zaznamenáno 1 pádů.", fontSize = 10.sp, color = Color(0xFFFF9A9A))
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) { MockBtn("Zkopírovat log", true); MockBtn("Smazat log") }

@@ -139,7 +139,7 @@ fun ScanScreen(
                     if (deniedOnce)
                         "Kamera je zakázaná. Povol ji tlačítkem níž, nebo přes nastavení aplikace, pokud se okno už neukazuje."
                     else
-                        "Antimarcipán skenuje karty foťákem a čte jejich jména.",
+                        "Grimoar skenuje karty foťákem a čte jejich jména.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                     textAlign = TextAlign.Center,

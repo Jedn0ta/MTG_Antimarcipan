@@ -584,7 +584,7 @@ private fun InviteDialog(g: BoardGroup, onDismiss: () -> Unit) {
                 OutlinedButton(onClick = {
                     val send = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(
                         Intent.EXTRA_TEXT,
-                        "Pozvánka do skupiny „${g.name}“ v appce Antimarcipán (sdílej do appky nebo zkopíruj a otevři Nástěnku):\n\n${g.invite}",
+                        "Pozvánka do skupiny „${g.name}“ v appce Grimoar (sdílej do appky nebo zkopíruj a otevři Nástěnku):\n\n${g.invite}",
                     )
                     ctx.startActivity(Intent.createChooser(send, "Pozvat do skupiny").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
                 }, modifier = Modifier.fillMaxWidth()) { Text("Poslat pozvánku zprávou") }

@@ -29,7 +29,7 @@ data class SynergyUiState(
     val suggestionsSource: String = "",
     /** Náhrady pro nevhodné karty: scryfallId → názvy navrhovaných karet. */
     val replacements: Map<String, List<String>> = emptyMap(),
-    /** Obecné rady k balíku (dříve „Anti Marcipán“). */
+    /** Obecné rady k balíku (rádce Grimoaru). */
     val tips: List<AdvisorTip> = emptyList(),
     /** Data navržených karet (obrázek + textace): jméno (malými) → karta. */
     val images: Map<String, com.example.antimarcipan.data.scryfall.ScryfallCard> = emptyMap(),

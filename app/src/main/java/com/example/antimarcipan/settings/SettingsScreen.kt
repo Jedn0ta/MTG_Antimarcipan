@@ -281,7 +281,7 @@ private fun AboutCard(sha: String) {
                     modifier = Modifier.size(64.dp).clip(RoundedCornerShape(12.dp)),
                 )
                 Text(
-                    "Antimarcipán · verze ${BuildConfig.VERSION_NAME} · build $sha",
+                    "Grimoar · verze ${BuildConfig.VERSION_NAME} · build $sha",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                 )
@@ -316,7 +316,7 @@ private fun AboutCard(sha: String) {
                     Button(
                         onClick = {
                             val cm = ctx.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
-                            cm.setPrimaryClip(android.content.ClipData.newPlainText("Antimarcipán crash log", logText))
+                            cm.setPrimaryClip(android.content.ClipData.newPlainText("Grimoar crash log", logText))
                             android.widget.Toast.makeText(ctx, "Log zkopírován do schránky", android.widget.Toast.LENGTH_SHORT).show()
                         },
                         modifier = Modifier.weight(1f),

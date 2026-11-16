@@ -87,7 +87,7 @@ fun AntimarcipanApp() {
         onBoard -> "Nástěnka"
         else -> Dest.entries.firstOrNull { d ->
             current?.hierarchy?.any { it.route == d.route } == true
-        }?.label ?: "Antimarcipán"
+        }?.label ?: "Grimoar"
     }
 
     Scaffold(

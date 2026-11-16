@@ -1,7 +1,7 @@
-# Antimarcipán
+# Grimoar
 
 Android aplikace (Kotlin + Jetpack Compose) na skenování a digitalizaci karet
-Magic: The Gathering, stavění balíků a návrhy synergie — plus mód **Anti Marcipán**,
+Magic: The Gathering, stavění balíků a návrhy synergie — plus mód **Grimoar**,
 který rozebere balík a radí při hře.
 
 > Tohle je funkční **kostra** projektu k otevření v Android Studiu. Hlavní
@@ -18,7 +18,7 @@ který rozebere balík a radí při hře.
 - **Balíky** — zakládání balíků, přidávání karet ze sbírky, nastavení velitele.
 - **Synergie** — pro velitele balíku stáhne doporučené karty z **EDHREC**
   (seřazené podle % synergie) a označí, které už máš ve sbírce.
-- **Anti Marcipán** — offline advisor. Projde balík (počet zemí, ramp, card
+- **Grimoar** — offline advisor. Projde balík (počet zemí, ramp, card
   draw, removal, manovou křivku, barevnou identitu vs. velitel) a vypíše
   varování + rady do hry (mulligan, sekvencování).
 
@@ -36,7 +36,7 @@ který rozebere balík a radí při hře.
 
 ## Jak spustit
 
-1. **Android Studio** (Koala / 2024.1 nebo novější). Otevři složku `Antimarcipan`.
+1. **Android Studio** (Koala / 2024.1 nebo novější). Otevři složku projektu.
 2. Studio samo stáhne Gradle (8.10.2) a knihovny při prvním **Sync**.
    - Je potřeba JDK 17 (Studio ho má v sobě).
 3. Připoj telefon (USB debugging) nebo spusť emulátor s kamerou.
@@ -56,7 +56,7 @@ app/src/main/java/com/example/antimarcipan/
 │  ├─ scryfall/               Scryfall API + modely
 │  ├─ edhrec/                 EDHREC API + slug velitele
 │  ├─ local/                  Room: entity, DAO, databáze
-│  ├─ advisor/AdvisorEngine   logika „Anti Marcipán" (čistý Kotlin)
+│  ├─ advisor/AdvisorEngine   logika „Grimoar" (čistý Kotlin)
 │  ├─ CollectionRepository    OCR → karta, správa sbírky
 │  ├─ DeckRepository          balíky
 │  └─ SynergyRepository       EDHREC doporučení + průnik se sbírkou
@@ -64,7 +64,7 @@ app/src/main/java/com/example/antimarcipan/
 ├─ collection/                CollectionScreen + VM
 ├─ decks/                     DeckScreen + VM
 ├─ synergy/                   SynergyScreen + VM
-├─ advisor/                   AdvisorScreen (Anti Marcipán) + VM
+├─ advisor/                   AdvisorScreen (Grimoar) + VM
 └─ ui/                        navigace, téma, společné UI, VM factory
 ```
 
@@ -77,7 +77,7 @@ app/src/main/java/com/example/antimarcipan/
 - **Výběr edice/variantu** — když fuzzy hledání trefí víc tisků, nechat uživatele
   vybrat konkrétní set a sběratelské číslo.
 - **Export** — decklist do Moxfieldu / Archidektu (textový i přes link).
-- **Chytřejší Anti Marcipán** — komba z Commander Spellbook API, tagy archetypů,
+- **Chytřejší Grimoar** — komba z Commander Spellbook API, tagy archetypů,
   rady podle aktuální ruky.
 
 ## Poznámky k API

@@ -51,7 +51,7 @@ class FriendsViewModel(
             },
         )
         val list = cards.sortedBy { it.card.name }.joinToString("\n") { "${it.deckQuantity} ${it.card.name}" }
-        return "Balík „${deck.name}“ od ${shared.owner} (${shared.total} karet) — otevři v appce Antimarcipán:\n\n$list\n\n" +
+        return "Balík „${deck.name}“ od ${shared.owner} (${shared.total} karet) — otevři v appce Grimoar:\n\n$list\n\n" +
             DeckShareCodec.encode(shared)
     }
 

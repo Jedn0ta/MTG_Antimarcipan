@@ -188,7 +188,7 @@ private fun FriendsList(vm: FriendsViewModel = viewModel(factory = AppViewModelF
                         )
                     }
                     if (!lanOn) Text(
-                        "Zapni a uvidíš kamarády s Antimarcipánem na stejné Wi-Fi (a oni tebe), dokud je appka otevřená. Balíky a pozvánky jdou přímo, bez internetu.",
+                        "Zapni a uvidíš kamarády s Grimoarem na stejné Wi-Fi (a oni tebe), dokud je appka otevřená. Balíky a pozvánky jdou přímo, bez internetu.",
                         style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                     ) else if (peers.isEmpty()) Row(verticalAlignment = Alignment.CenterVertically) {
                         androidx.compose.material3.CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp)

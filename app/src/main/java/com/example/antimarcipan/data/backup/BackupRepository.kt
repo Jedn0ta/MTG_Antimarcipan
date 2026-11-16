@@ -52,6 +52,6 @@ class BackupRepository(
     fun suggestedFileName(): String {
         val ts = java.text.SimpleDateFormat("yyyyMMdd-HHmm", java.util.Locale.US)
             .format(java.util.Date())
-        return "antimarcipan-zaloha-$ts.db"
+        return "grimoar-zaloha-$ts.db"
     }
 }
