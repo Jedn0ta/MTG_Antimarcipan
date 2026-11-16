@@ -2,6 +2,7 @@ package com.example.antimarcipan.settings
 
 import android.widget.Toast
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -278,7 +279,8 @@ private fun AboutCard(sha: String) {
                 Image(
                     painter = painterResource(R.drawable.splash_icon),
                     contentDescription = "Ikona aplikace",
-                    modifier = Modifier.size(64.dp).clip(RoundedCornerShape(12.dp)),
+                    modifier = Modifier.size(64.dp).clip(RoundedCornerShape(14.dp))
+                        .background(androidx.compose.ui.graphics.Brush.radialGradient(listOf(androidx.compose.ui.graphics.Color(0xFF3A2C72), androidx.compose.ui.graphics.Color(0xFF140F28)))),
                 )
                 Text(
                     "Grimoar · verze ${BuildConfig.VERSION_NAME} · build $sha",
