@@ -541,6 +541,7 @@ private fun SwipeToAddDeck(
         enableDismissFromEndToStart = false,
         backgroundContent = {
             // Jemná zpětná vazba: zlatý přechod sílí s tahem, bez ikon.
+            if (dismissState.dismissDirection == SwipeToDismissBoxValue.Settled) return@SwipeToDismissBox
             val p = dismissState.progress.coerceIn(0f, 1f)
             val armed = dismissState.targetValue == SwipeToDismissBoxValue.StartToEnd
             Box(
@@ -581,7 +582,7 @@ private fun CollectionRow(
 ) {
     var ringProgress by remember { androidx.compose.runtime.mutableFloatStateOf(0f) }
     Box(
-        Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface),
+        Modifier.fillMaxWidth(),
         contentAlignment = Alignment.Center,
     ) {
         Row(
