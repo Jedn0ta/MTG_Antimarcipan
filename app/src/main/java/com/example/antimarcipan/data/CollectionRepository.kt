@@ -72,6 +72,12 @@ class CollectionRepository(
         error("Kombinace edice a čísla nenalezena")
     }
 
+    /** Jen podle jména (fuzzy), bez náhradního hledání podle rohu — pro multisken. */
+    suspend fun lookupNameOnly(name: String): Result<ScryfallCard> = runCatching {
+        require(name.trim().length >= 3)
+        scryfall.cardByFuzzyName(name.trim())
+    }
+
     suspend fun lookup(rawText: String): Result<ScryfallCard> = runCatching {
         val parsed = OcrParser.parse(rawText)
         require(parsed.nameGuess.length >= 3) { "Text příliš krátký na jméno karty" }

@@ -39,7 +39,7 @@ class PhotoCardRecognizer(private val repo: CollectionRepository) {
             unique.map { name ->
                 async {
                     sem.withPermit {
-                        val card = repo.lookup(name).getOrNull()?.takeIf { similarName(name, it.name) }
+                        val card = repo.lookupNameOnly(name).getOrNull()?.takeIf { similarName(name, it.name) }
                         synchronized(this@PhotoCardRecognizer) {
                             done++; if (card != null) found++
                             onProgress(done, unique.size, found)
@@ -132,7 +132,11 @@ class PhotoCardRecognizer(private val repo: CollectionRepository) {
             val q = query.lowercase().filter { it.isLetter() }
             val f = found.lowercase().substringBefore(" //").filter { it.isLetter() }
             if (q.length < 3 || f.isEmpty()) return false
-            if (f == q || f.startsWith(q) && q.length >= f.length * 0.6 || q.startsWith(f)) return true
+            if (f == q) return true
+            // Část jména (např. bez „, the Wizened“) — musí to být většina jména.
+            if (f.startsWith(q) && q.length >= f.length * 0.75) return true
+            // Přečtený text je delší (připojené znaky) — jen o pár písmen.
+            if (q.startsWith(f) && q.length - f.length <= 3) return true
             val d = IntArray(f.length + 1) { it }
             for (i in 1..q.length) {
                 var prev = d[0]; d[0] = i
@@ -142,7 +146,7 @@ class PhotoCardRecognizer(private val repo: CollectionRepository) {
                     prev = tmp
                 }
             }
-            return d[f.length] <= maxOf(2, f.length / 4)
+            return d[f.length] <= maxOf(1, f.length / 7)
         }
     }
 }
