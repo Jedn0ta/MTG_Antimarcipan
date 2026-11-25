@@ -328,18 +328,13 @@ internal fun InviteDialog(g: BoardGroup, onDismiss: () -> Unit) {
     )
 }
 
-/** Odznak Mecenáš — za „Kafe pro autora“. */
+/** Odznak podporovatele — nenápadná zlatá hvězdička u jména. */
 @Composable
 internal fun MecenasBadge() {
     Text(
-        "☕ Mecenáš",
-        Modifier
-            .padding(start = 6.dp)
-            .clip(RoundedCornerShape(8.dp))
-            .background(Brush.linearGradient(listOf(Color(0xFFF6DE9A), Color(0xFFB98A35))))
-            .padding(horizontal = 6.dp, vertical = 1.dp),
-        color = Color(0xFF1E1633),
-        fontSize = 10.sp,
-        fontWeight = FontWeight.Bold,
+        "✦",
+        Modifier.padding(start = 4.dp),
+        color = Color(0xFFD9B45A).copy(alpha = 0.85f),
+        fontSize = 11.sp,
     )
 }

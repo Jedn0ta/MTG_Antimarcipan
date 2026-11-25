@@ -84,7 +84,7 @@ object SupportStore {
             return
         }
         Supporter.grant(app)
-        message.value = "Díky za kafe! ☕ Odznak Mecenáš je tvůj."
+        message.value = "Díky za kafe! ☕ Hvězdička ✦ na Nástěnce je tvoje."
         if (!p.isAcknowledged) {
             client?.acknowledgePurchase(
                 AcknowledgePurchaseParams.newBuilder().setPurchaseToken(p.purchaseToken).build()

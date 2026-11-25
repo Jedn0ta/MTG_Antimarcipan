@@ -469,11 +469,11 @@ private fun SupportCard() {
         Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text("☕ Kafe pro autora", style = MaterialTheme.typography.titleMedium)
             if (supporter) {
-                Text("Díky! Jsi Mecenáš — odznak ☕ uvidí kamarádi u tvých zpráv na Nástěnce.", style = MaterialTheme.typography.bodySmall)
+                Text("Díky! Jsi Mecenáš — kamarádi uvidí u tvých zpráv na Nástěnce zlatou hvězdičku ✦.", style = MaterialTheme.typography.bodySmall)
             } else {
                 Text(
                     "Grimoar je zdarma a všechny funkce zůstanou zdarma. Pokud se ti líbí, můžeš autorovi koupit kafe. " +
-                        "Jako poděkování dostaneš odznak Mecenáš u svých zpráv na Nástěnce — nic víc, jen pro radost.",
+                        "Jako poděkování dostaneš zlatou hvězdičku ✦ u svých zpráv na Nástěnce — nic víc, jen pro radost.",
                     style = MaterialTheme.typography.bodySmall,
                 )
                 androidx.compose.material3.Button(onClick = { activity?.let { com.example.antimarcipan.support.SupportStore.buy(it) } }) {
