@@ -113,4 +113,57 @@ class AdvisorViewModel(
             .filter { it.card.scryfallId != deck?.commanderScryfallId }
             .flatMap { e -> List(e.deckQuantity.coerceAtLeast(1)) { e.card } }
     }
+
+    // ---- Claude ----
+    suspend fun claudePrompt(deckId: Long?, includeCollection: Boolean, question: String): String {
+        val deck = deckId?.let { deckRepo.deck(it) }
+        val entries = deckId?.let { deckRepo.deckCardsWithQty(it).first() } ?: emptyList()
+        return com.example.antimarcipan.claude.ClaudeBridge.buildPrompt(
+            deck, entries, owned.value, includeCollection, _combos.value.report, question,
+        )
+    }
+
+    fun applyClaude(
+        deckId: Long,
+        changes: List<com.example.antimarcipan.claude.ClaudeBridge.Change>,
+        onDone: (String) -> Unit,
+    ) {
+        viewModelScope.launch {
+            var added = 0; var cut = 0; var wished = 0
+            val missing = mutableListOf<String>()
+            val deckEntries = if (deckId > 0) deckRepo.deckCardsWithQty(deckId).first() else emptyList()
+            for (c in changes) {
+                val key = c.name.lowercase()
+                fun matches(n: String) = n.lowercase() == key || n.lowercase().substringBefore(" // ") == key
+                when (c) {
+                    is com.example.antimarcipan.claude.ClaudeBridge.Change.Add -> {
+                        val own = owned.value.firstOrNull { matches(it.name) }
+                        if (deckId > 0 && own != null) {
+                            repeat(c.qty) { deckRepo.addCard(deckId, own.scryfallId) }; added += c.qty
+                        } else {
+                            collectionRepo.addToWishlistByName(c.name, "Claude: do balíku")
+                                .onSuccess { wished++ }.onFailure { missing += c.name }
+                        }
+                    }
+                    is com.example.antimarcipan.claude.ClaudeBridge.Change.Cut -> {
+                        val e = deckEntries.firstOrNull { matches(it.card.name) }
+                        if (e == null) missing += c.name else {
+                            val left = e.deckQuantity - c.qty
+                            if (left <= 0) deckRepo.removeCard(deckId, e.card.scryfallId)
+                            else deckRepo.setDeckCardQuantity(deckId, e.card.scryfallId, left)
+                            cut += c.qty
+                        }
+                    }
+                    is com.example.antimarcipan.claude.ClaudeBridge.Change.Wish -> {
+                        collectionRepo.addToWishlistByName(c.name, c.note.ifBlank { "Doporučil Claude" })
+                            .onSuccess { wished++ }.onFailure { missing += c.name }
+                    }
+                }
+            }
+            onDone(buildString {
+                append("Přidáno do balíku: $added · vyhozeno: $cut · na wishlist: $wished")
+                if (missing.isNotEmpty()) append("\nNenalezeno: ${missing.joinToString()}")
+            })
+        }
+    }
 }

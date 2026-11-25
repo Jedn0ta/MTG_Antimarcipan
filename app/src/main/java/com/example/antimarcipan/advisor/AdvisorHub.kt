@@ -70,7 +70,7 @@ import kotlinx.coroutines.launch
 import com.example.antimarcipan.data.thumbModel
 import androidx.compose.foundation.verticalScroll
 
-private enum class Tool { HUB, ANALYZE, BUILD, LIMITED, HAND, COMBOS, GLOSSARY }
+private enum class Tool { HUB, ANALYZE, BUILD, LIMITED, HAND, COMBOS, GLOSSARY, CLAUDE }
 
 /** Rádce: rozcestník nástrojů. */
 @Composable
@@ -93,6 +93,7 @@ fun AdvisorHubScreen(vm: AdvisorViewModel = viewModel(factory = AppViewModelFact
         Tool.HAND -> SampleHandTool(vm, back)
         Tool.COMBOS -> CombosTool(vm, back)
         Tool.GLOSSARY -> GlossaryTool(back)
+        Tool.CLAUDE -> com.example.antimarcipan.claude.ClaudeTool(vm, back)
     }
 }
 
@@ -107,6 +108,7 @@ fun HubBackRow(title: String, onBack: () -> Unit) {
 @Composable
 private fun Hub(open: (Tool) -> Unit) {
     LazyColumn(Modifier.fillMaxSize(), contentPadding = androidx.compose.foundation.layout.PaddingValues(12.dp)) {
+        item { HubTile(Icons.Filled.AutoAwesome, "Zeptat se Clauda", "Pošli balík a sbírku Claudovi (v telefonu nebo na PC přes Wi-Fi) a jeho návrhy změn proveď jedním klepnutím.") { open(Tool.CLAUDE) } }
         item { HubTile(Icons.Filled.Insights, "Analýza balíku", "Mana curve, země, ramp, dobírání, removal, synergie, co nesedí a co doplnit.") { open(Tool.ANALYZE) } }
         item { HubTile(Icons.Filled.Construction, "Postavit balík ze sbírky", "Vyber formát a barvy (nebo velitele) — navrhnu balík jen z karet, které máš.") { open(Tool.BUILD) } }
         item { HubTile(Icons.Filled.SwapHoriz, "Průvodce Draft / Sealed", "Krok za krokem: jak formát probíhá, pick order, focení poolu a stavba 40 karet.") { open(Tool.LIMITED) } }
