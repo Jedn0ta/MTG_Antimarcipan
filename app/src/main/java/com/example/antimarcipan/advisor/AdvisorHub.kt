@@ -132,7 +132,7 @@ private fun Hub(open: (Tool) -> Unit) {
 }
 
 @Composable
-private fun HubTile(icon: ImageVector, title: String, desc: String, modifier: Modifier, onClick: () -> Unit) {
+private fun HubTile(icon: ImageVector, title: String, desc: String, modifier: Modifier = Modifier.fillMaxWidth().height(130.dp).padding(vertical = 4.dp), onClick: () -> Unit) {
     Card(
         modifier.clip(RoundedCornerShape(18.dp)).clickable(onClick = onClick),
         shape = RoundedCornerShape(18.dp),
