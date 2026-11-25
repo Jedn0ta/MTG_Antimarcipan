@@ -47,7 +47,8 @@ class AdvisorViewModel(
     fun analyzeDeck(deckId: Long) {
         viewModelScope.launch {
             val deck = deckRepo.deck(deckId)
-            val cards = deckRepo.deckCards(deckId).first()
+            val cards = deckRepo.deckCardsWithQty(deckId).first()
+                .flatMap { e -> List(e.deckQuantity.coerceAtLeast(1)) { e.card } }
             val commander = cards.firstOrNull { it.scryfallId == deck?.commanderScryfallId }
             val tips = AdvisorEngine.analyze(cards, commander)
             val (curve, avg, lands) = com.example.antimarcipan.ui.computeCurve(deckRepo.deckCardsWithQty(deckId).first())

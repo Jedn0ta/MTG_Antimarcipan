@@ -81,6 +81,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -269,6 +270,16 @@ internal fun DeckDetailView(vm: DeckViewModel, deck: Deck) {
                         DeckStat("Ostatní kouzla", spellsN - creaturesN)
                         DeckStat("Země", landsN)
                     }
+                    // Multisken fotkou rovnou do balíku
+                    val deckPhotoUri = remember {
+                        val dir = java.io.File(context.cacheDir, "photos").apply { mkdirs() }
+                        androidx.core.content.FileProvider.getUriForFile(
+                            context, context.packageName + ".fileprovider", java.io.File(dir, "deck.jpg"),
+                        )
+                    }
+                    val deckTakePhoto = androidx.activity.compose.rememberLauncherForActivityResult(
+                        androidx.activity.result.contract.ActivityResultContracts.TakePicture()
+                    ) { ok -> if (ok) vm.scanDeckPhoto(deck.id, context, deckPhotoUri) }
                     // Rychlé akce
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         if (!format.isLimited) androidx.compose.material3.Button(
@@ -276,11 +287,21 @@ internal fun DeckDetailView(vm: DeckViewModel, deck: Deck) {
                             modifier = Modifier.weight(1f),
                             contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp),
                         ) { Icon(Icons.Filled.Add, null, Modifier.size(18.dp)); Text(" Přidat kartu") }
+                        if (!format.isLimited) androidx.compose.material3.OutlinedButton(
+                            onClick = { deckTakePhoto.launch(deckPhotoUri) },
+                            enabled = !poolScanBusy,
+                            modifier = Modifier.weight(1f),
+                            contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp),
+                        ) { Icon(Icons.Filled.PhotoCamera, null, Modifier.size(18.dp)); Text(" Vyfotit") }
                         androidx.compose.material3.OutlinedButton(
                             onClick = { shareDecklist(context, deck.name, flatCards) },
                             modifier = Modifier.weight(1f),
                             contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp),
                         ) { Icon(Icons.Filled.Share, null, Modifier.size(18.dp)); Text(" Export") }
+                    }
+                    if (!format.isLimited && poolScanStatus != null) Row(verticalAlignment = Alignment.CenterVertically) {
+                        if (poolScanBusy) androidx.compose.material3.CircularProgressIndicator(Modifier.padding(end = 8.dp).size(16.dp), strokeWidth = 2.dp)
+                        Text(poolScanStatus!!, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
                     }
                 }
             }

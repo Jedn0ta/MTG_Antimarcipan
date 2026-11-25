@@ -78,7 +78,9 @@ class SynergyViewModel(
         viewModelScope.launch {
             try {
                 val deck = deckRepo.deck(deckId)
-                val cards = deckRepo.deckCards(deckId).first()
+                // Včetně počtu kusů — základní země naklikané v panelu se počítají všechny.
+                val cards = deckRepo.deckCardsWithQty(deckId).first()
+                    .flatMap { e -> List(e.deckQuantity.coerceAtLeast(1)) { e.card } }
                 if (cards.isEmpty()) {
                     _state.value = SynergyUiState(
                         deckName = deck?.name,

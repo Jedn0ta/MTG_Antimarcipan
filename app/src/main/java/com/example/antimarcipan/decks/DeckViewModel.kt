@@ -87,6 +87,32 @@ class DeckViewModel(
         }
     }
 
+    /** Vyfocené karty (jedna i víc) přidá do sbírky a rovnou do balíku. */
+    fun scanDeckPhoto(deckId: Long, context: android.content.Context, uri: android.net.Uri) {
+        if (poolScanBusy.value) return
+        poolScanBusy.value = true
+        poolScanStatus.value = "Fotka pořízena · čtu text…"
+        viewModelScope.launch {
+            val cards = runCatching {
+                com.example.antimarcipan.scan.PhotoCardRecognizer(collectionRepo).recognize(context, uri) { d, t, f ->
+                    poolScanStatus.value = "Hledám karty $d/$t… (nalezeno $f)"
+                }
+            }.getOrElse {
+                poolScanStatus.value = "Fotku se nepodařilo načíst — zkus to znovu"
+                poolScanBusy.value = false
+                return@launch
+            }
+            cards.forEach {
+                collectionRepo.addToCollection(it)
+                deckRepo.addCard(deckId, it.id)
+            }
+            poolScanStatus.value = if (cards.isEmpty()) "Žádnou kartu se nepodařilo rozpoznat — zkus ostřejší fotku"
+            else "Do balíku přidáno ${cards.size} karet: " + cards.groupingBy { it.name }.eachCount()
+                .entries.joinToString(", ") { if (it.value > 1) "${it.value}× ${it.key}" else it.key }
+            poolScanBusy.value = false
+        }
+    }
+
     fun setPoolQty(deckId: Long, scryfallId: String, qty: Int) {
         viewModelScope.launch { deckRepo.setPoolQty(deckId, scryfallId, qty) }
     }
