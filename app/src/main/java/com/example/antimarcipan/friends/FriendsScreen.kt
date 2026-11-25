@@ -248,7 +248,7 @@ private fun FriendsList(vm: FriendsViewModel = viewModel(factory = AppViewModelF
                 }
             }
         }
-        item {
+        if (com.example.antimarcipan.BuildConfig.BOARD) item {
             Card(Modifier.fillMaxWidth().padding(top = 14.dp), colors = CardDefaults.cardColors(containerColor = Color.Black.copy(alpha = 0.2f))) {
                 Column(Modifier.padding(12.dp)) {
                     Text("Nástěnka", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
