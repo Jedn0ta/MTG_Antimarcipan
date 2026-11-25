@@ -27,6 +27,8 @@ data class Payload(
     val mu: Boolean = false,
     /** Odpověď na příspěvek (id). */
     val q: String = "",
+    /** Odesílatel je Mecenáš (koupil kafe pro autora). */
+    val s: Boolean = false,
 )
 
 data class Post(val id: String, val author: String, val createdAt: Long, val p: Payload, val mine: Boolean)
@@ -162,7 +164,7 @@ object Board {
         val g = current.value ?: return
         val id = identity ?: return
         scope.launch {
-            val ev = NostrEvent.create(id, AM_KIND, listOf(listOf("t", g.tag)), g.encrypt(json.encodeToString(Payload.serializer(), p)))
+            val ev = NostrEvent.create(id, AM_KIND, listOf(listOf("t", g.tag)), g.encrypt(json.encodeToString(Payload.serializer(), p.copy(s = com.example.antimarcipan.support.Supporter.isSupporter))))
             onEvent(ev)
             pool?.publish(ev)
         }

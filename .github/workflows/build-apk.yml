@@ -30,11 +30,41 @@ jobs:
       - name: Build debug APK
         run: |
           SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
-          ./gradlew assembleDebug \
+          ./gradlew assembleGithubDebug \
             -PgitSha=${{ github.sha }} \
             -PversionCode=${{ github.run_number }} \
             -PversionName="0.1.${{ github.run_number }} ($SHORT_SHA)" \
             --stacktrace
+
+      - name: Rename APK
+        run: mv app/build/outputs/apk/github/debug/*.apk app/build/outputs/apk/github/debug/app-debug.apk
+
+      # AAB pro Google Play — jen pokud jsou v repu nastavené Secrets s upload klíčem.
+      - name: Build Play bundle (AAB)
+        env:
+          UPLOAD_KEYSTORE_B64: ${{ secrets.UPLOAD_KEYSTORE_B64 }}
+          UPLOAD_STORE_PASSWORD: ${{ secrets.UPLOAD_STORE_PASSWORD }}
+          UPLOAD_KEY_ALIAS: ${{ secrets.UPLOAD_KEY_ALIAS }}
+        run: |
+          if [ -n "$UPLOAD_KEYSTORE_B64" ]; then
+            echo "$UPLOAD_KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/upload.jks"
+            export UPLOAD_KEYSTORE="$RUNNER_TEMP/upload.jks" UPLOAD_KEY_PASSWORD="$UPLOAD_STORE_PASSWORD"
+          fi
+          ./gradlew bundlePlayRelease \
+            -PgitSha=${{ github.sha }} \
+            -PversionCode=${{ github.run_number }} \
+            -PversionName="1.0.${{ github.run_number }}" \
+            --stacktrace
+          mv app/build/outputs/bundle/playRelease/*.aab app/build/outputs/bundle/playRelease/grimoar-play.aab
+          # Bez upload klíče je AAB jen kontrola překladu — nenahrávat (špatný podpis).
+          if [ -z "$UPLOAD_KEYSTORE_B64" ]; then rm app/build/outputs/bundle/playRelease/*.aab; fi
+
+      - name: Upload AAB as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Grimoar-play-aab
+          path: app/build/outputs/bundle/playRelease/*.aab
+          if-no-files-found: ignore
 
       - name: Generate version.json
         run: |
@@ -52,7 +82,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: Grimoar-debug-apk
-          path: app/build/outputs/apk/debug/*.apk
+          path: app/build/outputs/apk/github/debug/app-debug.apk
           if-no-files-found: error
 
       # Vytvoří / aktualizuje Release "latest-debug" s přiloženým APK + version.json,
@@ -68,6 +98,6 @@ jobs:
             (povol instalaci z neznámých zdrojů), nebo použij v appce
             Nastavení → Zkontrolovat aktualizaci.
           files: |
-            app/build/outputs/apk/debug/*.apk
+            app/build/outputs/apk/github/debug/app-debug.apk
             version.json
           make_latest: true

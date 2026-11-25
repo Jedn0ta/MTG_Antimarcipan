@@ -8,12 +8,12 @@ plugins {
 
 android {
     namespace = "com.example.antimarcipan"
-    compileSdk = 34
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.example.antimarcipan"
         minSdk = 26
-        targetSdk = 34
+        targetSdk = 36
         // versionCode roste s každým CI buildem (-PversionCode=<run_number>),
         // aby systém aktualizaci bral jako novější verzi.
         versionCode = (project.findProperty("versionCode") as String?)?.toIntOrNull() ?: 1
@@ -32,6 +32,15 @@ android {
     // aktualizaci lze nainstalovat přes předchozí verzi (jinak Android odmítne
     // instalaci kvůli neshodě podpisu).
     signingConfigs {
+        // Upload klíč pro Google Play — z proměnných prostředí (GitHub Secrets).
+        System.getenv("UPLOAD_KEYSTORE")?.let { path ->
+            create("upload") {
+                storeFile = file(path)
+                storePassword = System.getenv("UPLOAD_STORE_PASSWORD")
+                keyAlias = System.getenv("UPLOAD_KEY_ALIAS")
+                keyPassword = System.getenv("UPLOAD_KEY_PASSWORD")
+            }
+        }
         create("shared") {
             storeFile = file("antimarcipan.keystore")
             storePassword = "antimarcipan"
@@ -46,11 +55,25 @@ android {
         }
         release {
             isMinifyEnabled = false
-            signingConfig = signingConfigs.getByName("shared")
+            signingConfig = signingConfigs.findByName("upload") ?: signingConfigs.getByName("shared")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+        }
+    }
+    // github = APK z GitHubu se samoaktualizací (původní ID, ať se zachovají data),
+    // play = Google Play: vlastní ID, bez samoaktualizace, s nákupem „Kafe pro autora“.
+    flavorDimensions += "store"
+    productFlavors {
+        create("github") {
+            dimension = "store"
+            buildConfigField("boolean", "SELF_UPDATE", "true")
+        }
+        create("play") {
+            dimension = "store"
+            applicationId = "com.onoseto.grimoar"
+            buildConfigField("boolean", "SELF_UPDATE", "false")
         }
     }
     compileOptions {
@@ -105,4 +128,7 @@ dependencies {
     // Card images
     implementation(libs.coil.compose)
     implementation(libs.coil.svg)
+
+    // Google Play Billing — jen verze pro Play
+    "playImplementation"("com.android.billingclient:billing:8.0.0")
 }

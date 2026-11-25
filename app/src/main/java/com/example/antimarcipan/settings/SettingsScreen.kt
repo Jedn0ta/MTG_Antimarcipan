@@ -62,7 +62,8 @@ fun SettingsScreen(
         Spacer(Modifier.height(4.dp))
 
         // --- Verze / aktualizace ---
-        Card(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp)) {
+        SupportCard()
+        if (BuildConfig.SELF_UPDATE) Card(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp)) {
             Column(
                 Modifier.fillMaxWidth().padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
@@ -452,6 +453,34 @@ private fun ThumbSizeCard() {
                 }
             }
             TextButton(onClick = { settings.setListThumb(1f); settings.setGridThumb(1f) }) { Text("Výchozí velikost") }
+        }
+    }
+}
+
+/** „Kafe pro autora“ — dobrovolný příspěvek, odemkne odznak Mecenáš. */
+@Composable
+private fun SupportCard() {
+    val supporter by com.example.antimarcipan.support.Supporter.active.collectAsStateWithLifecycle()
+    if (!com.example.antimarcipan.support.SupportStore.AVAILABLE && !supporter) return
+    val price by com.example.antimarcipan.support.SupportStore.price.collectAsStateWithLifecycle()
+    val msg by com.example.antimarcipan.support.SupportStore.message.collectAsStateWithLifecycle()
+    val activity = LocalContext.current as? android.app.Activity
+    Card(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp)) {
+        Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text("☕ Kafe pro autora", style = MaterialTheme.typography.titleMedium)
+            if (supporter) {
+                Text("Díky! Jsi Mecenáš — odznak ☕ uvidí kamarádi u tvých zpráv na Nástěnce.", style = MaterialTheme.typography.bodySmall)
+            } else {
+                Text(
+                    "Grimoar je zdarma a všechny funkce zůstanou zdarma. Pokud se ti líbí, můžeš autorovi koupit kafe. " +
+                        "Jako poděkování dostaneš odznak Mecenáš u svých zpráv na Nástěnce — nic víc, jen pro radost.",
+                    style = MaterialTheme.typography.bodySmall,
+                )
+                androidx.compose.material3.Button(onClick = { activity?.let { com.example.antimarcipan.support.SupportStore.buy(it) } }) {
+                    Text("Koupit kafe" + (price?.let { " · $it" } ?: ""))
+                }
+            }
+            msg?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary) }
         }
     }
 }

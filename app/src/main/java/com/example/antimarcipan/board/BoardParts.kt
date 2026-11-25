@@ -55,6 +55,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -127,7 +129,10 @@ internal fun MessageBubble(p: Post, showName: Boolean, quoted: Post? = null, onL
                 .combinedClickable(onClick = {}, onLongClick = onLongPress)
                 .padding(horizontal = 12.dp, vertical = 7.dp),
         ) {
-            if (!p.mine && showName) Text(p.p.n, style = MaterialTheme.typography.labelMedium, color = nameColor(p.author), fontWeight = FontWeight.Bold)
+            if (showName && (!p.mine || p.p.s)) Row(verticalAlignment = Alignment.CenterVertically) {
+                if (!p.mine) Text(p.p.n, style = MaterialTheme.typography.labelMedium, color = nameColor(p.author), fontWeight = FontWeight.Bold)
+                if (p.p.s) MecenasBadge()
+            }
             if (p.p.q.isNotBlank()) Row(
                 Modifier.padding(vertical = 3.dp).clip(RoundedCornerShape(6.dp)).background(Color.Black.copy(alpha = 0.25f)).padding(6.dp),
             ) {
@@ -320,5 +325,21 @@ internal fun InviteDialog(g: BoardGroup, onDismiss: () -> Unit) {
             }
         },
         confirmButton = { TextButton(onClick = onDismiss) { Text("Hotovo") } },
+    )
+}
+
+/** Odznak Mecenáš — za „Kafe pro autora“. */
+@Composable
+internal fun MecenasBadge() {
+    Text(
+        "☕ Mecenáš",
+        Modifier
+            .padding(start = 6.dp)
+            .clip(RoundedCornerShape(8.dp))
+            .background(Brush.linearGradient(listOf(Color(0xFFF6DE9A), Color(0xFFB98A35))))
+            .padding(horizontal = 6.dp, vertical = 1.dp),
+        color = Color(0xFF1E1633),
+        fontSize = 10.sp,
+        fontWeight = FontWeight.Bold,
     )
 }
