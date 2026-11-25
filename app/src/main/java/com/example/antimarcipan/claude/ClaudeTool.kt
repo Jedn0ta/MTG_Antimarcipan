@@ -212,7 +212,7 @@ private fun ProposalDialog(
         onDismissRequest = onDismiss,
         title = { Text("Návrh od Clauda") },
         text = {
-            Column(Modifier.verticalScroll(rememberScrollState())) {
+            Column(Modifier) {
                 Text(
                     if (deckName != null) "Balík: $deckName" else "Bez balíku — přidávané karty půjdou na wishlist.",
                     style = MaterialTheme.typography.bodySmall,

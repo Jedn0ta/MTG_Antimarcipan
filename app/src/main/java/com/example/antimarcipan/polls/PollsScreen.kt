@@ -300,7 +300,7 @@ private fun CreatePollDialog(onDismiss: () -> Unit, onCreated: (Poll) -> Unit) {
         onDismissRequest = onDismiss,
         title = { Text("Nová anketa") },
         text = {
-            Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedTextField(title, { title = it }, label = { Text("Název") }, singleLine = true, modifier = Modifier.fillMaxWidth())
                 OutlinedTextField(place, { place = it }, label = { Text("Místo") }, singleLine = true, modifier = Modifier.fillMaxWidth())
                 if (PollStore.myName().isBlank()) OutlinedTextField(myName, { myName = it }, label = { Text("Tvoje jméno") }, singleLine = true, modifier = Modifier.fillMaxWidth())
