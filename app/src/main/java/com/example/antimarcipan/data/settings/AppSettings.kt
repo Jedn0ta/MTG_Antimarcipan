@@ -11,11 +11,11 @@ import kotlinx.coroutines.flow.asStateFlow
 enum class AppBackground(val code: String, val label: String) {
     NONE("none", tr("Žádné")),
     PLAINS("plains", tr("Pláně")),
-    ISLAND("island", "Ostrov"),
+    ISLAND("island", tr("Ostrov")),
     SWAMP("swamp", tr("Bažina")),
-    MOUNTAIN("mountain", "Hory"),
-    FOREST("forest", "Les"),
-    WASTES("wastes", "Pustina");
+    MOUNTAIN("mountain", tr("Hory")),
+    FOREST("forest", tr("Les")),
+    WASTES("wastes", tr("Pustina"));
 
     companion object {
         fun fromCode(code: String?): AppBackground =

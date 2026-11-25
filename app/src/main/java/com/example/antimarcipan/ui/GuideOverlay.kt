@@ -131,7 +131,7 @@ private val NODES: Map<String, GuideNode> = listOf(
         mock = { MockScanner(mode = 1) },
     ),
     GuideNode(
-        "s_multi", "Multisken z fotky",
+        "s_multi", tr("Multisken z fotky"),
         tr("Rozlož karty lícem nahoru vedle sebe a ťukni „Vyfotit karty“ (nebo vyber fotku z galerie). Appka přečte všechny názvy, ukáže průběh a nalezené karty potvrdíš najednou."),
         mock = { MockMulti() },
     ),
@@ -163,7 +163,7 @@ private val NODES: Map<String, GuideNode> = listOf(
         mock = { MockCardRow(highlightIcon = 0, label = "⇄ edice") },
     ),
     GuideNode(
-        "c_gatherer", "Gatherer a rulings",
+        "c_gatherer", tr("Gatherer a rulings"),
         tr("Ikona knížky:\n• ťuk → oficiální rulings (výklady pravidel),\n• podržení 3 s → otevře kartu na Gathereru (oficiální web Wizards of the Coast)."),
         mock = { MockCardRow(highlightIcon = 1, label = "📖 rulings") },
     ),
@@ -200,7 +200,7 @@ private val NODES: Map<String, GuideNode> = listOf(
         mock = { MockDetailDialog(showDelete = true, deleteLabel = tr("Odebrat z balíku")) },
     ),
     GuideNode(
-        "d_limited", "Draft a Sealed",
+        "d_limited", tr("Draft a Sealed"),
         tr("Limited balík se staví z poolu: v rádci balíku „Vyfotit karty“ → karty jdou do poolu. Rádce hlídá 40 karet a 17 zemí, doporučí barvy a nejlepší karty. Na konci „Pool do sbírky“."),
         mock = { MockPool() },
     ),
@@ -714,10 +714,10 @@ private fun MockLifeMenu() {
         }
         Text(tr("Den a noc"), fontSize = 10.sp, color = GoldLight)
         Row(Modifier.fillMaxWidth().border(1.dp, GoldBorderBrush, RoundedCornerShape(8.dp))) {
-            listOf("Vypnuto", "☀ Den", "☾ Noc").forEachIndexed { i, l -> Text(l, Modifier.weight(1f).background(if (i == 1) Gold else Color.Transparent).padding(4.dp), textAlign = TextAlign.Center, fontSize = 10.sp, color = if (i == 1) Ink else GoldLight) }
+            listOf(tr("Vypnuto"), "☀ Den", "☾ Noc").forEachIndexed { i, l -> Text(l, Modifier.weight(1f).background(if (i == 1) Gold else Color.Transparent).padding(4.dp), textAlign = TextAlign.Center, fontSize = 10.sp, color = if (i == 1) Ink else GoldLight) }
         }
         Row(verticalAlignment = Alignment.CenterVertically) { Text(tr("Nezhasínat obrazovku"), Modifier.weight(1f), fontSize = 10.sp, color = Color.White); Box(Modifier.size(28.dp, 14.dp).clip(CircleShape).background(Gold)) }
-        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) { MockBtn("Historie"); MockBtn(tr("Nová hra"), true) }
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) { MockBtn(tr("Historie")); MockBtn(tr("Nová hra"), true) }
     }
 }
 

@@ -181,7 +181,7 @@ fun CardFilterSheet(
 
             // --- Typ (málo hodnot → dlaždice) ---
             if (options.types.isNotEmpty()) item {
-                Section("Typ") {
+                Section(tr("Typ")) {
                     ChipGroup(options.types.map { it to it }, state.types) {
                         onChange(state.copy(types = state.types.toggle(it)))
                     }
@@ -190,7 +190,7 @@ fun CardFilterSheet(
 
             // --- Rarita ---
             if (options.rarities.isNotEmpty()) item {
-                Section("Rarita") {
+                Section(tr("Rarita")) {
                     ChipGroup(options.rarities.map { it to (RARITY_LABEL[it] ?: it) }, state.rarities) {
                         onChange(state.copy(rarities = state.rarities.toggle(it)))
                     }
@@ -204,22 +204,22 @@ fun CardFilterSheet(
                 }
             }
             if (options.keywords.isNotEmpty()) item {
-                MultiSelectField("Vlastnosti (Deathtouch, Lifelink…)", options.keywords.map { it to it }, state.keywords) {
+                MultiSelectField(tr("Vlastnosti (Deathtouch, Lifelink…)"), options.keywords.map { it to it }, state.keywords) {
                     onChange(state.copy(keywords = it))
                 }
             }
             if (options.sets.isNotEmpty()) item {
-                MultiSelectField("Edice", options.sets.map { it.first to "${it.second} (${it.first.uppercase()})" }, state.sets) {
+                MultiSelectField(tr("Edice"), options.sets.map { it.first to "${it.second} (${it.first.uppercase()})" }, state.sets) {
                     onChange(state.copy(sets = it))
                 }
             }
             if (options.subtypes.isNotEmpty()) item {
-                MultiSelectField("Podtyp (Equipment, Aura, Forest…)", options.subtypes.map { it to it }, state.subtypes) {
+                MultiSelectField(tr("Podtyp (Equipment, Aura, Forest…)"), options.subtypes.map { it to it }, state.subtypes) {
                     onChange(state.copy(subtypes = it))
                 }
             }
             if (options.supertypes.isNotEmpty()) item {
-                MultiSelectField("Nadtyp (Legendary, Basic, Snow…)", options.supertypes.map { it to it }, state.supertypes) {
+                MultiSelectField(tr("Nadtyp (Legendary, Basic, Snow…)"), options.supertypes.map { it to it }, state.supertypes) {
                     onChange(state.copy(supertypes = it))
                 }
             }

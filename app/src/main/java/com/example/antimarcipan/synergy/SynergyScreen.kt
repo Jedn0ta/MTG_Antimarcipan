@@ -86,7 +86,7 @@ fun SynergyScreen(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) { CircularProgressIndicator(); Text("Analyzuji „${state.deckName}“…") }
-            state.error != null -> EmptyState("Nepovedlo se", state.error!!)
+            state.error != null -> EmptyState(tr("Nepovedlo se"), state.error!!)
             state.report != null -> {
                 val report = state.report!!
                 LazyColumn(Modifier.fillMaxSize()) {

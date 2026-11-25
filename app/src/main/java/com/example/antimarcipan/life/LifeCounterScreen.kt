@@ -215,7 +215,7 @@ data class TimeCurve(val label: String, val baseSec: Int, val perTurnSec: Int, v
 }
 
 val TIME_CURVES = listOf(
-    TimeCurve("Bez limitu", 0, 0, 0),
+    TimeCurve(tr("Bez limitu"), 0, 0, 0),
     TimeCurve(tr("Rychlá"), 45, 10, 180),
     TimeCurve(tr("Standardní"), 60, 15, 240),
     TimeCurve(tr("Pohodová"), 90, 20, 360),
@@ -731,15 +731,15 @@ private fun LifeMenu(onDismiss: () -> Unit, save: () -> Unit) {
                     }
                 }
                 MenuSection(tr("Počítadla")) {
-                    SwitchRow("Jed (infect / poison)", tr("☠ ťuk +1, podržet −1; 10 = prohra"), LifeState.showPoison) {
+                    SwitchRow(tr("Jed (infect / poison)"), tr("☠ ťuk +1, podržet −1; 10 = prohra"), LifeState.showPoison) {
                         LifeState.showPoison = it; save()
                     }
-                    SwitchRow("Commander damage", tr("⚔ poškození od velitelů soupeřů; 21 = prohra"), LifeState.showCmd) {
+                    SwitchRow(tr("Commander damage"), tr("⚔ poškození od velitelů soupeřů; 21 = prohra"), LifeState.showCmd) {
                         LifeState.showCmd = it; save()
                     }
                 }
                 MenuSection(tr("Den a noc")) {
-                    Segmented(listOf("Vypnuto" to 0, "☀ Den" to 1, "☾ Noc" to 2), LifeState.dayNight) {
+                    Segmented(listOf(tr("Vypnuto") to 0, "☀ Den" to 1, "☾ Noc" to 2), LifeState.dayNight) {
                         LifeState.dayNight = it; save()
                     }
                     if (LifeState.dayNight != 0) Text(
@@ -747,7 +747,7 @@ private fun LifeMenu(onDismiss: () -> Unit, save: () -> Unit) {
                         style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.6f),
                     )
                 }
-                MenuSection("Tahy") {
+                MenuSection(tr("Tahy")) {
                     SwitchRow(
                         tr("Režim tahů"),
                         tr("Konec tahu tlačítkem, měření času, záznam do historie"),
@@ -769,11 +769,11 @@ private fun LifeMenu(onDismiss: () -> Unit, save: () -> Unit) {
                         )
                     }
                 }
-                MenuSection("Obrazovka") {
+                MenuSection(tr("Obrazovka")) {
                     SwitchRow(tr("Nezhasínat obrazovku"), null, LifeState.keepOn) { LifeState.keepOn = it; save() }
                     if (LifeState.keepOn) SwitchRow(
                         tr("Šetřit baterii"),
-                        "Po 1 min bez dotyku ztlumit jas",
+                        tr("Po 1 min bez dotyku ztlumit jas"),
                         LifeState.dimIdle,
                     ) { LifeState.dimIdle = it; save() }
                     SwitchRow(
@@ -787,7 +787,7 @@ private fun LifeMenu(onDismiss: () -> Unit, save: () -> Unit) {
                         onClick = { showHistory = true },
                         modifier = Modifier.weight(1f),
                         border = androidx.compose.foundation.BorderStroke(1.dp, com.example.antimarcipan.ui.GoldBorderBrush),
-                    ) { Text("Historie", color = Color(0xFFEAD9A8)) }
+                    ) { Text(tr("Historie"), color = Color(0xFFEAD9A8)) }
                     androidx.compose.material3.Button(
                         onClick = { confirmReset = true },
                         modifier = Modifier.weight(1f),

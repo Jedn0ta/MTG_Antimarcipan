@@ -240,7 +240,7 @@ internal fun MeetCard(m: Post, answers: List<Post>, myPub: String, onRsvp: (Stri
             Text(dateFmt.format(Date(m.p.w)) + if (m.p.pl.isNotBlank()) " · 📍 ${m.p.pl}" else "", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
             if (m.p.x.isNotBlank()) Text(m.p.x, style = MaterialTheme.typography.bodySmall)
             Text(tr("Pořádá {0}", (m.p.n)), style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.6f))
-            listOf("yes" to "Jdu ✓", "maybe" to tr("Možná"), "no" to "Nejdu").let { opts ->
+            listOf("yes" to "Jdu ✓", "maybe" to tr("Možná"), "no" to tr("Nejdu")).let { opts ->
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     opts.forEach { (k, l) ->
                         val cnt = answers.count { it.p.g == k }
@@ -322,7 +322,7 @@ internal fun InviteDialog(g: BoardGroup, onDismiss: () -> Unit) {
                         Intent.EXTRA_TEXT,
                         tr("Pozvánka do skupiny „{0}“ v appce Grimoar (sdílej do appky nebo zkopíruj a otevři Nástěnku):\n\n{1}", (g.name), (g.invite)),
                     )
-                    ctx.startActivity(Intent.createChooser(send, "Pozvat do skupiny").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                    ctx.startActivity(Intent.createChooser(send, tr("Pozvat do skupiny")).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
                 }, modifier = Modifier.fillMaxWidth()) { Text(tr("Poslat pozvánku zprávou")) }
             }
         },

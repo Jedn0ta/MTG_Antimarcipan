@@ -12,7 +12,7 @@ import androidx.compose.runtime.Composable
 fun ConfirmDialog(
     title: String,
     message: String,
-    confirmText: String = "Potvrdit",
+    confirmText: String = tr("Potvrdit"),
     dismissText: String = tr("Zrušit"),
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,

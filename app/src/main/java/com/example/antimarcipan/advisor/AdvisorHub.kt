@@ -113,7 +113,7 @@ fun HubBackRow(title: String, onBack: () -> Unit) {
 private fun Hub(open: (Tool) -> Unit) {
     // Čtvercové dlaždice 2 × 4 — vejdou se na jednu obrazovku bez scrollování.
     val tiles = listOf(
-        Triple(Icons.Filled.AutoAwesome, "Zeptat se Clauda", tr("Balík a sbírka Claudovi, návrhy zpět")) to Tool.CLAUDE,
+        Triple(Icons.Filled.AutoAwesome, tr("Zeptat se Clauda"), tr("Balík a sbírka Claudovi, návrhy zpět")) to Tool.CLAUDE,
         Triple(Icons.Filled.Insights, tr("Analýza balíku"), tr("Curve, země, synergie, co doplnit")) to Tool.ANALYZE,
         Triple(Icons.Filled.Construction, tr("Postavit balík"), tr("Návrh balíku jen z tvé sbírky")) to Tool.BUILD,
         Triple(Icons.Filled.Hub, tr("Komba"), tr("Komba ve sbírce a co chybí")) to Tool.COMBOS,
@@ -255,7 +255,7 @@ private fun BuildTool(vm: AdvisorViewModel, onBack: () -> Unit) {
                     onClick = { vm.buildDeck(format, colors.toList().ifEmpty { null }, if (format == BuildFormat.COMMANDER) commander else null) },
                     enabled = owned.isNotEmpty() && (format != BuildFormat.COMMANDER || commander != null),
                     modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-                ) { Text(if (result == null) tr("Navrhnout balík") else "Navrhnout znovu") }
+                ) { Text(if (result == null) tr("Navrhnout balík") else tr("Navrhnout znovu")) }
                 if (owned.isEmpty()) Text(tr("Sbírka je prázdná — nejdřív naskenuj karty."), style = MaterialTheme.typography.bodySmall)
             }
             result?.let { r ->
@@ -360,15 +360,15 @@ private fun LimitedTool(vm: AdvisorViewModel, onBack: () -> Unit) {
 private fun limitedSteps(f: DeckFormat): List<Pair<String, String>> = if (f == DeckFormat.SEALED) listOf(
     tr("Otevři boostery") to tr("Každý hráč dostane 6 boosterů. Otevři je — všech ~84 karet je tvůj pool. Základní země dostaneš zdarma, kolik chceš."),
     tr("Vyfoť pool") to tr("Po založení balíku se otevře jeho detail. V rádci nahoře ťukni „Vyfotit karty“ a fofť karty po skupinách lícem nahoru. Jdou do poolu, ne do sbírky."),
-    "Najdi barvy" to tr("Rádce v balíku spočítá nejsilnější barvy podle bomb (silné rare/mythic) a removalu. Hraj 2 barvy; třetí jen na 1–2 bomby, pokud máš fixing."),
-    "Postav 40 karet" to tr("Cíl: 17 zemí + 23 kouzel, 15–17 tvorů, co nejvíc removalu. Křivka: 4–6 tvorů za 2, 3–5 za 3, max 2–3 karty za 6+. Tlačítko „Nastavit země“ rozdělí basicy podle symbolů many."),
+    tr("Najdi barvy") to tr("Rádce v balíku spočítá nejsilnější barvy podle bomb (silné rare/mythic) a removalu. Hraj 2 barvy; třetí jen na 1–2 bomby, pokud máš fixing."),
+    tr("Postav 40 karet") to tr("Cíl: 17 zemí + 23 kouzel, 15–17 tvorů, co nejvíc removalu. Křivka: 4–6 tvorů za 2, 3–5 za 3, max 2–3 karty za 6+. Tlačítko „Nastavit země“ rozdělí basicy podle symbolů many."),
     tr("Hraj a ulož") to tr("Hraje se obvykle na 2 vítězné hry; mezi hrami můžeš měnit karty s poolem (sideboard). Po turnaji dej „Pool do sbírky“ a karty se přidají do sbírky naráz."),
 ) else listOf(
     tr("Jak draft probíhá") to tr("U stolu je obvykle 8 hráčů, každý má 3 boostery. Otevřeš booster, vezmeš si 1 kartu a zbytek pošleš doleva. Od souseda dostaneš jeho booster, zase vybereš 1… 2. booster jde doprava, 3. zase doleva. Skončíš s ~42 kartami."),
     "Pick order" to tr("1. Bomby — karty, které samy vyhrají hru.\n2. Removal.\n3. Evasivní a efektivní tvorové (flying, menace, dobrý poměr síla/cena).\n4. Kombinační karty a triky nakonec."),
     tr("Čti signály") to tr("Prvních ~5 picků ber nejsilnější kartu bez ohledu na barvu. Pak sleduj, která barva ti chodí pozdě (silná karta v 6.–9. picku) — ta je „otevřená“, sousedé ji neberou. Do konce 1. boosteru se ustal na 2 barvách."),
     tr("Vyfoť karty") to tr("Po draftu otevři balík (vytvoříme ho teď) a v rádci ťukni „Vyfotit karty“. Karty jdou do poolu; rádce je ohodnotí a doporučí barvy a nejlepší karty."),
-    "Postav 40 karet" to tr("17 zemí + 23 kouzel, 15–17 tvorů, co nejvíc removalu, rozumná křivka. Po hraní „Pool do sbírky“ přidá vydraftované karty do sbírky."),
+    tr("Postav 40 karet") to tr("17 zemí + 23 kouzel, 15–17 tvorů, co nejvíc removalu, rozumná křivka. Po hraní „Pool do sbírky“ přidá vydraftované karty do sbírky."),
 )
 
 @Composable
@@ -448,7 +448,7 @@ private fun SampleHandTool(vm: AdvisorViewModel, onBack: () -> Unit) {
                         }
                     },
                     enabled = !simBusy, modifier = Modifier.fillMaxWidth(),
-                ) { Text(if (simBusy) "Simuluji…" else "Spustit simulaci") }
+                ) { Text(if (simBusy) tr("Simuluji…") else tr("Spustit simulaci")) }
                 sim?.let { r -> SimResultView(r, library.size) }
             }
             return@Column
@@ -620,7 +620,7 @@ private fun ComboCard(c: com.example.antimarcipan.data.advisor.Combo) {
             c.missing.forEach { m ->
                 com.example.antimarcipan.ui.WishlistButton(
                     m,
-                    "Kombo: " + c.cards.joinToString(" + ") + (if (c.results.isNotEmpty()) " → " + c.results.joinToString(", ") else ""),
+                    tr("Kombo: ") + c.cards.joinToString(" + ") + (if (c.results.isNotEmpty()) " → " + c.results.joinToString(", ") else ""),
                     modifier = Modifier.fillMaxWidth(),
                 )
             }
@@ -669,7 +669,7 @@ private fun SimResultView(r: SimResult, deckSize: Int) {
     ))
     StatBlock(tr("Země včas (na tahu první)"), r.landDrops.map { (t, p) -> tr("{0}. země do {1}. tahu", t, t) to p })
     StatBlock(tr("První zahrané kouzlo"), r.firstPlay.map { (t, p) -> tr("nejpozději v {0}. tahu", t) to p })
-    if (r.colorBy3.isNotEmpty()) StatBlock("Zdroj barvy do 3. tahu", r.colorBy3.map { (c, p) -> c to p })
+    if (r.colorBy3.isNotEmpty()) StatBlock(tr("Zdroj barvy do 3. tahu"), r.colorBy3.map { (c, p) -> c to p })
     Text(
         tr("Zjednodušení: hratelná ruka = 2–4 země a kouzlo do 3 many; tahy počítají zemi za tah a kouzlo s MV ≤ zemím (bez ohledu na barvy)."),
         style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.5f),

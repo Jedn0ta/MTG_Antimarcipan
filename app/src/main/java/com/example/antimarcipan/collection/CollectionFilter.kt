@@ -32,8 +32,8 @@ enum class SortBy(val label: String) {
     ADDED(tr("Nejnovější")),
     NAME(tr("Jméno")),
     CMC("Mana value"),
-    PRICE("Cena"),
-    RARITY("Rarita"),
+    PRICE(tr("Cena")),
+    RARITY(tr("Rarita")),
 }
 
 /** Sada filtrů nad sbírkou. Prázdná skupina = bez omezení v dané kategorii. */

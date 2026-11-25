@@ -56,7 +56,7 @@ class ManualAddViewModel(
                     _state.value = _state.value.copy(
                         results = list,
                         loading = false,
-                        message = if (list.isEmpty()) "Nic nenalezeno" else null,
+                        message = if (list.isEmpty()) tr("Nic nenalezeno") else null,
                     )
                 }
                 .onFailure {

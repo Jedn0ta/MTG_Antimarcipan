@@ -66,10 +66,10 @@ fun ManualAddScreen(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp),
         ) {
             if (importBusy) CircularProgressIndicator(Modifier.padding(end = 8.dp).size(18.dp), strokeWidth = 2.dp)
-            Text(if (importBusy) "Importuji seznam…" else tr("Import seznamu karet (hromadně)"))
+            Text(if (importBusy) tr("Importuji seznam…") else tr("Import seznamu karet (hromadně)"))
         }
         Text(
-            "Pro karty, co nejdou naskenovat (fullarty, promo, tokeny).",
+            tr("Pro karty, co nejdou naskenovat (fullarty, promo, tokeny)."),
             Modifier.padding(horizontal = 16.dp),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
@@ -222,7 +222,7 @@ private fun ImportListDialog(
                     if (target == ManualAddViewModel.Target.DECK) pickDeck = true
                     else onImport(text, target, null)
                 },
-            ) { Text(if (target == ManualAddViewModel.Target.DECK) tr("Vybrat balík…") else "Importovat") }
+            ) { Text(if (target == ManualAddViewModel.Target.DECK) tr("Vybrat balík…") else tr("Importovat")) }
         },
         dismissButton = { androidx.compose.material3.TextButton(onClick = onDismiss) { Text(tr("Zrušit")) } },
     )

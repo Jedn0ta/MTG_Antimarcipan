@@ -144,7 +144,7 @@ private fun PollRow(p: Poll, onClick: () -> Unit) {
                 if (p.unread) Text(tr("nové"), color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall)
             }
             Text(
-                (if (p.mine) "Tvoje anketa" else "Od ${p.owner}") + " · hlasovalo ${p.votes.size}" +
+                (if (p.mine) tr("Tvoje anketa") else "Od ${p.owner}") + " · hlasovalo ${p.votes.size}" +
                     (if (p.people.isNotEmpty()) " z ${maxOf(p.people.size + if (p.mine) 1 else 0, p.votes.size)}" else ""),
                 style = MaterialTheme.typography.bodySmall,
             )
@@ -211,7 +211,7 @@ private fun PollDetail(p: Poll, onBack: () -> Unit) {
                             )
                         }
                         if (p.mine) TextButton(onClick = { PollStore.upsert(p.copy(chosen = if (p.chosen == i) null else i)) }) {
-                            Text(if (p.chosen == i) tr("Zrušit") else "Vybrat")
+                            Text(if (p.chosen == i) tr("Zrušit") else tr("Vybrat"))
                         }
                     }
                 }
@@ -280,7 +280,7 @@ private fun CreatePollDialog(onDismiss: () -> Unit, onCreated: (Poll) -> Unit) {
     val friends by remember {
         (ctx.applicationContext as com.example.antimarcipan.MtgApp).container.friendDao.friends()
     }.collectAsState(emptyList())
-    var title by remember { mutableStateOf("Magic u stolu") }
+    var title by remember { mutableStateOf(tr("Magic u stolu")) }
     var place by remember { mutableStateOf("") }
     var myName by remember { mutableStateOf(PollStore.myName()) }
     val options = remember { mutableStateListOf<Long>() }

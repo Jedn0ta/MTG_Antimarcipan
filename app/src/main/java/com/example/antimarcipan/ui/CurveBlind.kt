@@ -37,11 +37,11 @@ import com.example.antimarcipan.data.local.DeckCardWithQty
 
 /** Typ karty pro barevné rozlišení v grafu. */
 private enum class CType(val label: String, val color: Color) {
-    CREATURE("Tvor", Color(0xFFE2BC62)),
+    CREATURE(tr("Tvor"), Color(0xFFE2BC62)),
     INSTANT("Instant", Color(0xFF5FA8E8)),
     SORCERY("Sorcery", Color(0xFFE0705A)),
     ENCHANT("Enchant.", Color(0xFFB98AE8)),
-    ARTIFACT("Artefakt", Color(0xFFA9AEB8)),
+    ARTIFACT(tr("Artefakt"), Color(0xFFA9AEB8)),
     PW("Planesw.", Color(0xFF6FD2B0)),
     OTHER(tr("Jiné"), Color(0xFF7A6FA0)),
 }

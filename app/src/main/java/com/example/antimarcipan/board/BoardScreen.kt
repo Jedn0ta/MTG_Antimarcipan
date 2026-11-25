@@ -236,7 +236,7 @@ internal fun GroupList(
 }
 
 internal fun preview(p: Post): String = when (p.p.y) {
-    "msg" -> (if (p.mine) "Ty: " else "${p.p.n}: ") + p.p.x
+    "msg" -> (if (p.mine) tr("Ty: ") else "${p.p.n}: ") + p.p.x
     "meet" -> "📅 ${p.p.n}: ${p.p.ti}"
     "poll" -> "📊 ${p.p.n}: ${p.p.ti}"
     "meta" -> tr("✏️ přejmenováno na {0}", (p.p.ti))

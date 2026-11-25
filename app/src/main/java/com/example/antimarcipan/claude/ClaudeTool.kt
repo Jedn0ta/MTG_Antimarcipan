@@ -105,7 +105,7 @@ fun ClaudeTool(vm: AdvisorViewModel, onBack: () -> Unit) {
     DisposableEffect(Unit) { onDispose { PcBridge.stop() } }
 
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
-        HubBackRow("Zeptat se Clauda", onBack)
+        HubBackRow(tr("Zeptat se Clauda"), onBack)
         Column(Modifier.padding(horizontal = 14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text(
                 tr("Grimoar připraví zadání pro Clauda (tvůj balík, analýzu, komba a sbírku). Vlož ho do Clauda a ptej se. ") +

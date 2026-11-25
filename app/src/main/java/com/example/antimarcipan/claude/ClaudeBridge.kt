@@ -21,7 +21,7 @@ object ClaudeBridge {
 
     val QUESTIONS = listOf(
         tr("Vylepšit balík") to tr("Projdi balík a navrhni, jak ho vylepšit — co vyhodit a co přidat, ideálně z karet, které mám ve sbírce."),
-        "Komba a synergie" to tr("Jaká komba a synergie v balíku jsou nebo by šly doplnit? Co mi k nim chybí?"),
+        tr("Komba a synergie") to tr("Jaká komba a synergie v balíku jsou nebo by šly doplnit? Co mi k nim chybí?"),
         tr("Mana a země") to tr("Zkontroluj manabázi, počet zemí, ramp a mana curve. Navrhni úpravy."),
         tr("Postav balík") to tr("Postav mi z mé sbírky hratelný balík. Zeptej se mě nejdřív na formát a styl hry."),
         tr("Jak to hrát") to tr("Vysvětli mi, jak tenhle balík hrát: plán hry, mulligan, na co si dát pozor."),
@@ -38,7 +38,7 @@ object ClaudeBridge {
         val commander = entries.firstOrNull { it.card.scryfallId == deck?.commanderScryfallId }?.card
         val inner = buildString {
             appendLine(tr("ROLE: Jsi rádce pro Magic: The Gathering v aplikaci Grimoar. Hráč s tebou mluví česky, odpovídej česky, jména karet piš anglicky přesně jako na Scryfallu."))
-            appendLine("PRAVIDLA:")
+            appendLine(tr("PRAVIDLA:"))
             appendLine(tr("- Navrhuj jen karty legální ve formátu balíku a v barvách velitele (u Commanderu)."))
             appendLine(tr("- Přednostně navrhuj karty, které hráč MÁ ve sbírce (seznam je pod tímto blokem). Kartu, kterou nemá, označ jako ‚nemáš‘."))
             appendLine(tr("- U každé změny krátce vysvětli proč. Buď konkrétní a stručný."))

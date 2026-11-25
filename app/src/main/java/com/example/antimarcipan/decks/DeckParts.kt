@@ -200,7 +200,7 @@ internal fun manaBucketOf(cmc: Double?): String {
 }
 
 internal fun matchDeckValue(card: CollectionCard, cat: String, value: String): Boolean = when (cat) {
-    "Typ" -> card.typeLine?.contains(value, ignoreCase = true) == true
+    tr("Typ") -> card.typeLine?.contains(value, ignoreCase = true) == true
     "Tribal" -> creatureSubtypesOf(card).any { it.equals(value, ignoreCase = true) }
     tr("Barva") -> card.colorIdentityList().contains(value)
     "Mana" -> manaBucketOf(card.cmc) == value
@@ -468,7 +468,7 @@ internal fun DeckEntryRow(
                     onClick = { menu = false; detail = true },
                 )
                 if (showCommander && !isBasic) androidx.compose.material3.DropdownMenuItem(
-                    text = { Text(if (isCommander) "Je velitel ✓" else "Nastavit jako velitele") },
+                    text = { Text(if (isCommander) "Je velitel ✓" else tr("Nastavit jako velitele")) },
                     leadingIcon = { Icon(Icons.Filled.Star, null) },
                     enabled = !isCommander,
                     onClick = { menu = false; onCommander() },

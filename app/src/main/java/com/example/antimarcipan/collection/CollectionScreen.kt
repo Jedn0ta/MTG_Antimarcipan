@@ -277,14 +277,14 @@ fun CollectionScreen(
             EmptyState(
                 if (showPlayground && !fstate.isActive) tr("Playground je prázdný")
                 else if (showDraft && !fstate.isActive) tr("Žádné rozpracované karty")
-                else if (showWishlist && !fstate.isActive) tr("Wishlist je prázdný") else if (fstate.isActive) "Nic nenalezeno" else tr("Zatím prázdno"),
+                else if (showWishlist && !fstate.isActive) tr("Wishlist je prázdný") else if (fstate.isActive) tr("Nic nenalezeno") else tr("Zatím prázdno"),
                 if (showPlayground) tr("Při skenování ťukni na „Playground“ — karta se sem uloží k prozkoumání.")
                 else if (showDraft) tr("Sem patří karty naskenované do poolu draftu / sealed balíku, dokud je nepřidáš do sbírky.")
                 else if (showWishlist) tr("Přidej karty na wishlist ze skenu nebo ručně.")
-                else if (fstate.isActive) "Zkus upravit filtr." else tr("Naskenuj první kartu v záložce Sken."),
+                else if (fstate.isActive) tr("Zkus upravit filtr.") else tr("Naskenuj první kartu v záložce Sken."),
             )
         } else if (gridMode) {
-            androidx.compose.runtime.CompositionLocalProvider(com.example.antimarcipan.ui.LocalCardList provides (if (section == 0) source else lands + spells), com.example.antimarcipan.ui.LocalCardRemoveAction provides (when { showPlayground -> "Odebrat z playgroundu"; showWishlist -> "Odebrat z wishlistu"; showDraft -> "Smazat z draftu"; else -> tr("Odstranit ze sbírky") } to { c: CollectionCard -> pendingDelete = c })) {
+            androidx.compose.runtime.CompositionLocalProvider(com.example.antimarcipan.ui.LocalCardList provides (if (section == 0) source else lands + spells), com.example.antimarcipan.ui.LocalCardRemoveAction provides (when { showPlayground -> tr("Odebrat z playgroundu"); showWishlist -> tr("Odebrat z wishlistu"); showDraft -> tr("Smazat z draftu"); else -> tr("Odstranit ze sbírky") } to { c: CollectionCard -> pendingDelete = c })) {
             androidx.compose.foundation.lazy.grid.LazyVerticalGrid(
                 columns = androidx.compose.foundation.lazy.grid.GridCells.Adaptive((90 * com.example.antimarcipan.ui.LocalThumbScale.current.grid).dp),
                 modifier = Modifier.weight(1f),
@@ -300,7 +300,7 @@ fun CollectionScreen(
             }
             }
         } else {
-            androidx.compose.runtime.CompositionLocalProvider(com.example.antimarcipan.ui.LocalCardList provides (if (section == 0) source else lands + spells), com.example.antimarcipan.ui.LocalCardRemoveAction provides (when { showPlayground -> "Odebrat z playgroundu"; showWishlist -> "Odebrat z wishlistu"; showDraft -> "Smazat z draftu"; else -> tr("Odstranit ze sbírky") } to { c: CollectionCard -> pendingDelete = c })) {
+            androidx.compose.runtime.CompositionLocalProvider(com.example.antimarcipan.ui.LocalCardList provides (if (section == 0) source else lands + spells), com.example.antimarcipan.ui.LocalCardRemoveAction provides (when { showPlayground -> tr("Odebrat z playgroundu"); showWishlist -> tr("Odebrat z wishlistu"); showDraft -> tr("Smazat z draftu"); else -> tr("Odstranit ze sbírky") } to { c: CollectionCard -> pendingDelete = c })) {
             LazyColumn(Modifier.weight(1f)) {
                 if (section == 0) collectionListSection(tr("Vše ({0})", (source.size)), source, context, vm, onSwipe, onDelete) { pendingEdition = it }
                 else {
@@ -345,7 +345,7 @@ fun CollectionScreen(
 
     pendingDelete?.let { card ->
         ConfirmDialog(
-            title = if (showPlayground) "Odebrat z playgroundu?" else if (showWishlist) "Odebrat z wishlistu?" else "Smazat kartu?",
+            title = if (showPlayground) tr("Odebrat z playgroundu?") else if (showWishlist) tr("Odebrat z wishlistu?") else tr("Smazat kartu?"),
             message = if (showPlayground) "Odebrat „${card.name}“ z playgroundu?"
             else if (showWishlist) "Odebrat „${card.name}“ z wishlistu?"
             else tr("Opravdu odstranit „{0}“ ze sbírky (všechny kusy)? Tohle nejde vrátit.", (card.name)),

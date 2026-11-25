@@ -44,7 +44,7 @@ object SynergyEngine {
         "exile" to "exile",
         "dies" to "death triggers",
         "discard" to "discard",
-        "enters the battlefield" to "ETB efekty",
+        "enters the battlefield" to tr("ETB efekty"),
         "equip" to "equipment",
         "enchant" to "auras/enchant",
         "proliferate" to "proliferate",

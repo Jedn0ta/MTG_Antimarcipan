@@ -88,7 +88,7 @@ fun SettingsScreen(
                     UpdatePhase.DOWNLOADING -> {
                         val p = state.downloadProgress
                         Text(
-                            if (p >= 0f) "Stahuji… ${(p * 100).roundToInt()} %" else "Stahuji…",
+                            if (p >= 0f) "Stahuji… ${(p * 100).roundToInt()} %" else tr("Stahuji…"),
                             style = MaterialTheme.typography.bodyMedium,
                         )
                         if (p >= 0f) {
@@ -497,7 +497,7 @@ private fun LanguageCard() {
         Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text("Jazyk / Language", style = MaterialTheme.typography.titleMedium)
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                listOf("auto" to tr("Podle telefonu"), "cs" to "Čeština", "en" to "English").forEach { (m, label) ->
+                listOf("auto" to tr("Podle telefonu"), "cs" to tr("Čeština"), "en" to "English").forEach { (m, label) ->
                     com.example.antimarcipan.ui.GoldChip(selected = mode == m, onClick = {
                         if (m != mode) {
                             com.example.antimarcipan.i18n.I18n.setMode(ctx, m)

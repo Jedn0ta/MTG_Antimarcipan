@@ -221,7 +221,7 @@ fun LimitedAdvisorPanel(
             Check("Removal", tr("{0} (čím víc, tím líp, aspoň 3)", removal), removal >= 3)
             Check(tr("Levní tvorové (MV ≤ 2)"), tr("{0} (aspoň 4–5)", twoDrops), twoDrops >= 4)
             Check(tr("Drahá kouzla (MV ≥ 6)"), "$top (max 2–3)", top <= 3)
-            Check("Barvy", if (deckCols.isEmpty()) "—" else deckCols.joinToString(""), deckCols.size in 1..2)
+            Check(tr("Barvy"), if (deckCols.isEmpty()) "—" else deckCols.joinToString(""), deckCols.size in 1..2)
 
             HorizontalDivider(Modifier.padding(vertical = 2.dp))
             Text(
