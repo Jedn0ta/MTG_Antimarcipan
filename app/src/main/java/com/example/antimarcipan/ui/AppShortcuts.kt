@@ -17,7 +17,7 @@ object AppShortcuts {
             val t = intent.getStringExtra(android.content.Intent.EXTRA_TEXT) ?: return
             when {
                 "AMPOLL1:" in t || "AMVOTE1:" in t -> com.example.antimarcipan.polls.PollStore.receive(t)
-                "AMDECK1:" in t -> com.example.antimarcipan.friends.FriendsInbox.pending.value = t
+                "AMDECK1:" in t || "AMFRIEND1:" in t -> com.example.antimarcipan.friends.FriendsInbox.pending.value = t
                 "AMGROUP1:" in t && com.example.antimarcipan.BuildConfig.BOARD -> com.example.antimarcipan.board.BoardInbox.pending.value = t
             }
         } else handle(intent?.action)

@@ -15,6 +15,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         com.example.antimarcipan.support.SupportStore.connect(this)
         com.example.antimarcipan.polls.PollStore.init(this)
+        com.example.antimarcipan.friends.Me.init(this)
         if (savedInstanceState == null) com.example.antimarcipan.ui.AppShortcuts.handleIntent(intent)
         // Vždy světlé ikony stavového řádku (aplikace má tmavé pozadí bez ohledu na režim telefonu)
         enableEdgeToEdge(

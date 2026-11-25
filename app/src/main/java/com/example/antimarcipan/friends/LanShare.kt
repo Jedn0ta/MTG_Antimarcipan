@@ -12,10 +12,12 @@ import java.net.Socket
 import java.util.concurrent.ConcurrentLinkedQueue
 import kotlin.concurrent.thread
 
-data class LanPeer(val name: String, val host: String, val port: Int)
+data class LanPeer(val name: String, val host: String, val port: Int, val uid: String? = null) {
+    val key: String get() = if (uid != null) "$uid~$name" else name
+}
 
 /** Příchozí balík přes Wi-Fi — čeká, až ho příjemce potvrdí nebo odmítne. */
-data class LanIncoming(val from: String, val host: String, val port: Int?, val text: String, val at: Long = System.currentTimeMillis())
+data class LanIncoming(val from: String, val host: String, val port: Int?, val text: String, val uid: String? = null, val at: Long = System.currentTimeMillis())
 
 /**
  * Hledání přátel na stejné Wi-Fi (Android NSD / mDNS) a posílání balíků
@@ -30,6 +32,8 @@ object LanShare {
     val incoming = MutableStateFlow<List<LanIncoming>>(emptyList())
     /** Potvrzení od příjemce (zobrazí se odesílateli). */
     val acks = MutableStateFlow<String?>(null)
+    /** Přítel potvrdil moji žádost o přátelství (přidá se automaticky). */
+    val friendAccepted = MutableStateFlow<List<FriendCard>>(emptyList())
     private var myName: String = "Hráč"
     private var myPort: Int = 0
 
@@ -76,17 +80,20 @@ object LanShare {
                         s.soTimeout = 15000
                         val raw = s.getInputStream().readBytes().toString(Charsets.UTF_8)
                         val host = s.inetAddress?.hostAddress ?: ""
-                        var from = "?"; var port: Int? = null; var text = raw
+                        var from = "?"; var port: Int? = null; var text = raw; var uid: String? = null
                         if (raw.startsWith("AMFROM1:")) {
                             val head = raw.substringBefore("\n").removePrefix("AMFROM1:").split(":")
+                            uid = head.getOrNull(2)?.takeIf { it.isNotBlank() }
                             from = runCatching { String(android.util.Base64.decode(head[0], android.util.Base64.NO_WRAP or android.util.Base64.URL_SAFE)) }.getOrDefault("?")
                             port = head.getOrNull(1)?.toIntOrNull()
                             text = raw.substringAfter("\n")
                         }
                         when {
                             text.startsWith("AMACK1:") -> acks.value = text.removePrefix("AMACK1:")
+                            text.startsWith("AMFRIENDOK1:") -> FriendCode.decode(text.replace("AMFRIENDOK1:", "AMFRIEND1:"))?.let { friendAccepted.value = friendAccepted.value + it }
+                            "AMFRIEND1:" in text -> incoming.value = incoming.value + LanIncoming(from, host, port, text, uid)
                             "AMPOLL1:" in text || "AMVOTE1:" in text -> com.example.antimarcipan.polls.PollStore.receive(text)
-                            "AMDECK1:" in text || ("AMGROUP1:" in text && com.example.antimarcipan.BuildConfig.BOARD) -> incoming.value = incoming.value + LanIncoming(from, host, port, text)
+                            "AMDECK1:" in text || ("AMGROUP1:" in text && com.example.antimarcipan.BuildConfig.BOARD) -> incoming.value = incoming.value + LanIncoming(from, host, port, text, uid)
                         }
                     }
                     runCatching { s.close() }
@@ -96,7 +103,7 @@ object LanShare {
 
         // 2) Oznámení: „jsem tady“
         val info = NsdServiceInfo().apply {
-            serviceName = PREFIX + myName.ifBlank { "Hráč" }.take(40)
+            serviceName = PREFIX + Me.uid + "~" + myName.ifBlank { "Hráč" }.take(20)
             serviceType = TYPE
             port = ss.localPort
         }
@@ -121,7 +128,7 @@ object LanShare {
             }
             override fun onServiceLost(s: NsdServiceInfo) {
                 val n = s.serviceName.removePrefix(PREFIX)
-                peers.value = peers.value.filterNot { it.name == n }
+                peers.value = peers.value.filterNot { it.key == n }
             }
         }
         discListener = dl
@@ -140,8 +147,10 @@ object LanShare {
                 override fun onServiceResolved(i: NsdServiceInfo) {
                     val host = i.host?.hostAddress
                     if (host != null && i.serviceName != myServiceName) {
-                        val p = LanPeer(i.serviceName.removePrefix(PREFIX), host, i.port)
-                        peers.value = (peers.value.filterNot { it.name == p.name } + p).sortedBy { it.name }
+                        val raw = i.serviceName.removePrefix(PREFIX)
+                        val uid = raw.substringBefore("~", "").takeIf { it.length in 8..16 }
+                        val p = LanPeer(if (uid != null) raw.substringAfter("~") else raw, host, i.port, uid)
+                        peers.value = (peers.value.filterNot { it.key == p.key } + p).sortedBy { it.name }
                     }
                     resolving = false; resolveNext()
                 }
@@ -160,7 +169,7 @@ object LanShare {
     }
 
     private fun header(): String =
-        "AMFROM1:" + android.util.Base64.encodeToString(myName.toByteArray(), android.util.Base64.NO_WRAP or android.util.Base64.URL_SAFE) + ":" + myPort + "\n"
+        "AMFROM1:" + android.util.Base64.encodeToString(myName.toByteArray(), android.util.Base64.NO_WRAP or android.util.Base64.URL_SAFE) + ":" + myPort + ":" + Me.uid + "\n"
 
     private suspend fun raw(host: String, port: Int, text: String): Result<Unit> = withContext(Dispatchers.IO) {
         runCatching<Unit> {
@@ -173,6 +182,18 @@ object LanShare {
     }
 
     suspend fun send(peer: LanPeer, text: String): Result<Unit> = raw(peer.host, peer.port, header() + text)
+
+    /** Žádost o přátelství přes Wi-Fi (příjemce ji potvrdí). */
+    suspend fun requestFriend(peer: LanPeer): Result<Unit> = raw(peer.host, peer.port, header() + FriendCode.mine())
+
+    /** Potvrzení přátelství: pošle zpět můj kód, druhá strana si mě přidá. */
+    suspend fun acceptFriend(inc: LanIncoming) {
+        incoming.value = incoming.value - inc
+        val port = inc.port ?: return
+        raw(inc.host, port, header() + FriendCode.mine().replace("AMFRIEND1:", "AMFRIENDOK1:"))
+    }
+
+    fun dismiss(inc: LanIncoming) { incoming.value = incoming.value - inc }
 
     /** Odpověď odesílateli: přijato / odmítnuto. */
     suspend fun respond(inc: LanIncoming, accepted: Boolean, deckName: String) {

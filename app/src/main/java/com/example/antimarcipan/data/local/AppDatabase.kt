@@ -9,7 +9,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 
 @Database(
     entities = [CollectionCard::class, Deck::class, DeckCard::class, DeckPoolCard::class, com.example.antimarcipan.friends.Friend::class, com.example.antimarcipan.friends.FriendDeck::class],
-    version = 14,
+    version = 15,
     exportSchema = false,
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -103,6 +103,16 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        /** v14 → v15: přátelé s identitou (uid), barvou a avatarem. */
+        private val MIGRATION_14_15 = object : Migration(14, 15) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE friends ADD COLUMN uid TEXT")
+                db.execSQL("ALTER TABLE friends ADD COLUMN color INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE friends ADD COLUMN avatar TEXT")
+                db.execSQL("ALTER TABLE friends ADD COLUMN lastSeen INTEGER NOT NULL DEFAULT 0")
+            }
+        }
+
         private val MIGRATION_13_14 = object : Migration(13, 14) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("CREATE TABLE IF NOT EXISTS `friends` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `addedAt` INTEGER NOT NULL)")
@@ -117,6 +127,7 @@ abstract class AppDatabase : RoomDatabase() {
                     context.applicationContext,
                     AppDatabase::class.java,
                     "mtg-scanner.db",
+                ).addMigrations(MIGRATION_14_15,
                 ).addMigrations(
                     MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6,
                     MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14,

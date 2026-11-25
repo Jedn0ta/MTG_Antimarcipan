@@ -20,7 +20,15 @@ data class Friend(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val name: String,
     val addedAt: Long = System.currentTimeMillis(),
-)
+    /** Jedinečný identifikátor zařízení přítele (null = starý přítel přidaný jen jménem). */
+    val uid: String? = null,
+    val color: Int = 0,
+    val avatar: String? = null,
+    /** Kdy jsme se naposledy viděli (Wi-Fi / balík / hlas). */
+    val lastSeen: Long = 0,
+) {
+    val verified: Boolean get() = uid != null
+}
 
 /** Balík od kamaráda — uložený jako snímek (JSON), nezávislý na mé sbírce. */
 @Entity(tableName = "friend_decks", indices = [Index("friendId")])
@@ -46,6 +54,15 @@ interface FriendDao {
 
     @Insert
     suspend fun insertFriend(f: Friend): Long
+
+    @Query("SELECT * FROM friends WHERE uid = :uid LIMIT 1")
+    suspend fun findByUid(uid: String): Friend?
+
+    @androidx.room.Update
+    suspend fun update(f: Friend)
+
+    @Query("UPDATE friends SET lastSeen = :t WHERE uid = :uid")
+    suspend fun touch(uid: String, t: Long = System.currentTimeMillis())
 
     @Insert
     suspend fun insertDeck(d: FriendDeck): Long
@@ -84,6 +101,8 @@ data class SharedCard(
 data class SharedDeck(
     val v: Int = 1,
     val owner: String,
+    /** uid odesílatele (pro přiřazení k příteli). */
+    val uid: String? = null,
     val name: String,
     val format: String,
     val cards: List<SharedCard>,

@@ -33,12 +33,44 @@ class FriendsViewModel(
     val myName = MutableStateFlow(prefs.getString("myName", "") ?: "")
     fun setMyName(n: String) { myName.value = n.trim(); prefs.edit().putString("myName", n.trim()).apply() }
 
+    fun saveProfile(name: String, color: Int, avatar: String?) {
+        Me.save(ctx, name, color, avatar)
+        myName.value = name.trim()
+        // Ohlásit se na Wi-Fi pod novým jménem
+        if (LanShare.running.value) { LanShare.stop(); LanShare.start(ctx, name.trim()) }
+    }
+
+    /** Přidá / aktualizuje ověřeného přítele z kódu (QR, odkaz, Wi-Fi). Vrací jeho jméno. */
+    suspend fun addVerified(card: FriendCard): String {
+        if (card.u == Me.uid) return card.n
+        val now = System.currentTimeMillis()
+        val byUid = dao.findByUid(card.u)
+        when {
+            byUid != null -> dao.update(byUid.copy(name = card.n, color = card.c, avatar = card.a, lastSeen = now))
+            else -> {
+                // Starý přítel stejného jména bez ID → spárovat (zachová jeho balíky)
+                val legacy = dao.findByName(card.n)?.takeIf { it.uid == null }
+                if (legacy != null) dao.update(legacy.copy(uid = card.u, color = card.c, avatar = card.a, lastSeen = now))
+                else dao.insertFriend(Friend(name = card.n, uid = card.u, color = card.c, avatar = card.a, lastSeen = now))
+            }
+        }
+        return card.n
+    }
+
+    fun addFromCode(text: String, onDone: (String?) -> Unit) {
+        val card = FriendCode.decode(text) ?: run { onDone(null); return }
+        viewModelScope.launch { onDone(addVerified(card)) }
+    }
+
+    fun renameFriend(f: Friend, name: String) = viewModelScope.launch { if (name.isNotBlank()) dao.update(f.copy(name = name.trim())) }
+
     /** Připraví text ke sdílení (čitelný seznam + kód pro import). */
     suspend fun shareText(deckId: Long): String {
         val deck = deckRepo.deck(deckId) ?: return ""
         val cards = deckRepo.deckCardsWithQty(deckId).first()
         val shared = SharedDeck(
             owner = myName.value.ifBlank { "Kamarád" },
+            uid = Me.uid,
             name = deck.name,
             format = deck.format,
             cards = cards.map { e ->
@@ -59,7 +91,9 @@ class FriendsViewModel(
     fun importDeck(deck: SharedDeck, friendName: String, onDone: (String) -> Unit) {
         viewModelScope.launch {
             val name = friendName.trim().ifBlank { deck.owner }
-            val fid = dao.findByName(name)?.id ?: dao.insertFriend(Friend(name = name))
+            val byUid = deck.uid?.let { dao.findByUid(it) }
+            val fid = byUid?.id ?: dao.findByName(name)?.id ?: dao.insertFriend(Friend(name = name, uid = deck.uid))
+            deck.uid?.let { dao.touch(it) }
             dao.insertDeck(FriendDeck(friendId = fid, name = deck.name, format = deck.format, json = DeckShareCodec.toJson(deck)))
             onDone(name)
         }

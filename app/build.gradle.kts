@@ -131,6 +131,9 @@ dependencies {
     // Card images
     implementation(libs.coil.compose)
     implementation(libs.coil.svg)
+    // Přátelé: QR kód (generování) a skener QR (Google code scanner, bez oprávnění kamery)
+    implementation("com.google.zxing:core:3.5.3")
+    implementation("com.google.android.gms:play-services-code-scanner:16.1.0")
 
     // Google Play Billing — jen verze pro Play
     "playImplementation"("com.android.billingclient:billing:8.0.0")
