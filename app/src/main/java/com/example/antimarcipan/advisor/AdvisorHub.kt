@@ -1,5 +1,7 @@
 package com.example.antimarcipan.advisor
 
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.material.icons.filled.Hub
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -107,34 +109,54 @@ fun HubBackRow(title: String, onBack: () -> Unit) {
 
 @Composable
 private fun Hub(open: (Tool) -> Unit) {
-    LazyColumn(Modifier.fillMaxSize(), contentPadding = androidx.compose.foundation.layout.PaddingValues(12.dp)) {
-        item { HubTile(Icons.Filled.AutoAwesome, "Zeptat se Clauda", "Pošli balík a sbírku Claudovi (v telefonu nebo na PC přes Wi-Fi) a jeho návrhy změn proveď jedním klepnutím.") { open(Tool.CLAUDE) } }
-        item { HubTile(Icons.Filled.Insights, "Analýza balíku", "Mana curve, země, ramp, dobírání, removal, synergie, co nesedí a co doplnit.") { open(Tool.ANALYZE) } }
-        item { HubTile(Icons.Filled.Construction, "Postavit balík ze sbírky", "Vyber formát a barvy (nebo velitele) — navrhnu balík jen z karet, které máš.") { open(Tool.BUILD) } }
-        item { HubTile(Icons.Filled.SwapHoriz, "Průvodce Draft / Sealed", "Krok za krokem: jak formát probíhá, pick order, focení poolu a stavba 40 karet.") { open(Tool.LIMITED) } }
-        item { HubTile(Icons.Filled.Casino, "Zkušební ruka", "Zamíchej balík, lízni 7 karet, zkus mulligan a líznutí — poznáš, jak balík startuje.") { open(Tool.HAND) } }
-        item { HubTile(Icons.Filled.AutoAwesome, "Komba ze sbírky", "Najde známá komba mezi tvými kartami (nebo v balíku) a komba, kterým chybí jediná karta.") { open(Tool.COMBOS) } }
-        item { HubTile(Icons.AutoMirrored.Filled.MenuBook, "Slovníček vlastností", "Hledej klíčová slova (Flying, Ward, Dredge…) s českým vysvětlením.") { open(Tool.GLOSSARY) } }
+    // Čtvercové dlaždice 2 × 4 — vejdou se na jednu obrazovku bez scrollování.
+    val tiles = listOf(
+        Triple(Icons.Filled.AutoAwesome, "Zeptat se Clauda", "Balík a sbírka Claudovi, návrhy zpět") to Tool.CLAUDE,
+        Triple(Icons.Filled.Insights, "Analýza balíku", "Curve, země, synergie, co doplnit") to Tool.ANALYZE,
+        Triple(Icons.Filled.Construction, "Postavit balík", "Návrh balíku jen z tvé sbírky") to Tool.BUILD,
+        Triple(Icons.Filled.Hub, "Komba", "Komba ve sbírce a co chybí") to Tool.COMBOS,
+        Triple(Icons.Filled.Casino, "Zkušební ruka", "Lízni 7, mulligan, simulace") to Tool.HAND,
+        Triple(Icons.Filled.SwapHoriz, "Draft / Sealed", "Průvodce limited formáty") to Tool.LIMITED,
+        Triple(Icons.AutoMirrored.Filled.MenuBook, "Slovníček", "Klíčová slova a vysvětlení") to Tool.GLOSSARY,
+    )
+    Column(Modifier.fillMaxSize().padding(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        tiles.chunked(2).forEach { row ->
+            Row(Modifier.fillMaxWidth().weight(1f), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                row.forEach { (t, tool) ->
+                    HubTile(t.first, t.second, t.third, Modifier.weight(1f).fillMaxHeight()) { open(tool) }
+                }
+                if (row.size == 1) Spacer(Modifier.weight(1f))
+            }
+        }
     }
 }
 
 @Composable
-private fun HubTile(icon: ImageVector, title: String, desc: String, onClick: () -> Unit) {
+private fun HubTile(icon: ImageVector, title: String, desc: String, modifier: Modifier, onClick: () -> Unit) {
     Card(
-        Modifier.fillMaxWidth().padding(vertical = 6.dp).clip(RoundedCornerShape(18.dp)).clickable(onClick = onClick),
+        modifier.clip(RoundedCornerShape(18.dp)).clickable(onClick = onClick),
         shape = RoundedCornerShape(18.dp),
         border = BorderStroke(1.dp, GoldBorderBrush),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.08f)),
     ) {
-        Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+        Column(
+            Modifier.fillMaxSize().padding(10.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+        ) {
             Box(
-                Modifier.size(48.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha = 0.18f)),
+                Modifier.size(46.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha = 0.18f)),
                 contentAlignment = Alignment.Center,
             ) { Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary) }
-            Column(Modifier.weight(1f)) {
-                Text(title, style = MaterialTheme.typography.titleSmall)
-                Text(desc, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f))
-            }
+            Text(
+                title, Modifier.padding(top = 8.dp), style = MaterialTheme.typography.titleSmall,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center, maxLines = 1,
+            )
+            Text(
+                desc, style = MaterialTheme.typography.labelSmall, maxLines = 2,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f),
+            )
         }
     }
 }

@@ -286,7 +286,7 @@ internal fun DeckDetailView(vm: DeckViewModel, deck: Deck) {
                             onClick = { showAddCards = true },
                             modifier = Modifier.weight(1f),
                             contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp),
-                        ) { Icon(Icons.Filled.Add, null, Modifier.size(18.dp)); Text(" Přidat kartu") }
+                        ) { Icon(Icons.Filled.Add, null, Modifier.size(18.dp)); Text(" Přidat", maxLines = 1) }
                         if (!format.isLimited) androidx.compose.material3.OutlinedButton(
                             onClick = { deckTakePhoto.launch(deckPhotoUri) },
                             enabled = !poolScanBusy,
