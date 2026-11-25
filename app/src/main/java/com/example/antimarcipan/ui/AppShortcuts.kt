@@ -17,7 +17,7 @@ object AppShortcuts {
             val t = intent.getStringExtra(android.content.Intent.EXTRA_TEXT) ?: return
             when {
                 "AMDECK1:" in t -> com.example.antimarcipan.friends.FriendsInbox.pending.value = t
-                "AMGROUP1:" in t -> com.example.antimarcipan.board.BoardInbox.pending.value = t
+                "AMGROUP1:" in t && com.example.antimarcipan.BuildConfig.BOARD -> com.example.antimarcipan.board.BoardInbox.pending.value = t
             }
         } else handle(intent?.action)
     }

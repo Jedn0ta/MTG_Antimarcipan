@@ -85,7 +85,7 @@ object LanShare {
                         }
                         when {
                             text.startsWith("AMACK1:") -> acks.value = text.removePrefix("AMACK1:")
-                            "AMDECK1:" in text || "AMGROUP1:" in text -> incoming.value = incoming.value + LanIncoming(from, host, port, text)
+                            "AMDECK1:" in text || ("AMGROUP1:" in text && com.example.antimarcipan.BuildConfig.BOARD) -> incoming.value = incoming.value + LanIncoming(from, host, port, text)
                         }
                     }
                     runCatching { s.close() }

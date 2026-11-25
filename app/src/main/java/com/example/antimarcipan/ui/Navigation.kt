@@ -132,6 +132,7 @@ fun AntimarcipanApp() {
                         IconButton(onClick = { navController.navigate(FRIENDS_ROUTE) { launchSingleTop = true } }) {
                             Icon(androidx.compose.material.icons.Icons.Filled.Group, contentDescription = "Přátelé")
                         }
+                        if (com.example.antimarcipan.BuildConfig.BOARD) {
                         val unreadMap by com.example.antimarcipan.board.Board.unread.collectAsState()
                         val unreadTotal = unreadMap.values.sum()
                         IconButton(onClick = { navController.navigate(BOARD_ROUTE) { launchSingleTop = true } }) {
@@ -140,6 +141,7 @@ fun AntimarcipanApp() {
                             }) {
                                 Icon(androidx.compose.material.icons.Icons.Filled.Forum, contentDescription = "Nástěnka")
                             }
+                        }
                         }
                         IconButton(onClick = { navController.navigate(LIFE_ROUTE) { launchSingleTop = true } }) {
                             Icon(painterResource(com.example.antimarcipan.R.drawable.ic_life_counter), contentDescription = "Počítadlo životů")

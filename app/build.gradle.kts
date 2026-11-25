@@ -69,11 +69,14 @@ android {
         create("github") {
             dimension = "store"
             buildConfigField("boolean", "SELF_UPDATE", "true")
+            buildConfigField("boolean", "BOARD", "true")
         }
         create("play") {
             dimension = "store"
             applicationId = "com.onoseto.grimoar"
             buildConfigField("boolean", "SELF_UPDATE", "false")
+            // Nástěnka (Nostr) ve verzi pro Google Play není.
+            buildConfigField("boolean", "BOARD", "false")
         }
     }
     compileOptions {

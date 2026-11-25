@@ -38,13 +38,15 @@ class MainActivity : ComponentActivity() {
     override fun onStart() {
         super.onStart()
         com.example.antimarcipan.friends.LanShare.resume(this)
-        com.example.antimarcipan.board.Board.init(this)
-        com.example.antimarcipan.board.Board.start()
+        if (BuildConfig.BOARD) {
+            com.example.antimarcipan.board.Board.init(this)
+            com.example.antimarcipan.board.Board.start()
+        }
     }
 
     override fun onStop() {
         super.onStop()
         com.example.antimarcipan.friends.LanShare.stop()
-        com.example.antimarcipan.board.Board.stop()
+        if (BuildConfig.BOARD) com.example.antimarcipan.board.Board.stop()
     }
 }
