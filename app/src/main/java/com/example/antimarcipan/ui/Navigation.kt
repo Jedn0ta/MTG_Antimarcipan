@@ -1,5 +1,6 @@
 package com.example.antimarcipan.ui
 
+import androidx.compose.material.icons.filled.HowToVote
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
@@ -138,7 +139,7 @@ fun AntimarcipanApp() {
                             androidx.compose.material3.BadgedBox(badge = {
                                 if (unreadPolls > 0) androidx.compose.material3.Badge { Text("$unreadPolls") }
                             }) {
-                                Icon(androidx.compose.material.icons.Icons.Filled.DateRange, contentDescription = "Hlasování o hře")
+                                Icon(androidx.compose.material.icons.Icons.Filled.HowToVote, contentDescription = "Hlasování o hře")
                             }
                         }
                         IconButton(onClick = { navController.navigate(LIFE_ROUTE) { launchSingleTop = true } }) {
