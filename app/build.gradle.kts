@@ -69,7 +69,7 @@ android {
         create("github") {
             dimension = "store"
             buildConfigField("boolean", "SELF_UPDATE", "true")
-            buildConfigField("boolean", "BOARD", "true")
+            buildConfigField("boolean", "BOARD", "false")
         }
         create("play") {
             dimension = "store"

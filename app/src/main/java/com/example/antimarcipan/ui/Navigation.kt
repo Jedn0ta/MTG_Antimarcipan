@@ -84,7 +84,7 @@ fun AntimarcipanApp() {
         onManual -> "Přidat ručně"
         onLife -> "Počítadlo životů"
         onFriends -> "Přátelé"
-        onBoard -> "Nástěnka"
+        onBoard -> "Hlasování"
         else -> Dest.entries.firstOrNull { d ->
             current?.hierarchy?.any { it.route == d.route } == true
         }?.label ?: "Grimoar"
@@ -132,16 +132,14 @@ fun AntimarcipanApp() {
                         IconButton(onClick = { navController.navigate(FRIENDS_ROUTE) { launchSingleTop = true } }) {
                             Icon(androidx.compose.material.icons.Icons.Filled.Group, contentDescription = "Přátelé")
                         }
-                        if (com.example.antimarcipan.BuildConfig.BOARD) {
-                        val unreadMap by com.example.antimarcipan.board.Board.unread.collectAsState()
-                        val unreadTotal = unreadMap.values.sum()
+                        val polls by com.example.antimarcipan.polls.PollStore.polls.collectAsState()
+                        val unreadPolls = polls.count { it.unread }
                         IconButton(onClick = { navController.navigate(BOARD_ROUTE) { launchSingleTop = true } }) {
                             androidx.compose.material3.BadgedBox(badge = {
-                                if (unreadTotal > 0) androidx.compose.material3.Badge { Text(if (unreadTotal > 99) "99+" else "$unreadTotal") }
+                                if (unreadPolls > 0) androidx.compose.material3.Badge { Text("$unreadPolls") }
                             }) {
-                                Icon(androidx.compose.material.icons.Icons.Filled.Forum, contentDescription = "Nástěnka")
+                                Icon(androidx.compose.material.icons.Icons.Filled.HowToVote, contentDescription = "Hlasování o hře")
                             }
-                        }
                         }
                         IconButton(onClick = { navController.navigate(LIFE_ROUTE) { launchSingleTop = true } }) {
                             Icon(painterResource(com.example.antimarcipan.R.drawable.ic_life_counter), contentDescription = "Počítadlo životů")
@@ -216,7 +214,7 @@ fun AntimarcipanApp() {
         },
     ) { padding ->
         val friendsInbox by com.example.antimarcipan.friends.FriendsInbox.pending.collectAsState()
-        val boardInbox by com.example.antimarcipan.board.BoardInbox.pending.collectAsState()
+        val boardInbox by com.example.antimarcipan.polls.PollStore.openRequest.collectAsState()
         androidx.compose.runtime.LaunchedEffect(friendsInbox, boardInbox) {
             // Jen když na Přátelích ještě nejsme — jinak by se obrazovka znovu vytvořila a vypnula Wi-Fi hledání
             val target = if (boardInbox != null) BOARD_ROUTE else if (friendsInbox != null) FRIENDS_ROUTE else null
@@ -270,7 +268,7 @@ fun AntimarcipanApp() {
             composable(Dest.Settings.route) { SettingsScreen() }
             composable(MANUAL_ROUTE) { ManualAddScreen() }
             composable(FRIENDS_ROUTE) { com.example.antimarcipan.friends.FriendsScreen() }
-            composable(BOARD_ROUTE) { com.example.antimarcipan.board.BoardScreen() }
+            composable(BOARD_ROUTE) { com.example.antimarcipan.polls.PollsScreen() }
             composable(LIFE_ROUTE) { com.example.antimarcipan.life.LifeCounterScreen() }
         }
         }
