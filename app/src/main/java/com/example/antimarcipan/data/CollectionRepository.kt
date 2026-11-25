@@ -78,13 +78,47 @@ class CollectionRepository(
         scryfall.cardByFuzzyName(name.trim())
     }
 
+    /** Poslední karta nalezená podle cizojazyčného jména: „Blitzschlag (němčina)“. */
+    @Volatile var lastForeign: String? = null
+
+    private val LANG_CS = mapOf(
+        "de" to "němčina", "fr" to "francouzština", "it" to "italština", "es" to "španělština",
+        "pt" to "portugalština", "ru" to "ruština", "ja" to "japonština", "ko" to "korejština",
+        "zhs" to "čínština", "zht" to "čínština", "ph" to "phyrexianština",
+    )
+
+    /**
+     * Cizojazyčné jméno (Blitzschlag, Éclair…) → anglická karta. Scryfall hledá i v tištěných
+     * jménech jiných jazyků; vrátíme anglický tisk ze stejné edice (anglický text).
+     */
+    suspend fun lookupForeignName(name: String): Result<ScryfallCard> = runCatching {
+        require(name.trim().length >= 3)
+        val hit = scryfall.search(
+            query = "\"${name.trim()}\" -lang:en",
+            order = "released", unique = "prints", multilingual = true,
+        ).data.first()
+        val english = runCatching { scryfall.cardBySetAndNumber(hit.set!!, hit.collectorNumber!!) }
+            .getOrNull()?.takeIf { it.lang == null || it.lang == "en" }
+            ?: scryfall.cardByExactName(hit.name)
+        lastForeign = "${hit.printedName ?: name} (${LANG_CS[hit.lang] ?: hit.lang ?: "cizí jazyk"})"
+        english
+    }
+
     suspend fun lookup(rawText: String): Result<ScryfallCard> = runCatching {
+        lastForeign = null
         val parsed = OcrParser.parse(rawText)
         require(parsed.nameGuess.length >= 3) { "Text příliš krátký na jméno karty" }
 
-        val byName = runCatching { scryfall.cardByFuzzyName(parsed.nameGuess) }.getOrElse { e ->
-            // Cizojazyčná karta: jméno nenajdeme, zkusíme roh (edice + číslo)
-            return@runCatching lookupByCorner(rawText, strict = true).getOrElse { throw e }
+        val fuzzy = runCatching { scryfall.cardByFuzzyName(parsed.nameGuess) }
+        // Fuzzy občas „najde“ podobně znějící anglickou kartu i pro cizí jméno — ověř začátek jména.
+        val plausible = fuzzy.getOrNull()?.let {
+            it.name.take(4).equals(parsed.nameGuess.take(4), ignoreCase = true) ||
+                it.name.substringBefore(" // ").length.let { l -> kotlin.math.abs(l - parsed.nameGuess.length) <= 3 }
+        } ?: false
+        val byName = if (plausible) fuzzy.getOrThrow() else {
+            // Cizojazyčná karta: hledej podle tištěného jména v jiném jazyce, pak podle rohu.
+            lookupForeignName(parsed.nameGuess).getOrNull()?.let { return@runCatching it }
+            fuzzy.getOrNull() ?: return@runCatching lookupByCorner(rawText, strict = true).getOrElse { throw fuzzy.exceptionOrNull()!! }
         }
 
         // Zkus upřesnit edici podle set kódu + čísla z fotky.

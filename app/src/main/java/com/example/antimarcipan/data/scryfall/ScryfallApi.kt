@@ -36,6 +36,7 @@ interface ScryfallApi {
         @Query("q") query: String,
         @Query("order") order: String = "edhrec",
         @Query("unique") unique: String = "cards",
+        @Query("include_multilingual") multilingual: Boolean = false,
     ): ScryfallList
 
     /**

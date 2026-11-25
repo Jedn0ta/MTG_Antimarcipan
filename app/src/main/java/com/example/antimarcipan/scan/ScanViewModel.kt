@@ -136,14 +136,15 @@ class ScanViewModel(
                     _state.value = _state.value.copy(
                         candidate = card,
                         looking = false,
-                        status = editionLabel(card),
+                        status = editionLabel(card) + (repo.lastForeign?.let { "\nOriginál: $it · zobrazeno anglicky" } ?: ""),
                     )
                 }
                 .onFailure {
                     _state.value = _state.value.copy(
                         candidate = null,
                         looking = false,
-                        status = "Nenašlo se — zkus lepší světlo / úhel",
+                        status = if (firstLine.any { it.code > 0x24F }) "Cizí písmo — přepni na „Roh“ a zaměř edici + číslo vlevo dole"
+                        else "Nenašlo se — zkus lepší světlo / úhel. Cizojazyčná karta? Zkus režim „Roh“.",
                     )
                 }
         }
@@ -163,7 +164,7 @@ class ScanViewModel(
         viewModelScope.launch {
             repo.lookupByCorner(text)
                 .onSuccess { card ->
-                    _state.value = _state.value.copy(candidate = card, looking = false, status = editionLabel(card))
+                    _state.value = _state.value.copy(candidate = card, looking = false, status = editionLabel(card) + "\nZobrazeno anglicky")
                 }
                 .onFailure {
                     _state.value = _state.value.copy(looking = false, status = "Roh nečitelný — přibliž a přisviť (číslo + kód edice)")
