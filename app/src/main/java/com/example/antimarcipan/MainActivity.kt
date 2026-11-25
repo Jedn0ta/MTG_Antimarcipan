@@ -12,6 +12,7 @@ import com.example.antimarcipan.ui.theme.AntimarcipanTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
+        com.example.antimarcipan.i18n.I18n.init(this)
         super.onCreate(savedInstanceState)
         com.example.antimarcipan.support.SupportStore.connect(this)
         com.example.antimarcipan.polls.PollStore.init(this)

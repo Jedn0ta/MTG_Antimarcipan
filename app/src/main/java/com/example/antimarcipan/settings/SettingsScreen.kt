@@ -64,6 +64,7 @@ fun SettingsScreen(
         Spacer(Modifier.height(4.dp))
 
         // --- Verze / aktualizace ---
+        LanguageCard()
         SupportCard()
         if (BuildConfig.SELF_UPDATE) Card(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp)) {
             Column(
@@ -483,6 +484,32 @@ private fun SupportCard() {
                 }
             }
             msg?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary) }
+        }
+    }
+}
+
+/** Jazyk aplikace: podle telefonu / čeština / angličtina. Změna restartuje aplikaci. */
+@Composable
+private fun LanguageCard() {
+    val ctx = LocalContext.current
+    val mode = com.example.antimarcipan.i18n.I18n.mode
+    Card(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp)) {
+        Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text("Jazyk / Language", style = MaterialTheme.typography.titleMedium)
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                listOf("auto" to tr("Podle telefonu"), "cs" to "Čeština", "en" to "English").forEach { (m, label) ->
+                    com.example.antimarcipan.ui.GoldChip(selected = mode == m, onClick = {
+                        if (m != mode) {
+                            com.example.antimarcipan.i18n.I18n.setMode(ctx, m)
+                            // Restart, ať se přeloží i texty načtené při startu.
+                            val i = ctx.packageManager.getLaunchIntentForPackage(ctx.packageName)
+                                ?.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK or android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK)
+                            ctx.startActivity(i)
+                            Runtime.getRuntime().exit(0)
+                        }
+                    }, label = { Text(label) })
+                }
+            }
         }
     }
 }

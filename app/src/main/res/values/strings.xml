@@ -1,9 +1,9 @@
 <resources>
     <string name="app_name">Grimoar</string>
-    <string name="sc_quick_short">Rychlý sken</string>
-    <string name="sc_quick_long">Rychlý sken → rulings + Playground</string>
-    <string name="sc_scan_short">Sken</string>
-    <string name="sc_scan_long">Skenovat kartu</string>
-    <string name="sc_glossary_short">Slovníček</string>
-    <string name="sc_glossary_long">Slovníček vlastností</string>
+    <string name="sc_quick_short">Quick scan</string>
+    <string name="sc_quick_long">Quick scan → rulings + Playground</string>
+    <string name="sc_scan_short">Scan</string>
+    <string name="sc_scan_long">Scan a card</string>
+    <string name="sc_glossary_short">Glossary</string>
+    <string name="sc_glossary_long">Keyword glossary</string>
 </resources>
