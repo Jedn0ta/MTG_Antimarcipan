@@ -1,5 +1,7 @@
 package com.example.antimarcipan.ui
 
+import com.example.antimarcipan.i18n.tr
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
@@ -41,7 +43,7 @@ private enum class CType(val label: String, val color: Color) {
     ENCHANT("Enchant.", Color(0xFFB98AE8)),
     ARTIFACT("Artefakt", Color(0xFFA9AEB8)),
     PW("Planesw.", Color(0xFF6FD2B0)),
-    OTHER("Jiné", Color(0xFF7A6FA0)),
+    OTHER(tr("Jiné"), Color(0xFF7A6FA0)),
 }
 
 private fun typeOf(t: String?): CType {

@@ -1,5 +1,7 @@
 package com.example.antimarcipan.advisor
 
+import com.example.antimarcipan.i18n.tr
+
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.material.icons.filled.Hub
 import androidx.compose.foundation.BorderStroke
@@ -102,7 +104,7 @@ fun AdvisorHubScreen(vm: AdvisorViewModel = viewModel(factory = AppViewModelFact
 @Composable
 fun HubBackRow(title: String, onBack: () -> Unit) {
     Row(Modifier.fillMaxWidth().padding(horizontal = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-        IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Zpět do Rádce") }
+        IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = tr("Zpět do Rádce")) }
         Text(title, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
     }
 }
@@ -111,13 +113,13 @@ fun HubBackRow(title: String, onBack: () -> Unit) {
 private fun Hub(open: (Tool) -> Unit) {
     // Čtvercové dlaždice 2 × 4 — vejdou se na jednu obrazovku bez scrollování.
     val tiles = listOf(
-        Triple(Icons.Filled.AutoAwesome, "Zeptat se Clauda", "Balík a sbírka Claudovi, návrhy zpět") to Tool.CLAUDE,
-        Triple(Icons.Filled.Insights, "Analýza balíku", "Curve, země, synergie, co doplnit") to Tool.ANALYZE,
-        Triple(Icons.Filled.Construction, "Postavit balík", "Návrh balíku jen z tvé sbírky") to Tool.BUILD,
-        Triple(Icons.Filled.Hub, "Komba", "Komba ve sbírce a co chybí") to Tool.COMBOS,
-        Triple(Icons.Filled.Casino, "Zkušební ruka", "Lízni 7, mulligan, simulace") to Tool.HAND,
-        Triple(Icons.Filled.SwapHoriz, "Draft / Sealed", "Průvodce limited formáty") to Tool.LIMITED,
-        Triple(Icons.AutoMirrored.Filled.MenuBook, "Slovníček", "Klíčová slova a vysvětlení") to Tool.GLOSSARY,
+        Triple(Icons.Filled.AutoAwesome, "Zeptat se Clauda", tr("Balík a sbírka Claudovi, návrhy zpět")) to Tool.CLAUDE,
+        Triple(Icons.Filled.Insights, tr("Analýza balíku"), tr("Curve, země, synergie, co doplnit")) to Tool.ANALYZE,
+        Triple(Icons.Filled.Construction, tr("Postavit balík"), tr("Návrh balíku jen z tvé sbírky")) to Tool.BUILD,
+        Triple(Icons.Filled.Hub, tr("Komba"), tr("Komba ve sbírce a co chybí")) to Tool.COMBOS,
+        Triple(Icons.Filled.Casino, tr("Zkušební ruka"), tr("Lízni 7, mulligan, simulace")) to Tool.HAND,
+        Triple(Icons.Filled.SwapHoriz, "Draft / Sealed", tr("Průvodce limited formáty")) to Tool.LIMITED,
+        Triple(Icons.AutoMirrored.Filled.MenuBook, tr("Slovníček"), tr("Klíčová slova a vysvětlení")) to Tool.GLOSSARY,
     )
     Column(Modifier.fillMaxSize().padding(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         tiles.chunked(2).forEach { row ->
@@ -176,10 +178,10 @@ private fun BuildTool(vm: AdvisorViewModel, onBack: () -> Unit) {
     val suggested = remember(owned) { DeckBuilder.bestColors(owned) }
 
     Column(Modifier.fillMaxSize()) {
-        HubBackRow("Postavit balík ze sbírky") { vm.clearBuild(); onBack() }
+        HubBackRow(tr("Postavit balík ze sbírky")) { vm.clearBuild(); onBack() }
         LazyColumn(Modifier.fillMaxSize(), contentPadding = androidx.compose.foundation.layout.PaddingValues(12.dp)) {
             item {
-                Text("Formát", style = MaterialTheme.typography.labelLarge)
+                Text(tr("Formát"), style = MaterialTheme.typography.labelLarge)
                 Row(Modifier.horizontalScroll(rememberScrollState()).padding(vertical = 6.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     BuildFormat.entries.forEach { f ->
                         com.example.antimarcipan.ui.GoldChip(selected = format == f, onClick = { format = f; vm.clearBuild() }, label = { Text(f.label) })
@@ -188,11 +190,11 @@ private fun BuildTool(vm: AdvisorViewModel, onBack: () -> Unit) {
             }
             if (format == BuildFormat.COMMANDER) {
                 item {
-                    Text("Velitel (${commanders.size} legendárních tvorů)", style = MaterialTheme.typography.labelLarge)
-                    if (commanders.isEmpty()) Text("Ve sbírce nemáš žádného legendárního tvora.", style = MaterialTheme.typography.bodySmall)
+                    Text(tr("Velitel ({0} legendárních tvorů)", (commanders.size)), style = MaterialTheme.typography.labelLarge)
+                    if (commanders.isEmpty()) Text(tr("Ve sbírce nemáš žádného legendárního tvora."), style = MaterialTheme.typography.bodySmall)
                     else if (commanders.size > 6) OutlinedTextField(
                         value = cmdQuery, onValueChange = { cmdQuery = it }, singleLine = true,
-                        label = { Text("Hledat velitele") },
+                        label = { Text(tr("Hledat velitele")) },
                         modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
                     )
                 }
@@ -227,7 +229,7 @@ private fun BuildTool(vm: AdvisorViewModel, onBack: () -> Unit) {
                 }
             } else {
                 item {
-                    Text("Barvy (prázdné = vyberu sám: ${suggested.joinToString("")})", style = MaterialTheme.typography.labelLarge)
+                    Text(tr("Barvy (prázdné = vyberu sám: {0})", (suggested.joinToString(""))), style = MaterialTheme.typography.labelLarge)
                     Row(Modifier.padding(vertical = 6.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         listOf("W", "U", "B", "R", "G").forEach { col ->
                             val sel = col in colors
@@ -253,8 +255,8 @@ private fun BuildTool(vm: AdvisorViewModel, onBack: () -> Unit) {
                     onClick = { vm.buildDeck(format, colors.toList().ifEmpty { null }, if (format == BuildFormat.COMMANDER) commander else null) },
                     enabled = owned.isNotEmpty() && (format != BuildFormat.COMMANDER || commander != null),
                     modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-                ) { Text(if (result == null) "Navrhnout balík" else "Navrhnout znovu") }
-                if (owned.isEmpty()) Text("Sbírka je prázdná — nejdřív naskenuj karty.", style = MaterialTheme.typography.bodySmall)
+                ) { Text(if (result == null) tr("Navrhnout balík") else "Navrhnout znovu") }
+                if (owned.isEmpty()) Text(tr("Sbírka je prázdná — nejdřív naskenuj karty."), style = MaterialTheme.typography.bodySmall)
             }
             result?.let { r ->
                 item {
@@ -264,12 +266,12 @@ private fun BuildTool(vm: AdvisorViewModel, onBack: () -> Unit) {
                     ) {
                         Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                             Text(
-                                "${r.total} karet · ${r.spellCount} kouzel · ${r.landCount} zemí · barvy ${r.colors.joinToString("")}",
+                                tr("{0} karet · {1} kouzel · {2} zemí · barvy {3}", (r.total), (r.spellCount), (r.landCount), (r.colors.joinToString(""))),
                                 style = MaterialTheme.typography.titleSmall,
                             )
                             r.notes.forEach { Text("• $it", style = MaterialTheme.typography.bodySmall) }
                             if (r.basics.isNotEmpty()) Text(
-                                "Základní země: " + r.basics.entries.joinToString(", ") { "${it.value}× ${it.key}" },
+                                tr("Základní země: ") + r.basics.entries.joinToString(", ") { "${it.value}× ${it.key}" },
                                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary,
                             )
                         }
@@ -286,11 +288,11 @@ private fun BuildTool(vm: AdvisorViewModel, onBack: () -> Unit) {
                 item {
                     OutlinedTextField(
                         value = name, onValueChange = { name = it },
-                        label = { Text("Název balíku") }, singleLine = true,
+                        label = { Text(tr("Název balíku")) }, singleLine = true,
                         modifier = Modifier.fillMaxWidth().padding(top = 10.dp),
                     )
                     Button(onClick = { vm.saveBuild(name) }, modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
-                        Text("Vytvořit balík a otevřít")
+                        Text(tr("Vytvořit balík a otevřít"))
                     }
                 }
             }
@@ -321,15 +323,15 @@ private fun LimitedTool(vm: AdvisorViewModel, onBack: () -> Unit) {
     var step by rememberSaveable { mutableIntStateOf(0) }
     var name by rememberSaveable { mutableStateOf("") }
     Column(Modifier.fillMaxSize()) {
-        HubBackRow("Průvodce Draft / Sealed", onBack)
+        HubBackRow(tr("Průvodce Draft / Sealed"), onBack)
         Column(
             Modifier.fillMaxSize().androidx_verticalScroll().padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             if (format == null) {
-                Text("Co budeš hrát?", style = MaterialTheme.typography.titleMedium)
-                HubTile(Icons.Filled.SwapHoriz, "Booster Draft", "8 hráčů, 3 boostery, karty si vybíráš po jedné a posíláš dál.") { format = "DRAFT"; step = 0 }
-                HubTile(Icons.Filled.AutoAwesome, "Sealed deck", "Otevřeš 6 boosterů a z nich postavíš balík.") { format = "SEALED"; step = 0 }
+                Text(tr("Co budeš hrát?"), style = MaterialTheme.typography.titleMedium)
+                HubTile(Icons.Filled.SwapHoriz, "Booster Draft", tr("8 hráčů, 3 boostery, karty si vybíráš po jedné a posíláš dál.")) { format = "DRAFT"; step = 0 }
+                HubTile(Icons.Filled.AutoAwesome, "Sealed deck", tr("Otevřeš 6 boosterů a z nich postavíš balík.")) { format = "SEALED"; step = 0 }
             } else {
                 val f = DeckFormat.from(format)
                 val steps = limitedSteps(f)
@@ -340,14 +342,14 @@ private fun LimitedTool(vm: AdvisorViewModel, onBack: () -> Unit) {
                 if (step == steps.lastIndex) {
                     OutlinedTextField(
                         value = name, onValueChange = { name = it },
-                        label = { Text("Název balíku") }, singleLine = true, modifier = Modifier.fillMaxWidth(),
+                        label = { Text(tr("Název balíku")) }, singleLine = true, modifier = Modifier.fillMaxWidth(),
                     )
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedButton(onClick = { if (step == 0) format = null else step-- }, modifier = Modifier.weight(1f)) { Text("Zpět") }
-                    if (step < steps.lastIndex) Button(onClick = { step++ }, modifier = Modifier.weight(1f)) { Text("Dál") }
+                    OutlinedButton(onClick = { if (step == 0) format = null else step-- }, modifier = Modifier.weight(1f)) { Text(tr("Zpět")) }
+                    if (step < steps.lastIndex) Button(onClick = { step++ }, modifier = Modifier.weight(1f)) { Text(tr("Dál")) }
                     else Button(onClick = { vm.createLimitedDeck(name.ifBlank { f.label }, f.code) }, modifier = Modifier.weight(1f)) {
-                        Text("Založit a začít")
+                        Text(tr("Založit a začít"))
                     }
                 }
             }
@@ -356,17 +358,17 @@ private fun LimitedTool(vm: AdvisorViewModel, onBack: () -> Unit) {
 }
 
 private fun limitedSteps(f: DeckFormat): List<Pair<String, String>> = if (f == DeckFormat.SEALED) listOf(
-    "Otevři boostery" to "Každý hráč dostane 6 boosterů. Otevři je — všech ~84 karet je tvůj pool. Základní země dostaneš zdarma, kolik chceš.",
-    "Vyfoť pool" to "Po založení balíku se otevře jeho detail. V rádci nahoře ťukni „Vyfotit karty“ a fofť karty po skupinách lícem nahoru. Jdou do poolu, ne do sbírky.",
-    "Najdi barvy" to "Rádce v balíku spočítá nejsilnější barvy podle bomb (silné rare/mythic) a removalu. Hraj 2 barvy; třetí jen na 1–2 bomby, pokud máš fixing.",
-    "Postav 40 karet" to "Cíl: 17 zemí + 23 kouzel, 15–17 tvorů, co nejvíc removalu. Křivka: 4–6 tvorů za 2, 3–5 za 3, max 2–3 karty za 6+. Tlačítko „Nastavit země“ rozdělí basicy podle symbolů many.",
-    "Hraj a ulož" to "Hraje se obvykle na 2 vítězné hry; mezi hrami můžeš měnit karty s poolem (sideboard). Po turnaji dej „Pool do sbírky“ a karty se přidají do sbírky naráz.",
+    tr("Otevři boostery") to tr("Každý hráč dostane 6 boosterů. Otevři je — všech ~84 karet je tvůj pool. Základní země dostaneš zdarma, kolik chceš."),
+    tr("Vyfoť pool") to tr("Po založení balíku se otevře jeho detail. V rádci nahoře ťukni „Vyfotit karty“ a fofť karty po skupinách lícem nahoru. Jdou do poolu, ne do sbírky."),
+    "Najdi barvy" to tr("Rádce v balíku spočítá nejsilnější barvy podle bomb (silné rare/mythic) a removalu. Hraj 2 barvy; třetí jen na 1–2 bomby, pokud máš fixing."),
+    "Postav 40 karet" to tr("Cíl: 17 zemí + 23 kouzel, 15–17 tvorů, co nejvíc removalu. Křivka: 4–6 tvorů za 2, 3–5 za 3, max 2–3 karty za 6+. Tlačítko „Nastavit země“ rozdělí basicy podle symbolů many."),
+    tr("Hraj a ulož") to tr("Hraje se obvykle na 2 vítězné hry; mezi hrami můžeš měnit karty s poolem (sideboard). Po turnaji dej „Pool do sbírky“ a karty se přidají do sbírky naráz."),
 ) else listOf(
-    "Jak draft probíhá" to "U stolu je obvykle 8 hráčů, každý má 3 boostery. Otevřeš booster, vezmeš si 1 kartu a zbytek pošleš doleva. Od souseda dostaneš jeho booster, zase vybereš 1… 2. booster jde doprava, 3. zase doleva. Skončíš s ~42 kartami.",
-    "Pick order" to "1. Bomby — karty, které samy vyhrají hru.\n2. Removal.\n3. Evasivní a efektivní tvorové (flying, menace, dobrý poměr síla/cena).\n4. Kombinační karty a triky nakonec.",
-    "Čti signály" to "Prvních ~5 picků ber nejsilnější kartu bez ohledu na barvu. Pak sleduj, která barva ti chodí pozdě (silná karta v 6.–9. picku) — ta je „otevřená“, sousedé ji neberou. Do konce 1. boosteru se ustal na 2 barvách.",
-    "Vyfoť karty" to "Po draftu otevři balík (vytvoříme ho teď) a v rádci ťukni „Vyfotit karty“. Karty jdou do poolu; rádce je ohodnotí a doporučí barvy a nejlepší karty.",
-    "Postav 40 karet" to "17 zemí + 23 kouzel, 15–17 tvorů, co nejvíc removalu, rozumná křivka. Po hraní „Pool do sbírky“ přidá vydraftované karty do sbírky.",
+    tr("Jak draft probíhá") to tr("U stolu je obvykle 8 hráčů, každý má 3 boostery. Otevřeš booster, vezmeš si 1 kartu a zbytek pošleš doleva. Od souseda dostaneš jeho booster, zase vybereš 1… 2. booster jde doprava, 3. zase doleva. Skončíš s ~42 kartami."),
+    "Pick order" to tr("1. Bomby — karty, které samy vyhrají hru.\n2. Removal.\n3. Evasivní a efektivní tvorové (flying, menace, dobrý poměr síla/cena).\n4. Kombinační karty a triky nakonec."),
+    tr("Čti signály") to tr("Prvních ~5 picků ber nejsilnější kartu bez ohledu na barvu. Pak sleduj, která barva ti chodí pozdě (silná karta v 6.–9. picku) — ta je „otevřená“, sousedé ji neberou. Do konce 1. boosteru se ustal na 2 barvách."),
+    tr("Vyfoť karty") to tr("Po draftu otevři balík (vytvoříme ho teď) a v rádci ťukni „Vyfotit karty“. Karty jdou do poolu; rádce je ohodnotí a doporučí barvy a nejlepší karty."),
+    "Postav 40 karet" to tr("17 zemí + 23 kouzel, 15–17 tvorů, co nejvíc removalu, rozumná křivka. Po hraní „Pool do sbírky“ přidá vydraftované karty do sbírky."),
 )
 
 @Composable
@@ -412,26 +414,26 @@ private fun SampleHandTool(vm: AdvisorViewModel, onBack: () -> Unit) {
     }
 
     Column(Modifier.fillMaxSize()) {
-        HubBackRow("Zkušební ruka", onBack)
+        HubBackRow(tr("Zkušební ruka"), onBack)
         Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 12.dp, vertical = 6.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             decks.forEach { d -> com.example.antimarcipan.ui.GoldChip(selected = deckId == d.id, onClick = { deckId = d.id }, label = { Text(d.name) }) }
         }
         HorizontalDivider()
         if (deckId == null) {
-            Text("Vyber balík.", Modifier.padding(16.dp))
+            Text(tr("Vyber balík."), Modifier.padding(16.dp))
             return@Column
         }
         if (library.size < 7) {
-            Text("Balík má méně než 7 karet.", Modifier.padding(16.dp))
+            Text(tr("Balík má méně než 7 karet."), Modifier.padding(16.dp))
             return@Column
         }
         Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            com.example.antimarcipan.ui.GoldChip(selected = !simMode, onClick = { simMode = false }, label = { Text("Ruka") })
-            com.example.antimarcipan.ui.GoldChip(selected = simMode, onClick = { simMode = true }, label = { Text("Simulace") })
+            com.example.antimarcipan.ui.GoldChip(selected = !simMode, onClick = { simMode = false }, label = { Text(tr("Ruka")) })
+            com.example.antimarcipan.ui.GoldChip(selected = simMode, onClick = { simMode = true }, label = { Text(tr("Simulace")) })
         }
         if (simMode) {
             Column(Modifier.weight(1f).androidx_verticalScroll().padding(12.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Text("Počet simulovaných her", style = MaterialTheme.typography.labelLarge)
+                Text(tr("Počet simulovaných her"), style = MaterialTheme.typography.labelLarge)
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     listOf(1000, 10000, 50000).forEach { n ->
                         com.example.antimarcipan.ui.GoldChip(selected = simRuns == n, onClick = { simRuns = n }, label = { Text("%,d".format(n).replace(',', ' ')) })
@@ -454,13 +456,13 @@ private fun SampleHandTool(vm: AdvisorViewModel, onBack: () -> Unit) {
         val lands = hand.count { LimitedAdvisor.isLand(it) }
         val verdict = when {
             hand.size < 7 -> ""
-            lands <= 1 -> "Málo zemí — spíš mulligan."
-            lands >= 5 -> "Moc zemí — spíš mulligan."
-            hand.none { !LimitedAdvisor.isLand(it) && (it.cmc ?: 9.0) <= 3 } -> "Žádný levný tah — zvaž mulligan."
-            else -> "Hratelná ruka — drž."
+            lands <= 1 -> tr("Málo zemí — spíš mulligan.")
+            lands >= 5 -> tr("Moc zemí — spíš mulligan.")
+            hand.none { !LimitedAdvisor.isLand(it) && (it.cmc ?: 9.0) <= 3 } -> tr("Žádný levný tah — zvaž mulligan.")
+            else -> tr("Hratelná ruka — drž.")
         }
         Text(
-            "V ruce ${hand.size} karet · zemí $lands" + (if (mulligans > 0) " · mulligan $mulligans× (dej $mulligans ${if (mulligans == 1) "kartu" else "karty"} dospod)" else ""),
+            tr("V ruce {0} karet · zemí {1}", (hand.size), lands) + (if (mulligans > 0) " · mulligan $mulligans× (dej $mulligans ${if (mulligans == 1) "kartu" else "karty"} dospod)" else ""),
             Modifier.padding(horizontal = 16.dp, vertical = 6.dp), style = MaterialTheme.typography.labelLarge,
         )
         if (verdict.isNotEmpty()) Text(verdict, Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
@@ -479,8 +481,8 @@ private fun SampleHandTool(vm: AdvisorViewModel, onBack: () -> Unit) {
             OutlinedButton(
                 onClick = { if (drawn < library.size) { hand = hand + library[drawn]; drawn++ } },
                 enabled = drawn < library.size, modifier = Modifier.weight(1f),
-            ) { Text("Líznout") }
-            Button(onClick = { scope.launch { newHand(false) } }, modifier = Modifier.weight(1f)) { Text("Nová") }
+            ) { Text(tr("Líznout")) }
+            Button(onClick = { scope.launch { newHand(false) } }, modifier = Modifier.weight(1f)) { Text(tr("Nová")) }
         }
     }
 }
@@ -501,10 +503,10 @@ private fun GlossaryTool(onBack: () -> Unit) {
     val shown = all.entries.filter { q.isBlank() || it.key.contains(q.trim(), true) || it.value.contains(q.trim(), true) }
         .sortedBy { it.key }
     Column(Modifier.fillMaxSize()) {
-        HubBackRow("Slovníček vlastností", onBack)
+        HubBackRow(tr("Slovníček vlastností"), onBack)
         OutlinedTextField(
             value = q, onValueChange = { q = it }, singleLine = true,
-            label = { Text("Hledat (např. trample, ward)") },
+            label = { Text(tr("Hledat (např. trample, ward)")) },
             modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp),
             trailingIcon = {
                 IconButton(onClick = {
@@ -513,17 +515,17 @@ private fun GlossaryTool(onBack: () -> Unit) {
                             android.content.Intent(android.speech.RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
                                 .putExtra(android.speech.RecognizerIntent.EXTRA_LANGUAGE_MODEL, android.speech.RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
                                 .putExtra(android.speech.RecognizerIntent.EXTRA_LANGUAGE, if (czech) "cs-CZ" else "en-US")
-                                .putExtra(android.speech.RecognizerIntent.EXTRA_PROMPT, "Řekni vlastnost (např. trample)")
+                                .putExtra(android.speech.RecognizerIntent.EXTRA_PROMPT, tr("Řekni vlastnost (např. trample)"))
                         )
                     }.onFailure {
-                        android.widget.Toast.makeText(ctx, "Diktování není v telefonu dostupné", android.widget.Toast.LENGTH_SHORT).show()
+                        android.widget.Toast.makeText(ctx, tr("Diktování není v telefonu dostupné"), android.widget.Toast.LENGTH_SHORT).show()
                     }
-                }) { Icon(Icons.Filled.Mic, contentDescription = "Diktovat") }
+                }) { Icon(Icons.Filled.Mic, contentDescription = tr("Diktovat")) }
             },
         )
         Row(Modifier.padding(horizontal = 12.dp, vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             com.example.antimarcipan.ui.GoldChip(selected = !czech, onClick = { czech = false }, label = { Text("English") })
-            com.example.antimarcipan.ui.GoldChip(selected = czech, onClick = { czech = true }, label = { Text("Přeložit do češtiny") })
+            com.example.antimarcipan.ui.GoldChip(selected = czech, onClick = { czech = true }, label = { Text(tr("Přeložit do češtiny")) })
         }
         LazyColumn(Modifier.fillMaxSize().padding(top = 6.dp)) {
             items(shown, key = { it.key }) { e ->
@@ -546,28 +548,28 @@ private fun CombosTool(vm: AdvisorViewModel, onBack: () -> Unit) {
     val st by vm.combos.collectAsStateWithLifecycle()
     var source by rememberSaveable { mutableStateOf<Long?>(-1L) } // -1 = celá sbírka
     Column(Modifier.fillMaxSize()) {
-        HubBackRow("Komba ze sbírky", onBack)
+        HubBackRow(tr("Komba ze sbírky"), onBack)
         Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 12.dp, vertical = 6.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            com.example.antimarcipan.ui.GoldChip(selected = source == -1L, onClick = { source = -1L; vm.findCombos(null) }, label = { Text("Celá sbírka") })
+            com.example.antimarcipan.ui.GoldChip(selected = source == -1L, onClick = { source = -1L; vm.findCombos(null) }, label = { Text(tr("Celá sbírka")) })
             decks.forEach { d -> com.example.antimarcipan.ui.GoldChip(selected = source == d.id, onClick = { source = d.id; vm.findCombos(d.id) }, label = { Text(d.name) }) }
         }
         HorizontalDivider()
         when {
             st.loading -> Row(Modifier.padding(20.dp), verticalAlignment = Alignment.CenterVertically) {
-                androidx.compose.material3.CircularProgressIndicator(Modifier.size(22.dp)); Text("  Hledám komba…")
+                androidx.compose.material3.CircularProgressIndicator(Modifier.size(22.dp)); Text(tr("  Hledám komba…"))
             }
             st.error != null -> Text(st.error!!, Modifier.padding(16.dp))
             st.report == null -> Text(
-                "Vyber celou sbírku nebo balík. Komba hledám v databázi Commander Spellbook (potřebuje internet).",
+                tr("Vyber celou sbírku nebo balík. Komba hledám v databázi Commander Spellbook (potřebuje internet)."),
                 Modifier.padding(16.dp), style = MaterialTheme.typography.bodySmall,
             )
             else -> {
                 val r = st.report!!
                 LazyColumn(Modifier.fillMaxSize()) {
-                    item { ComboHeader("Kompletní komba (${r.complete.size})", "Všechny karty máš.") }
-                    if (r.complete.isEmpty()) item { Text("Žádné kompletní kombo.", Modifier.padding(16.dp, 4.dp), style = MaterialTheme.typography.bodySmall) }
+                    item { ComboHeader(tr("Kompletní komba ({0})", (r.complete.size)), tr("Všechny karty máš.")) }
+                    if (r.complete.isEmpty()) item { Text(tr("Žádné kompletní kombo."), Modifier.padding(16.dp, 4.dp), style = MaterialTheme.typography.bodySmall) }
                     items(r.complete.take(100), key = { "c" + it.id }) { ComboCard(it) }
-                    item { ComboHeader("Chybí jedna karta (${r.almost.size})", "Stačí sehnat jednu kartu — vhodné na wishlist.") }
+                    item { ComboHeader(tr("Chybí jedna karta ({0})", (r.almost.size)), tr("Stačí sehnat jednu kartu — vhodné na wishlist.")) }
                     items(r.almost.take(150), key = { "a" + it.id }) { ComboCard(it) }
                 }
             }
@@ -623,11 +625,11 @@ private fun ComboCard(c: com.example.antimarcipan.data.advisor.Combo) {
                 )
             }
             if (c.results.isNotEmpty()) Text(
-                "Výsledek: " + c.results.joinToString(", "),
+                tr("Výsledek: ") + c.results.joinToString(", "),
                 style = MaterialTheme.typography.bodySmall, color = Color(0xFF8FD6A0),
             )
             if (open && c.steps.isNotBlank()) Text(c.steps, style = MaterialTheme.typography.bodySmall)
-            else if (c.steps.isNotBlank()) Text("Ťukni pro postup", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+            else if (c.steps.isNotBlank()) Text(tr("Ťukni pro postup"), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
         }
     }
 }
@@ -638,12 +640,12 @@ private fun ComboCard(c: com.example.antimarcipan.data.advisor.Combo) {
 @Composable
 private fun SimResultView(r: SimResult, deckSize: Int) {
     val gold = Color(0xFFE2BC62)
-    Text("Výsledek z ${"%,d".format(r.runs).replace(',', ' ')} her", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
+    Text(tr("Výsledek z {0} her", ("%,d".format(r.runs).replace(',', ' '))), style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
     // Vyhodnocení
     HandSimulator.verdict(r, deckSize).forEach { Text("• $it", style = MaterialTheme.typography.bodySmall) }
 
     // Graf: zemí v úvodní ruce
-    Text("Zemí v úvodní ruce", style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(top = 6.dp))
+    Text(tr("Zemí v úvodní ruce"), style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(top = 6.dp))
     val maxP = r.landDist.maxOrNull()?.coerceAtLeast(0.01) ?: 1.0
     Row(Modifier.fillMaxWidth().height(130.dp), verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         r.landDist.forEachIndexed { i, p ->
@@ -660,16 +662,16 @@ private fun SimResultView(r: SimResult, deckSize: Int) {
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         (0..7).forEach { Text("$it", Modifier.weight(1f), style = MaterialTheme.typography.labelSmall, textAlign = androidx.compose.ui.text.style.TextAlign.Center) }
     }
-    Text("% rukou · zlatě 2–4 země (ideál)", style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.6f))
+    Text(tr("% rukou · zlatě 2–4 země (ideál)"), style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.6f))
 
     StatBlock("Mulligan", listOf(
-        "Hratelná na 7" to r.keep7, "Hratelná do 6 (1 mulligan)" to r.keepBy6, "Hratelná do 5 (2 mulligany)" to r.keepBy5,
+        tr("Hratelná na 7") to r.keep7, tr("Hratelná do 6 (1 mulligan)") to r.keepBy6, tr("Hratelná do 5 (2 mulligany)") to r.keepBy5,
     ))
-    StatBlock("Země včas (na tahu první)", r.landDrops.map { (t, p) -> "$t. země do $t. tahu" to p })
-    StatBlock("První zahrané kouzlo", r.firstPlay.map { (t, p) -> "nejpozději v $t. tahu" to p })
+    StatBlock(tr("Země včas (na tahu první)"), r.landDrops.map { (t, p) -> tr("{0}. země do {1}. tahu", t, t) to p })
+    StatBlock(tr("První zahrané kouzlo"), r.firstPlay.map { (t, p) -> tr("nejpozději v {0}. tahu", t) to p })
     if (r.colorBy3.isNotEmpty()) StatBlock("Zdroj barvy do 3. tahu", r.colorBy3.map { (c, p) -> c to p })
     Text(
-        "Zjednodušení: hratelná ruka = 2–4 země a kouzlo do 3 many; tahy počítají zemi za tah a kouzlo s MV ≤ zemím (bez ohledu na barvy).",
+        tr("Zjednodušení: hratelná ruka = 2–4 země a kouzlo do 3 many; tahy počítají zemi za tah a kouzlo s MV ≤ zemím (bez ohledu na barvy)."),
         style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.5f),
     )
 }

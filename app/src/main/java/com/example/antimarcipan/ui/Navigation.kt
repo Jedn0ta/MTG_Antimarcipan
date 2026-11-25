@@ -1,5 +1,7 @@
 package com.example.antimarcipan.ui
 
+import com.example.antimarcipan.i18n.tr
+
 import androidx.compose.material.icons.filled.HowToVote
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -56,11 +58,11 @@ private enum class Dest(
     val label: String,
     @androidx.annotation.DrawableRes val icon: Int,
 ) {
-    Scan("scan", "Sken", R.drawable.ic_nav_scan),
-    Collection("collection", "Sbírka", R.drawable.ic_nav_collection),
-    Decks("decks", "Balíky", R.drawable.ic_nav_decks),
-    Synergy("synergy", "Rádce", R.drawable.ic_nav_advisor),
-    Settings(SETTINGS_ROUTE, "Nastavení", R.drawable.ic_nav_synergy),
+    Scan("scan", tr("Sken"), R.drawable.ic_nav_scan),
+    Collection("collection", tr("Sbírka"), R.drawable.ic_nav_collection),
+    Decks("decks", tr("Balíky"), R.drawable.ic_nav_decks),
+    Synergy("synergy", tr("Rádce"), R.drawable.ic_nav_advisor),
+    Settings(SETTINGS_ROUTE, tr("Nastavení"), R.drawable.ic_nav_synergy),
 }
 
 /** Jemný gradient lišt (nahoře mírně světlejší fialová). */
@@ -82,10 +84,10 @@ fun AntimarcipanApp() {
     val isSubScreen = onManual || onLife || onFriends || onBoard
 
     val title = when {
-        onManual -> "Přidat ručně"
-        onLife -> "Počítadlo životů"
-        onFriends -> "Přátelé"
-        onBoard -> "Hlasování"
+        onManual -> tr("Přidat ručně")
+        onLife -> tr("Počítadlo životů")
+        onFriends -> tr("Přátelé")
+        onBoard -> tr("Hlasování")
         else -> Dest.entries.firstOrNull { d ->
             current?.hierarchy?.any { it.route == d.route } == true
         }?.label ?: "Grimoar"
@@ -123,7 +125,7 @@ fun AntimarcipanApp() {
                         IconButton(onClick = { navController.popBackStack() }) {
                             Icon(
                                 Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = "Zpět",
+                                contentDescription = tr("Zpět"),
                             )
                         }
                     }
@@ -131,7 +133,7 @@ fun AntimarcipanApp() {
                 actions = {
                     if (!isSubScreen) {
                         IconButton(onClick = { navController.navigate(FRIENDS_ROUTE) { launchSingleTop = true } }) {
-                            Icon(androidx.compose.material.icons.Icons.Filled.Group, contentDescription = "Přátelé")
+                            Icon(androidx.compose.material.icons.Icons.Filled.Group, contentDescription = tr("Přátelé"))
                         }
                         val polls by com.example.antimarcipan.polls.PollStore.polls.collectAsState()
                         val unreadPolls = polls.count { it.unread }
@@ -139,14 +141,14 @@ fun AntimarcipanApp() {
                             androidx.compose.material3.BadgedBox(badge = {
                                 if (unreadPolls > 0) androidx.compose.material3.Badge { Text("$unreadPolls") }
                             }) {
-                                Icon(androidx.compose.material.icons.Icons.Filled.HowToVote, contentDescription = "Hlasování o hře")
+                                Icon(androidx.compose.material.icons.Icons.Filled.HowToVote, contentDescription = tr("Hlasování o hře"))
                             }
                         }
                         IconButton(onClick = { navController.navigate(LIFE_ROUTE) { launchSingleTop = true } }) {
-                            Icon(painterResource(com.example.antimarcipan.R.drawable.ic_life_counter), contentDescription = "Počítadlo životů")
+                            Icon(painterResource(com.example.antimarcipan.R.drawable.ic_life_counter), contentDescription = tr("Počítadlo životů"))
                         }
                         IconButton(onClick = { navController.navigate(MANUAL_ROUTE) }) {
-                            Icon(Icons.Filled.Add, contentDescription = "Přidat ručně")
+                            Icon(Icons.Filled.Add, contentDescription = tr("Přidat ručně"))
                         }
                     }
                 },

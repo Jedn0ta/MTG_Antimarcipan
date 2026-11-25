@@ -1,5 +1,7 @@
 package com.example.antimarcipan.board
 
+import com.example.antimarcipan.i18n.tr
+
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
@@ -116,7 +118,7 @@ internal fun GroupView(g: BoardGroup, status: Pair<Int, Int>, onBack: () -> Unit
     Column(Modifier.fillMaxSize()) {
         // Hlavička
         Row(Modifier.fillMaxWidth().padding(end = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Zpět na skupiny") }
+            IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = tr("Zpět na skupiny")) }
             Box(Modifier.size(36.dp).clip(CircleShape).background(nameColor(g.tag).copy(alpha = 0.9f)), contentAlignment = Alignment.Center) {
                 Text(g.name.take(1).uppercase(), color = Color(0xFF1E1633), fontWeight = FontWeight.Bold)
             }
@@ -124,22 +126,22 @@ internal fun GroupView(g: BoardGroup, status: Pair<Int, Int>, onBack: () -> Unit
                 Text(g.name, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary, maxLines = 1)
                 Text(
                     "${members.size} ${if (members.size == 1) "člen" else if (members.size in 2..4) "členové" else "členů"}" +
-                        if (status.first == 0) " · připojuji…" else "",
+                        if (status.first == 0) tr(" · připojuji…") else "",
                     style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.6f),
                 )
             }
-            IconButton(onClick = { showInvite = true }) { Icon(Icons.Filled.PersonAdd, contentDescription = "Přidat přítele", tint = MaterialTheme.colorScheme.primary) }
+            IconButton(onClick = { showInvite = true }) { Icon(Icons.Filled.PersonAdd, contentDescription = tr("Přidat přítele"), tint = MaterialTheme.colorScheme.primary) }
             Box {
-                IconButton(onClick = { menu = true }) { Icon(Icons.Filled.MoreVert, contentDescription = "Možnosti skupiny") }
+                IconButton(onClick = { menu = true }) { Icon(Icons.Filled.MoreVert, contentDescription = tr("Možnosti skupiny")) }
                 androidx.compose.material3.DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
-                    androidx.compose.material3.DropdownMenuItem(text = { Text("Přejmenovat skupinu") }, onClick = { menu = false; showRename = true }, leadingIcon = { Icon(Icons.Filled.Edit, null) })
-                    androidx.compose.material3.DropdownMenuItem(text = { Text("Členové") }, onClick = { menu = false; showMembers = true }, leadingIcon = { Icon(Icons.Filled.Group, null) })
-                    androidx.compose.material3.DropdownMenuItem(text = { Text("Zkopírovat pozvánku") }, onClick = {
+                    androidx.compose.material3.DropdownMenuItem(text = { Text(tr("Přejmenovat skupinu")) }, onClick = { menu = false; showRename = true }, leadingIcon = { Icon(Icons.Filled.Edit, null) })
+                    androidx.compose.material3.DropdownMenuItem(text = { Text(tr("Členové")) }, onClick = { menu = false; showMembers = true }, leadingIcon = { Icon(Icons.Filled.Group, null) })
+                    androidx.compose.material3.DropdownMenuItem(text = { Text(tr("Zkopírovat pozvánku")) }, onClick = {
                         menu = false
-                        (ctx.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager).setPrimaryClip(android.content.ClipData.newPlainText("Pozvánka", g.invite))
-                        Toast.makeText(ctx, "Pozvánka zkopírována", Toast.LENGTH_SHORT).show()
+                        (ctx.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager).setPrimaryClip(android.content.ClipData.newPlainText(tr("Pozvánka"), g.invite))
+                        Toast.makeText(ctx, tr("Pozvánka zkopírována"), Toast.LENGTH_SHORT).show()
                     }, leadingIcon = { Icon(Icons.Filled.ContentCopy, null) })
-                    androidx.compose.material3.DropdownMenuItem(text = { Text("Opustit skupinu", color = Color(0xFFFF8A8A)) }, onClick = { menu = false; confirmLeave = true }, leadingIcon = { Icon(Icons.AutoMirrored.Filled.ExitToApp, null, tint = Color(0xFFFF8A8A)) })
+                    androidx.compose.material3.DropdownMenuItem(text = { Text(tr("Opustit skupinu"), color = Color(0xFFFF8A8A)) }, onClick = { menu = false; confirmLeave = true }, leadingIcon = { Icon(Icons.AutoMirrored.Filled.ExitToApp, null, tint = Color(0xFFFF8A8A)) })
                 }
             }
         }
@@ -147,7 +149,7 @@ internal fun GroupView(g: BoardGroup, status: Pair<Int, Int>, onBack: () -> Unit
         androidx.compose.material3.TabRow(
             selectedTabIndex = tab, containerColor = Color.Transparent, contentColor = MaterialTheme.colorScheme.primary,
         ) {
-            listOf("Chat", "Schůzky (${upcoming.size})", "Ankety (${polls.size})").forEachIndexed { i, t ->
+            listOf("Chat", tr("Schůzky ({0})", (upcoming.size)), "Ankety (${polls.size})").forEachIndexed { i, t ->
                 androidx.compose.material3.Tab(selected = tab == i, onClick = { tab = i }, text = { Text(t, maxLines = 1) })
             }
         }
@@ -156,15 +158,15 @@ internal fun GroupView(g: BoardGroup, status: Pair<Int, Int>, onBack: () -> Unit
             when (tab) {
                 0 -> ChatTab(chat, byId, votes, onLong = { msgMenu = it }, onVote = { id, c -> vm.vote(id, c) }, myPub = vm.myPub, nextMeet = upcoming.firstOrNull(), onOpenMeets = { tab = 1 })
                 1 -> LazyColumn(Modifier.fillMaxSize(), contentPadding = androidx.compose.foundation.layout.PaddingValues(10.dp)) {
-                    if (upcoming.isEmpty() && past.isEmpty()) item { EmptyHint("Žádné schůzky", "Naplánuj první — vyber den, čas a místo.") }
-                    if (upcoming.isNotEmpty()) item { SectionLabel("Nadcházející") }
+                    if (upcoming.isEmpty() && past.isEmpty()) item { EmptyHint(tr("Žádné schůzky"), tr("Naplánuj první — vyber den, čas a místo.")) }
+                    if (upcoming.isNotEmpty()) item { SectionLabel(tr("Nadcházející")) }
                     items(upcoming, key = { "u" + it.id }) { m -> MeetCard(m, rsvps[m.id].orEmpty(), vm.myPub) { vm.rsvp(m.id, it) } }
-                    if (past.isNotEmpty()) item { SectionLabel("Proběhlé") }
+                    if (past.isNotEmpty()) item { SectionLabel(tr("Proběhlé")) }
                     items(past, key = { "p" + it.id }) { m -> Box(Modifier.alpha(0.6f)) { MeetCard(m, rsvps[m.id].orEmpty(), vm.myPub) { vm.rsvp(m.id, it) } } }
                     item { Box(Modifier.size(80.dp)) }
                 }
                 else -> LazyColumn(Modifier.fillMaxSize(), contentPadding = androidx.compose.foundation.layout.PaddingValues(10.dp)) {
-                    if (polls.isEmpty()) item { EmptyHint("Žádné ankety", "Zeptej se party — formát, den, kdo co přinese…") }
+                    if (polls.isEmpty()) item { EmptyHint(tr("Žádné ankety"), tr("Zeptej se party — formát, den, kdo co přinese…")) }
                     items(polls, key = { it.id }) { p -> PollCard(p, votes[p.id].orEmpty(), vm.myPub, onVote = { vm.vote(p.id, it) }, onLongPress = { if (p.mine) deleting = p }) }
                     item { Box(Modifier.size(80.dp)) }
                 }
@@ -172,7 +174,7 @@ internal fun GroupView(g: BoardGroup, status: Pair<Int, Int>, onBack: () -> Unit
             if (tab != 0) androidx.compose.material3.ExtendedFloatingActionButton(
                 onClick = { if (tab == 1) showMeet = true else showPoll = true },
                 icon = { Icon(if (tab == 1) Icons.Filled.Event else Icons.Filled.AddCircle, null) },
-                text = { Text(if (tab == 1) "Naplánovat" else "Nová anketa") },
+                text = { Text(if (tab == 1) tr("Naplánovat") else tr("Nová anketa")) },
                 containerColor = MaterialTheme.colorScheme.primary, contentColor = Color(0xFF1E1633),
                 modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp),
             )
@@ -187,29 +189,29 @@ internal fun GroupView(g: BoardGroup, status: Pair<Int, Int>, onBack: () -> Unit
                 ) {
                     Box(Modifier.size(3.dp, 28.dp).background(MaterialTheme.colorScheme.primary))
                     Column(Modifier.weight(1f).padding(start = 8.dp)) {
-                        Text("Odpověď pro ${r.p.n}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+                        Text(tr("Odpověď pro {0}", (r.p.n)), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
                         Text(r.p.x.ifBlank { r.p.ti }, style = MaterialTheme.typography.bodySmall, maxLines = 1)
                     }
-                    IconButton(onClick = { replyTo = null }) { Icon(Icons.Filled.Close, contentDescription = "Zrušit odpověď") }
+                    IconButton(onClick = { replyTo = null }) { Icon(Icons.Filled.Close, contentDescription = tr("Zrušit odpověď")) }
                 }
             }
             Row(Modifier.fillMaxWidth().padding(horizontal = 6.dp, vertical = 6.dp), verticalAlignment = Alignment.Bottom) {
                 var attach by remember { mutableStateOf(false) }
                 Box {
                     IconButton(onClick = { attach = true }) {
-                        Icon(Icons.Filled.AddCircle, contentDescription = "Schůzka nebo anketa", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(30.dp))
+                        Icon(Icons.Filled.AddCircle, contentDescription = tr("Schůzka nebo anketa"), tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(30.dp))
                     }
                     androidx.compose.material3.DropdownMenu(expanded = attach, onDismissRequest = { attach = false }) {
-                        androidx.compose.material3.DropdownMenuItem(text = { Text("📅  Schůzka") }, onClick = { attach = false; showMeet = true })
+                        androidx.compose.material3.DropdownMenuItem(text = { Text(tr("📅  Schůzka")) }, onClick = { attach = false; showMeet = true })
                         androidx.compose.material3.DropdownMenuItem(text = { Text("📊  Anketa") }, onClick = { attach = false; showPoll = true })
                     }
                 }
-                OutlinedTextField(text, { text = it }, Modifier.weight(1f), placeholder = { Text("Zpráva…") }, maxLines = 5, shape = RoundedCornerShape(22.dp))
+                OutlinedTextField(text, { text = it }, Modifier.weight(1f), placeholder = { Text(tr("Zpráva…")) }, maxLines = 5, shape = RoundedCornerShape(22.dp))
                 IconButton(onClick = { vm.sendMessage(text, replyTo?.id ?: ""); text = ""; replyTo = null }, enabled = text.isNotBlank()) {
                     Box(
                         Modifier.size(42.dp).clip(CircleShape).background(if (text.isNotBlank()) MaterialTheme.colorScheme.primary else Color.White.copy(alpha = 0.12f)),
                         contentAlignment = Alignment.Center,
-                    ) { Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Odeslat", tint = Color(0xFF1E1633)) }
+                    ) { Icon(Icons.AutoMirrored.Filled.Send, contentDescription = tr("Odeslat"), tint = Color(0xFF1E1633)) }
                 }
             }
         }
@@ -224,62 +226,62 @@ internal fun GroupView(g: BoardGroup, status: Pair<Int, Int>, onBack: () -> Unit
                 Column {
                     Text(p.p.x.ifBlank { p.p.ti }, style = MaterialTheme.typography.bodySmall, maxLines = 3)
                     androidx.compose.material3.HorizontalDivider(Modifier.padding(vertical = 8.dp))
-                    MenuRow("↩  Odpovědět") { replyTo = p; msgMenu = null }
-                    MenuRow("⧉  Kopírovat text") {
-                        (ctx.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager).setPrimaryClip(android.content.ClipData.newPlainText("Zpráva", p.p.x))
-                        Toast.makeText(ctx, "Zkopírováno", Toast.LENGTH_SHORT).show(); msgMenu = null
+                    MenuRow(tr("↩  Odpovědět")) { replyTo = p; msgMenu = null }
+                    MenuRow(tr("⧉  Kopírovat text")) {
+                        (ctx.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager).setPrimaryClip(android.content.ClipData.newPlainText(tr("Zpráva"), p.p.x))
+                        Toast.makeText(ctx, tr("Zkopírováno"), Toast.LENGTH_SHORT).show(); msgMenu = null
                     }
-                    if (p.mine) MenuRow("🗑  Smazat u všech", Color(0xFFFF8A8A)) { deleting = p; msgMenu = null }
+                    if (p.mine) MenuRow(tr("🗑  Smazat u všech"), Color(0xFFFF8A8A)) { deleting = p; msgMenu = null }
                 }
             },
-            confirmButton = { TextButton(onClick = { msgMenu = null }) { Text("Zavřít") } },
+            confirmButton = { TextButton(onClick = { msgMenu = null }) { Text(tr("Zavřít")) } },
         )
     }
     if (showRename) {
         var n by remember { mutableStateOf(g.name) }
         GoldDialog(
             onDismissRequest = { showRename = false },
-            title = { Text("Přejmenovat skupinu") },
-            text = { Column { OutlinedTextField(n, { n = it }, singleLine = true, label = { Text("Nový název") }); Text("Změna se projeví všem členům.", style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(top = 6.dp)) } },
-            confirmButton = { TextButton(enabled = n.isNotBlank() && n != g.name, onClick = { vm.renameGroup(n); showRename = false }) { Text("Uložit") } },
-            dismissButton = { TextButton(onClick = { showRename = false }) { Text("Zrušit") } },
+            title = { Text(tr("Přejmenovat skupinu")) },
+            text = { Column { OutlinedTextField(n, { n = it }, singleLine = true, label = { Text(tr("Nový název")) }); Text(tr("Změna se projeví všem členům."), style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(top = 6.dp)) } },
+            confirmButton = { TextButton(enabled = n.isNotBlank() && n != g.name, onClick = { vm.renameGroup(n); showRename = false }) { Text(tr("Uložit")) } },
+            dismissButton = { TextButton(onClick = { showRename = false }) { Text(tr("Zrušit")) } },
         )
     }
     if (showMembers) GoldDialog(
         onDismissRequest = { showMembers = false },
-        title = { Text("Členové (${members.size})") },
+        title = { Text(tr("Členové ({0})", (members.size))) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                if (members.isEmpty()) Text("Zatím nikdo nic nenapsal.", style = MaterialTheme.typography.bodySmall)
+                if (members.isEmpty()) Text(tr("Zatím nikdo nic nenapsal."), style = MaterialTheme.typography.bodySmall)
                 members.forEach { (pub, name, last) ->
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Avatar(pub, name, 30)
                         Column(Modifier.padding(start = 10.dp)) {
                             Text(name + if (pub == vm.myPub) " (ty)" else "", style = MaterialTheme.typography.bodyMedium)
-                            Text("aktivní " + timeFmt.format(Date(last * 1000)), style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.6f))
+                            Text(tr("aktivní ") + timeFmt.format(Date(last * 1000)), style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.6f))
                         }
                     }
                 }
-                Text("Členem je každý s pozvánkou; v seznamu jsou ti, kdo už něco napsali.", style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.5f))
+                Text(tr("Členem je každý s pozvánkou; v seznamu jsou ti, kdo už něco napsali."), style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.5f))
             }
         },
-        confirmButton = { TextButton(onClick = { showMembers = false; showInvite = true }) { Text("Přidat přítele") } },
-        dismissButton = { TextButton(onClick = { showMembers = false }) { Text("Zavřít") } },
+        confirmButton = { TextButton(onClick = { showMembers = false; showInvite = true }) { Text(tr("Přidat přítele")) } },
+        dismissButton = { TextButton(onClick = { showMembers = false }) { Text(tr("Zavřít")) } },
     )
     if (confirmLeave) GoldDialog(
         onDismissRequest = { confirmLeave = false },
-        title = { Text("Opustit skupinu?") },
-        text = { Text("Skupina „${g.name}“ zmizí z telefonu. Vrátit se můžeš přes pozvánku.") },
-        confirmButton = { TextButton(onClick = { vm.leaveGroup(g); confirmLeave = false; onBack() }) { Text("Opustit") } },
-        dismissButton = { TextButton(onClick = { confirmLeave = false }) { Text("Zrušit") } },
+        title = { Text(tr("Opustit skupinu?")) },
+        text = { Text(tr("Skupina „{0}“ zmizí z telefonu. Vrátit se můžeš přes pozvánku.", (g.name))) },
+        confirmButton = { TextButton(onClick = { vm.leaveGroup(g); confirmLeave = false; onBack() }) { Text(tr("Opustit")) } },
+        dismissButton = { TextButton(onClick = { confirmLeave = false }) { Text(tr("Zrušit")) } },
     )
     deleting?.let { p ->
         GoldDialog(
             onDismissRequest = { deleting = null },
-            title = { Text("Smazat příspěvek?") },
-            text = { Text("Příspěvek zmizí u všech členů.") },
-            confirmButton = { TextButton(onClick = { vm.deletePost(p.id); deleting = null }) { Text("Smazat") } },
-            dismissButton = { TextButton(onClick = { deleting = null }) { Text("Zrušit") } },
+            title = { Text(tr("Smazat příspěvek?")) },
+            text = { Text(tr("Příspěvek zmizí u všech členů.")) },
+            confirmButton = { TextButton(onClick = { vm.deletePost(p.id); deleting = null }) { Text(tr("Smazat")) } },
+            dismissButton = { TextButton(onClick = { deleting = null }) { Text(tr("Zrušit")) } },
         )
     }
     if (showInvite) InviteDialog(g) { showInvite = false }
@@ -333,7 +335,7 @@ internal fun ChatTab(
             }
         }
         LazyColumn(Modifier.weight(1f).fillMaxWidth(), state = listState, contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 8.dp, vertical = 4.dp)) {
-            if (chat.isEmpty()) item { EmptyHint("Zatím je tu ticho", "Napiš první zprávu. Tlačítkem ⊕ přidáš schůzku nebo anketu.") }
+            if (chat.isEmpty()) item { EmptyHint(tr("Zatím je tu ticho"), tr("Napiš první zprávu. Tlačítkem ⊕ přidáš schůzku nebo anketu.")) }
             var lastDay = ""
             var lastAuthor = ""
             chat.forEach { p ->
@@ -352,8 +354,8 @@ internal fun ChatTab(
                 item(key = p.id) {
                     when (p.p.y) {
                         "msg" -> MessageBubble(p, showName, quoted = byId[p.p.q], onLongPress = { onLong(p) })
-                        "meet" -> SystemLine("📅 ${p.p.n} naplánoval/a: ${p.p.ti} · ${dateFmt.format(Date(p.p.w))}")
-                        "meta" -> SystemLine("✏️ ${p.p.n} přejmenoval/a skupinu na „${p.p.ti}“")
+                        "meet" -> SystemLine(tr("📅 {0} naplánoval/a: {1} · {2}", (p.p.n), (p.p.ti), (dateFmt.format(Date(p.p.w)))))
+                        "meta" -> SystemLine(tr("✏️ {0} přejmenoval/a skupinu na „{1}“", (p.p.n), (p.p.ti)))
                         "poll" -> PollCard(p, votes[p.id].orEmpty(), myPub, onVote = { onVote(p.id, it) }, onLongPress = { onLong(p) })
                     }
                 }

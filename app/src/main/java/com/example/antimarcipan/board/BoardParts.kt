@@ -1,5 +1,7 @@
 package com.example.antimarcipan.board
 
+import com.example.antimarcipan.i18n.tr
+
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
@@ -139,7 +141,7 @@ internal fun MessageBubble(p: Post, showName: Boolean, quoted: Post? = null, onL
                 Box(Modifier.size(2.dp, 26.dp).background(MaterialTheme.colorScheme.primary))
                 Column(Modifier.padding(start = 6.dp)) {
                     Text(quoted?.p?.n ?: "…", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
-                    Text(quoted?.let { it.p.x.ifBlank { it.p.ti } } ?: "zpráva byla smazána", style = MaterialTheme.typography.labelSmall, maxLines = 2, color = Color.White.copy(alpha = 0.75f))
+                    Text(quoted?.let { it.p.x.ifBlank { it.p.ti } } ?: tr("zpráva byla smazána"), style = MaterialTheme.typography.labelSmall, maxLines = 2, color = Color.White.copy(alpha = 0.75f))
                 }
             }
             Text(p.p.x, style = MaterialTheme.typography.bodyMedium)
@@ -201,27 +203,27 @@ internal fun PollDialog(onDismiss: () -> Unit, onCreate: (String, List<String>, 
     var multi by remember { mutableStateOf(false) }
     GoldDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Nová anketa") },
+        title = { Text(tr("Nová anketa")) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(q, { q = it }, label = { Text("Otázka (např. Jaký formát v pátek?)") }, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(q, { q = it }, label = { Text(tr("Otázka (např. Jaký formát v pátek?)")) }, modifier = Modifier.fillMaxWidth())
                 opts.forEachIndexed { i, o ->
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        OutlinedTextField(o, { opts[i] = it }, singleLine = true, label = { Text("Možnost ${i + 1}") }, modifier = Modifier.weight(1f))
-                        if (opts.size > 2) IconButton(onClick = { opts.removeAt(i) }) { Icon(Icons.Filled.Close, contentDescription = "Odebrat") }
+                        OutlinedTextField(o, { opts[i] = it }, singleLine = true, label = { Text(tr("Možnost {0}", (i + 1))) }, modifier = Modifier.weight(1f))
+                        if (opts.size > 2) IconButton(onClick = { opts.removeAt(i) }) { Icon(Icons.Filled.Close, contentDescription = tr("Odebrat")) }
                     }
                 }
-                if (opts.size < 8) TextButton(onClick = { opts.add("") }) { Text("+ Přidat možnost") }
+                if (opts.size < 8) TextButton(onClick = { opts.add("") }) { Text(tr("+ Přidat možnost")) }
                 Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.clickable { multi = !multi }) {
                     androidx.compose.material3.Checkbox(multi, { multi = it })
-                    Text("Povolit více odpovědí")
+                    Text(tr("Povolit více odpovědí"))
                 }
             }
         },
         confirmButton = {
-            TextButton(enabled = q.isNotBlank() && opts.count { it.isNotBlank() } >= 2, onClick = { onCreate(q, opts.toList(), multi) }) { Text("Zveřejnit") }
+            TextButton(enabled = q.isNotBlank() && opts.count { it.isNotBlank() } >= 2, onClick = { onCreate(q, opts.toList(), multi) }) { Text(tr("Zveřejnit")) }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Zrušit") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(tr("Zrušit")) } },
     )
 }
 
@@ -237,8 +239,8 @@ internal fun MeetCard(m: Post, answers: List<Post>, myPub: String, onRsvp: (Stri
             Text("📅 ${m.p.ti}", style = MaterialTheme.typography.titleSmall)
             Text(dateFmt.format(Date(m.p.w)) + if (m.p.pl.isNotBlank()) " · 📍 ${m.p.pl}" else "", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
             if (m.p.x.isNotBlank()) Text(m.p.x, style = MaterialTheme.typography.bodySmall)
-            Text("Pořádá ${m.p.n}", style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.6f))
-            listOf("yes" to "Jdu ✓", "maybe" to "Možná", "no" to "Nejdu").let { opts ->
+            Text(tr("Pořádá {0}", (m.p.n)), style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.6f))
+            listOf("yes" to "Jdu ✓", "maybe" to tr("Možná"), "no" to "Nejdu").let { opts ->
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     opts.forEach { (k, l) ->
                         val cnt = answers.count { it.p.g == k }
@@ -246,7 +248,7 @@ internal fun MeetCard(m: Post, answers: List<Post>, myPub: String, onRsvp: (Stri
                     }
                 }
                 val going = answers.filter { it.p.g == "yes" }.map { it.p.n }
-                if (going.isNotEmpty()) Text("Jdou: " + going.joinToString(", "), style = MaterialTheme.typography.labelSmall, color = Color(0xFF8FD6A0))
+                if (going.isNotEmpty()) Text(tr("Jdou: ") + going.joinToString(", "), style = MaterialTheme.typography.labelSmall, color = Color(0xFF8FD6A0))
             }
         }
     }
@@ -255,7 +257,7 @@ internal fun MeetCard(m: Post, answers: List<Post>, myPub: String, onRsvp: (Stri
 @Composable
 internal fun MeetDialog(onDismiss: () -> Unit, onCreate: (String, Long, String, String) -> Unit) {
     val ctx = LocalContext.current
-    var title by remember { mutableStateOf("Hraní Magicu") }
+    var title by remember { mutableStateOf(tr("Hraní Magicu")) }
     var place by remember { mutableStateOf("") }
     var note by remember { mutableStateOf("") }
     var whenMs by remember {
@@ -263,10 +265,10 @@ internal fun MeetDialog(onDismiss: () -> Unit, onCreate: (String, Long, String, 
     }
     GoldDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Naplánovat schůzku") },
+        title = { Text(tr("Naplánovat schůzku")) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(title, { title = it }, singleLine = true, label = { Text("Co") })
+                OutlinedTextField(title, { title = it }, singleLine = true, label = { Text(tr("Co")) })
                 OutlinedButton(onClick = {
                     val c = Calendar.getInstance().apply { timeInMillis = whenMs }
                     android.app.DatePickerDialog(ctx, { _, y, mo, d ->
@@ -275,13 +277,13 @@ internal fun MeetDialog(onDismiss: () -> Unit, onCreate: (String, Long, String, 
                             c.set(Calendar.HOUR_OF_DAY, h); c.set(Calendar.MINUTE, mi); whenMs = c.timeInMillis
                         }, c.get(Calendar.HOUR_OF_DAY), c.get(Calendar.MINUTE), true).show()
                     }, c.get(Calendar.YEAR), c.get(Calendar.MONTH), c.get(Calendar.DAY_OF_MONTH)).show()
-                }) { Text("Kdy: " + dateFmt.format(Date(whenMs))) }
-                OutlinedTextField(place, { place = it }, singleLine = true, label = { Text("Kde") })
-                OutlinedTextField(note, { note = it }, label = { Text("Poznámka (formát, co přinést…)") }, maxLines = 3)
+                }) { Text(tr("Kdy: ") + dateFmt.format(Date(whenMs))) }
+                OutlinedTextField(place, { place = it }, singleLine = true, label = { Text(tr("Kde")) })
+                OutlinedTextField(note, { note = it }, label = { Text(tr("Poznámka (formát, co přinést…)")) }, maxLines = 3)
             }
         },
-        confirmButton = { TextButton(enabled = title.isNotBlank(), onClick = { onCreate(title, whenMs, place, note) }) { Text("Zveřejnit") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Zrušit") } },
+        confirmButton = { TextButton(enabled = title.isNotBlank(), onClick = { onCreate(title, whenMs, place, note) }) { Text(tr("Zveřejnit")) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(tr("Zrušit")) } },
     )
 }
 
@@ -298,33 +300,33 @@ internal fun InviteDialog(g: BoardGroup, onDismiss: () -> Unit) {
         title = { Text("Pozvat do „${g.name}“") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("Přátelé na této Wi-Fi", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
-                if (!lanOn) TextButton(onClick = { com.example.antimarcipan.friends.LanShare.enable(ctx, true) }) { Text("Zapnout viditelnost na Wi-Fi") }
-                else if (peers.isEmpty()) Text("Hledám… (kamarád musí mít appku otevřenou a zapnutou viditelnost na Wi-Fi)", style = MaterialTheme.typography.bodySmall)
+                Text(tr("Přátelé na této Wi-Fi"), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+                if (!lanOn) TextButton(onClick = { com.example.antimarcipan.friends.LanShare.enable(ctx, true) }) { Text(tr("Zapnout viditelnost na Wi-Fi")) }
+                else if (peers.isEmpty()) Text(tr("Hledám… (kamarád musí mít appku otevřenou a zapnutou viditelnost na Wi-Fi)"), style = MaterialTheme.typography.bodySmall)
                 peers.forEach { p ->
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text("📶 ${p.name}", Modifier.weight(1f))
-                        if (p.name in sent) Text("Pozváno ✓", color = Color(0xFF8FD6A0))
+                        if (p.name in sent) Text(tr("Pozváno ✓"), color = Color(0xFF8FD6A0))
                         else TextButton(onClick = {
                             scope.launch {
                                 val ok = com.example.antimarcipan.friends.LanShare.sendInvite(p, g.invite, g.name).isSuccess
-                                if (ok) sent += p.name else Toast.makeText(ctx, "Nepodařilo se poslat", Toast.LENGTH_SHORT).show()
+                                if (ok) sent += p.name else Toast.makeText(ctx, tr("Nepodařilo se poslat"), Toast.LENGTH_SHORT).show()
                             }
-                        }) { Text("Pozvat") }
+                        }) { Text(tr("Pozvat")) }
                     }
                 }
                 androidx.compose.material3.HorizontalDivider()
-                Text("Nebo pošli pozvánku zprávou (WhatsApp, Quick Share…). Kamarád ji otevře v appce a potvrdí.", style = MaterialTheme.typography.bodySmall)
+                Text(tr("Nebo pošli pozvánku zprávou (WhatsApp, Quick Share…). Kamarád ji otevře v appce a potvrdí."), style = MaterialTheme.typography.bodySmall)
                 OutlinedButton(onClick = {
                     val send = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(
                         Intent.EXTRA_TEXT,
-                        "Pozvánka do skupiny „${g.name}“ v appce Grimoar (sdílej do appky nebo zkopíruj a otevři Nástěnku):\n\n${g.invite}",
+                        tr("Pozvánka do skupiny „{0}“ v appce Grimoar (sdílej do appky nebo zkopíruj a otevři Nástěnku):\n\n{1}", (g.name), (g.invite)),
                     )
                     ctx.startActivity(Intent.createChooser(send, "Pozvat do skupiny").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
-                }, modifier = Modifier.fillMaxWidth()) { Text("Poslat pozvánku zprávou") }
+                }, modifier = Modifier.fillMaxWidth()) { Text(tr("Poslat pozvánku zprávou")) }
             }
         },
-        confirmButton = { TextButton(onClick = onDismiss) { Text("Hotovo") } },
+        confirmButton = { TextButton(onClick = onDismiss) { Text(tr("Hotovo")) } },
     )
 }
 

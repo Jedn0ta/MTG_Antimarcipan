@@ -1,5 +1,7 @@
 package com.example.antimarcipan.ui
 
+import com.example.antimarcipan.i18n.tr
+
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -91,7 +93,7 @@ fun ScryfallCardDetailDialog(card: ScryfallCard, onDismiss: () -> Unit) {
                 }
                 if (images.size > 1) {
                     Text(
-                        "Ťukni na obrázek pro otočení karty",
+                        tr("Ťukni na obrázek pro otočení karty"),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                     )
@@ -111,6 +113,6 @@ fun ScryfallCardDetailDialog(card: ScryfallCard, onDismiss: () -> Unit) {
                 }
             }
         },
-        confirmButton = { TextButton(onClick = onDismiss) { Text("Zavřít") } },
+        confirmButton = { TextButton(onClick = onDismiss) { Text(tr("Zavřít")) } },
     )
 }

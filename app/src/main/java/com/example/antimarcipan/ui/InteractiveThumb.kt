@@ -1,5 +1,7 @@
 package com.example.antimarcipan.ui
 
+import com.example.antimarcipan.i18n.tr
+
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -113,7 +115,7 @@ fun CardInfoDialog(card: CollectionCard, onDismiss: () -> Unit) {
                     color = androidx.compose.ui.graphics.Color(0xFFB9A7EC),
                 )
                 TextButton(onClick = { editNote = true }) {
-                    Text(if (card.note.isNullOrBlank()) "Přidat poznámku" else "Upravit poznámku", style = MaterialTheme.typography.labelMedium)
+                    Text(if (card.note.isNullOrBlank()) tr("Přidat poznámku") else tr("Upravit poznámku"), style = MaterialTheme.typography.labelMedium)
                 }
                 if (editNote) EditNoteDialog(card.scryfallId, card.note) { editNote = false }
                 Text(
@@ -127,7 +129,7 @@ fun CardInfoDialog(card: CollectionCard, onDismiss: () -> Unit) {
                 )
             }
         },
-        confirmButton = { TextButton(onClick = onDismiss) { Text("Zavřít") } },
+        confirmButton = { TextButton(onClick = onDismiss) { Text(tr("Zavřít")) } },
     )
 }
 

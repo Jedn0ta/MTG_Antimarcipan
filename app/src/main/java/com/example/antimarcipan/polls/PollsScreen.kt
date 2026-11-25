@@ -1,5 +1,7 @@
 package com.example.antimarcipan.polls
 
+import com.example.antimarcipan.i18n.tr
+
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
@@ -94,20 +96,20 @@ fun PollsScreen() {
     } else Column(Modifier.fillMaxSize()) {
         Row(Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
-                Text("Hlasování o hře", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.primary)
-                Text("Navrhni termíny a místo, pošli kamarádům, oni zaškrtnou, kdy můžou.", style = MaterialTheme.typography.bodySmall)
+                Text(tr("Hlasování o hře"), style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.primary)
+                Text(tr("Navrhni termíny a místo, pošli kamarádům, oni zaškrtnou, kdy můžou."), style = MaterialTheme.typography.bodySmall)
             }
         }
         Row(Modifier.padding(horizontal = 14.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Button(onClick = { creating = true }) { Icon(Icons.Filled.Add, null); Text(" Nová anketa") }
+            Button(onClick = { creating = true }) { Icon(Icons.Filled.Add, null); Text(tr(" Nová anketa")) }
             OutlinedButton(onClick = {
                 val t = readClip(ctx)
-                if (!PollStore.receive(t)) PollStore.notice.value = "Ve schránce není pozvánka ani hlas z Grimoaru."
+                if (!PollStore.receive(t)) PollStore.notice.value = tr("Ve schránce není pozvánka ani hlas z Grimoaru.")
                 else lastClip = t
-            }) { Icon(Icons.Filled.ContentPaste, null); Text(" Vložit") }
+            }) { Icon(Icons.Filled.ContentPaste, null); Text(tr(" Vložit")) }
         }
         if (polls.isEmpty()) Text(
-            "Zatím žádná anketa. Vytvoř novou, nebo zkopíruj pozvánku od kamaráda a ťukni na Vložit.",
+            tr("Zatím žádná anketa. Vytvoř novou, nebo zkopíruj pozvánku od kamaráda a ťukni na Vložit."),
             Modifier.padding(20.dp), style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
         )
@@ -120,7 +122,7 @@ fun PollsScreen() {
     notice?.let { msg ->
         GoldDialog(
             onDismissRequest = { PollStore.notice.value = null },
-            title = { Text("Hlasování") },
+            title = { Text(tr("Hlasování")) },
             text = { Text(msg) },
             confirmButton = { TextButton(onClick = { PollStore.notice.value = null }) { Text("OK") } },
         )
@@ -139,7 +141,7 @@ private fun PollRow(p: Poll, onClick: () -> Unit) {
         Column(Modifier.padding(14.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(p.title, Modifier.weight(1f), style = MaterialTheme.typography.titleMedium, fontWeight = if (p.unread) FontWeight.Bold else null)
-                if (p.unread) Text("nové", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall)
+                if (p.unread) Text(tr("nové"), color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall)
             }
             Text(
                 (if (p.mine) "Tvoje anketa" else "Od ${p.owner}") + " · hlasovalo ${p.votes.size}" +
@@ -149,8 +151,8 @@ private fun PollRow(p: Poll, onClick: () -> Unit) {
             Text(
                 when {
                     p.chosen != null -> "✅ ${PollStore.label(p.options[p.chosen])}"
-                    best != null -> "Zatím nejlíp: ${PollStore.label(p.options[best.first])} (${best.second})"
-                    else -> "${p.options.size} termínů"
+                    best != null -> tr("Zatím nejlíp: {0} ({1})", (PollStore.label(p.options[best.first])), (best.second))
+                    else -> tr("{0} termínů", (p.options.size))
                 } + if (p.place.isNotBlank()) " · 📍 ${p.place}" else "",
                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary,
             )
@@ -172,26 +174,26 @@ private fun PollDetail(p: Poll, onBack: () -> Unit) {
     }
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Zpět") }
+            IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, tr("Zpět")) }
             Text(p.title, Modifier.weight(1f), style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.primary)
-            IconButton(onClick = { confirmDelete = true }) { Icon(Icons.Filled.Delete, "Smazat") }
+            IconButton(onClick = { confirmDelete = true }) { Icon(Icons.Filled.Delete, tr("Smazat")) }
         }
         Column(Modifier.padding(horizontal = 14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(
-                (if (p.mine) "Organizuješ ty" else "Organizuje ${p.owner}") + if (p.place.isNotBlank()) " · 📍 ${p.place}" else "",
+                (if (p.mine) tr("Organizuješ ty") else "Organizuje ${p.owner}") + if (p.place.isNotBlank()) " · 📍 ${p.place}" else "",
                 style = MaterialTheme.typography.bodyMedium,
             )
-            if (p.people.isNotEmpty()) Text("Pozvaní: " + p.people.joinToString(), style = MaterialTheme.typography.bodySmall)
+            if (p.people.isNotEmpty()) Text(tr("Pozvaní: ") + p.people.joinToString(), style = MaterialTheme.typography.bodySmall)
             p.chosen?.let { c ->
                 Card(colors = CardDefaults.cardColors(containerColor = Color(0xFF1F3B2A))) {
                     Column(Modifier.padding(12.dp)) {
                         Text("✅ Domluveno: ${PollStore.label(p.options[c])}", fontWeight = FontWeight.Bold)
-                        TextButton(onClick = { addToCalendar(ctx, p, c) }) { Text("Přidat do kalendáře") }
+                        TextButton(onClick = { addToCalendar(ctx, p, c) }) { Text(tr("Přidat do kalendáře")) }
                     }
                 }
             }
             HorizontalDivider()
-            Text("Kdy můžeš? Zaškrtni všechny termíny, které ti vyhovují.", style = MaterialTheme.typography.labelLarge)
+            Text(tr("Kdy můžeš? Zaškrtni všechny termíny, které ti vyhovují."), style = MaterialTheme.typography.labelLarge)
             p.options.forEachIndexed { i, o ->
                 val who = p.votes.filter { i in it.value }.keys
                 Card(
@@ -203,29 +205,29 @@ private fun PollDetail(p: Poll, onBack: () -> Unit) {
                         Column(Modifier.weight(1f)) {
                             Text(PollStore.label(o), style = MaterialTheme.typography.titleSmall)
                             Text(
-                                if (who.isEmpty()) "zatím nikdo" else "${who.size}: ${who.joinToString()}",
+                                if (who.isEmpty()) tr("zatím nikdo") else "${who.size}: ${who.joinToString()}",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                             )
                         }
                         if (p.mine) TextButton(onClick = { PollStore.upsert(p.copy(chosen = if (p.chosen == i) null else i)) }) {
-                            Text(if (p.chosen == i) "Zrušit" else "Vybrat")
+                            Text(if (p.chosen == i) tr("Zrušit") else "Vybrat")
                         }
                     }
                 }
             }
             val waiting = p.people.filter { it !in p.votes.keys }
-            if (p.mine && waiting.isNotEmpty()) Text("Ještě nehlasovali: " + waiting.joinToString(), style = MaterialTheme.typography.bodySmall)
+            if (p.mine && waiting.isNotEmpty()) Text(tr("Ještě nehlasovali: ") + waiting.joinToString(), style = MaterialTheme.typography.bodySmall)
 
             if (p.mine) {
                 Button(onClick = {
                     PollStore.upsert(p.copy(votes = p.votes + (p.owner to mySel.toList().sorted())))
                     share(ctx, PollStore.inviteText(p.copy(votes = p.votes + (p.owner to mySel.toList().sorted()))))
                 }, modifier = Modifier.fillMaxWidth()) {
-                    Text(if (p.chosen != null) "Poslat potvrzený termín" else "Poslat pozvánku / aktuální stav")
+                    Text(if (p.chosen != null) tr("Poslat potvrzený termín") else tr("Poslat pozvánku / aktuální stav"))
                 }
                 Text(
-                    "Pošli zprávu do skupiny nebo jednotlivě. Kamarád ji zkopíruje a otevře Grimoar, zaškrtne termíny a pošle ti odpověď — tu zase zkopíruj a otevři Grimoar.",
+                    tr("Pošli zprávu do skupiny nebo jednotlivě. Kamarád ji zkopíruje a otevře Grimoar, zaškrtne termíny a pošle ti odpověď — tu zase zkopíruj a otevři Grimoar."),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                 )
@@ -236,9 +238,9 @@ private fun PollDetail(p: Poll, onBack: () -> Unit) {
                         PollStore.upsert(p.copy(myVote = mySel.toList().sorted(), votes = p.votes + (me to mySel.toList().sorted())))
                         share(ctx, PollStore.voteText(p, me, mySel.toList().sorted()))
                     }
-                }, modifier = Modifier.fillMaxWidth()) { Text(if (p.myVote == null) "Odeslat hlas organizátorovi" else "Poslat změněný hlas") }
+                }, modifier = Modifier.fillMaxWidth()) { Text(if (p.myVote == null) tr("Odeslat hlas organizátorovi") else tr("Poslat změněný hlas")) }
                 Text(
-                    "Odpověď pošli ${p.owner} (třeba do stejné konverzace). Odpověď obsahuje jen tvé zaškrtnuté termíny.",
+                    tr("Odpověď pošli {0} (třeba do stejné konverzace). Odpověď obsahuje jen tvé zaškrtnuté termíny.", (p.owner)),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                 )
@@ -253,10 +255,10 @@ private fun PollDetail(p: Poll, onBack: () -> Unit) {
     }
     if (confirmDelete) GoldDialog(
         onDismissRequest = { confirmDelete = false },
-        title = { Text("Smazat anketu?") },
-        text = { Text("Anketa „${p.title}“ zmizí jen z tvého telefonu.") },
-        confirmButton = { TextButton(onClick = { PollStore.delete(p.id); confirmDelete = false; onBack() }) { Text("Smazat") } },
-        dismissButton = { TextButton(onClick = { confirmDelete = false }) { Text("Zrušit") } },
+        title = { Text(tr("Smazat anketu?")) },
+        text = { Text(tr("Anketa „{0}“ zmizí jen z tvého telefonu.", (p.title))) },
+        confirmButton = { TextButton(onClick = { PollStore.delete(p.id); confirmDelete = false; onBack() }) { Text(tr("Smazat")) } },
+        dismissButton = { TextButton(onClick = { confirmDelete = false }) { Text(tr("Zrušit")) } },
     )
 }
 
@@ -265,10 +267,10 @@ private fun NameDialog(onDismiss: () -> Unit, onOk: (String) -> Unit) {
     var n by remember { mutableStateOf("") }
     GoldDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Jak ti říkají?") },
-        text = { OutlinedTextField(n, { n = it }, label = { Text("Tvoje jméno / přezdívka") }, singleLine = true) },
+        title = { Text(tr("Jak ti říkají?")) },
+        text = { OutlinedTextField(n, { n = it }, label = { Text(tr("Tvoje jméno / přezdívka")) }, singleLine = true) },
         confirmButton = { TextButton(enabled = n.isNotBlank(), onClick = { onOk(n.trim()) }) { Text("OK") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Zrušit") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(tr("Zrušit")) } },
     )
 }
 
@@ -298,21 +300,21 @@ private fun CreatePollDialog(onDismiss: () -> Unit, onCreated: (Poll) -> Unit) {
 
     GoldDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Nová anketa") },
+        title = { Text(tr("Nová anketa")) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(title, { title = it }, label = { Text("Název") }, singleLine = true, modifier = Modifier.fillMaxWidth())
-                OutlinedTextField(place, { place = it }, label = { Text("Místo") }, singleLine = true, modifier = Modifier.fillMaxWidth())
-                if (PollStore.myName().isBlank()) OutlinedTextField(myName, { myName = it }, label = { Text("Tvoje jméno") }, singleLine = true, modifier = Modifier.fillMaxWidth())
-                Text("Termíny", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+                OutlinedTextField(title, { title = it }, label = { Text(tr("Název")) }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(place, { place = it }, label = { Text(tr("Místo")) }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                if (PollStore.myName().isBlank()) OutlinedTextField(myName, { myName = it }, label = { Text(tr("Tvoje jméno")) }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                Text(tr("Termíny"), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
                 options.forEach { o ->
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(PollStore.label(o), Modifier.weight(1f))
-                        IconButton(onClick = { options.remove(o) }) { Icon(Icons.Filled.Close, "Odebrat") }
+                        IconButton(onClick = { options.remove(o) }) { Icon(Icons.Filled.Close, tr("Odebrat")) }
                     }
                 }
-                OutlinedButton(onClick = { pickDateTime() }, enabled = options.size < 8) { Icon(Icons.Filled.Add, null); Text(" Přidat termín") }
-                Text("Koho pozvat", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+                OutlinedButton(onClick = { pickDateTime() }, enabled = options.size < 8) { Icon(Icons.Filled.Add, null); Text(tr(" Přidat termín")) }
+                Text(tr("Koho pozvat"), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
                 (friends.map { it.name } + people.filter { n -> friends.none { it.name == n } }).distinct().forEach { n ->
                     Row(Modifier.fillMaxWidth().clickable { if (n in people) people.remove(n) else people.add(n) }, verticalAlignment = Alignment.CenterVertically) {
                         Checkbox(checked = n in people, onCheckedChange = { if (it) people.add(n) else people.remove(n) })
@@ -320,11 +322,11 @@ private fun CreatePollDialog(onDismiss: () -> Unit, onCreated: (Poll) -> Unit) {
                     }
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    OutlinedTextField(extra, { extra = it }, label = { Text("Další jméno") }, singleLine = true, modifier = Modifier.weight(1f))
-                    IconButton(onClick = { if (extra.isNotBlank() && extra.trim() !in people) people.add(extra.trim()); extra = "" }) { Icon(Icons.Filled.Add, "Přidat") }
+                    OutlinedTextField(extra, { extra = it }, label = { Text(tr("Další jméno")) }, singleLine = true, modifier = Modifier.weight(1f))
+                    IconButton(onClick = { if (extra.isNotBlank() && extra.trim() !in people) people.add(extra.trim()); extra = "" }) { Icon(Icons.Filled.Add, tr("Přidat")) }
                 }
                 Text(
-                    "Seznam pozvaných ti jen ukáže, kdo ještě nehlasoval. Pozvánku pak pošleš přes WhatsApp/SMS komu chceš.",
+                    tr("Seznam pozvaných ti jen ukáže, kdo ještě nehlasoval. Pozvánku pak pošleš přes WhatsApp/SMS komu chceš."),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                 )
@@ -334,15 +336,15 @@ private fun CreatePollDialog(onDismiss: () -> Unit, onCreated: (Poll) -> Unit) {
             TextButton(enabled = title.isNotBlank() && options.isNotEmpty(), onClick = {
                 if (myName.isNotBlank()) PollStore.setMyName(myName)
                 onCreated(PollStore.create(title, place, options.toList(), people.toList(), emptyList()))
-            }) { Text("Vytvořit") }
+            }) { Text(tr("Vytvořit")) }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Zrušit") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(tr("Zrušit")) } },
     )
 }
 
 private fun share(ctx: Context, text: String) {
     val i = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, text)
-    ctx.startActivity(Intent.createChooser(i, "Poslat přes…"))
+    ctx.startActivity(Intent.createChooser(i, tr("Poslat přes…")))
 }
 
 private fun readClip(ctx: Context): String = runCatching {

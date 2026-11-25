@@ -1,5 +1,7 @@
 package com.example.antimarcipan.data.update
 
+import com.example.antimarcipan.i18n.tr
+
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -45,7 +47,7 @@ class UpdateRepository(
             val (owner, name) = repo.split("/").let { it[0] to it[1] }
             val release = api.releaseByTag(owner, name, tag)
             val apk = release.apkAsset()
-                ?: return@runCatching UpdateStatus.Error("Release nemá přiložené APK.")
+                ?: return@runCatching UpdateStatus.Error(tr("Release nemá přiložené APK."))
 
             val info = resolveVersion(release)
             val latestSha = info?.sha ?: release.targetCommitish.orEmpty()
@@ -70,7 +72,7 @@ class UpdateRepository(
                 )
             }
         }.getOrElse { e ->
-            UpdateStatus.Error(e.message ?: "Neznámá chyba při kontrole aktualizace.")
+            UpdateStatus.Error(e.message ?: tr("Neznámá chyba při kontrole aktualizace."))
         }
     }
 
@@ -83,8 +85,8 @@ class UpdateRepository(
 
             val request = Request.Builder().url(url).build()
             Network.httpClient.newCall(request).execute().use { resp ->
-                check(resp.isSuccessful) { "Stažení selhalo (HTTP ${resp.code})" }
-                val body = resp.body ?: error("Prázdná odpověď při stahování.")
+                check(resp.isSuccessful) { tr("Stažení selhalo (HTTP {0})", (resp.code)) }
+                val body = resp.body ?: error(tr("Prázdná odpověď při stahování."))
                 val total = body.contentLength()
                 body.byteStream().use { input ->
                     outFile.outputStream().use { output ->

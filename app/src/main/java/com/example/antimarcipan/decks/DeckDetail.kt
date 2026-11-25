@@ -1,5 +1,7 @@
 package com.example.antimarcipan.decks
 
+import com.example.antimarcipan.i18n.tr
+
 import android.content.Context
 import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -167,7 +169,7 @@ internal fun DeckDetailView(vm: DeckViewModel, deck: Deck) {
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 IconButton(onClick = vm::closeDeck) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Zpět")
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = tr("Zpět"))
                 }
                 Text(
                     deck.name,
@@ -179,35 +181,35 @@ internal fun DeckDetailView(vm: DeckViewModel, deck: Deck) {
                 IconButton(onClick = { showInfo = !showInfo; infoPrefs.edit().putBoolean("info", showInfo).apply() }) {
                     Icon(
                         if (showInfo) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
-                        contentDescription = if (showInfo) "Skrýt přehled balíku" else "Zobrazit přehled balíku",
+                        contentDescription = if (showInfo) tr("Skrýt přehled balíku") else tr("Zobrazit přehled balíku"),
                         tint = MaterialTheme.colorScheme.primary,
                     )
                 }
                 Box {
                     IconButton(onClick = { showMenu = true }) {
-                        Icon(Icons.Filled.MoreVert, contentDescription = "Akce")
+                        Icon(Icons.Filled.MoreVert, contentDescription = tr("Akce"))
                     }
                     androidx.compose.material3.DropdownMenu(
                         expanded = showMenu,
                         onDismissRequest = { showMenu = false },
                     ) {
                         androidx.compose.material3.DropdownMenuItem(
-                            text = { Text("Název a barvy") },
+                            text = { Text(tr("Název a barvy")) },
                             leadingIcon = { Icon(Icons.Filled.Edit, contentDescription = null) },
                             onClick = { showMenu = false; showRename = true },
                         )
                         androidx.compose.material3.DropdownMenuItem(
-                            text = { Text("Export decklistu") },
+                            text = { Text(tr("Export decklistu")) },
                             leadingIcon = { Icon(Icons.Filled.Share, contentDescription = null) },
                             onClick = { showMenu = false; shareDecklist(context, deck.name, flatCards) },
                         )
                         androidx.compose.material3.DropdownMenuItem(
-                            text = { Text("Formát balíku") },
+                            text = { Text(tr("Formát balíku")) },
                             leadingIcon = { Icon(Icons.Filled.Tune, contentDescription = null) },
                             onClick = { showMenu = false; showFormat = true },
                         )
                         androidx.compose.material3.DropdownMenuItem(
-                            text = { Text("Přidat základní země") },
+                            text = { Text(tr("Přidat základní země")) },
                             leadingIcon = { Icon(Icons.Filled.Add, contentDescription = null) },
                             onClick = { showMenu = false; showBasics = true },
                         )
@@ -266,9 +268,9 @@ internal fun DeckDetailView(vm: DeckViewModel, deck: Deck) {
                     }
                     // Složení
                     Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-                        DeckStat("Tvorové", creaturesN)
-                        DeckStat("Ostatní kouzla", spellsN - creaturesN)
-                        DeckStat("Země", landsN)
+                        DeckStat(tr("Tvorové"), creaturesN)
+                        DeckStat(tr("Ostatní kouzla"), spellsN - creaturesN)
+                        DeckStat(tr("Země"), landsN)
                     }
                     // Multisken fotkou rovnou do balíku
                     val deckPhotoUri = remember {
@@ -286,7 +288,7 @@ internal fun DeckDetailView(vm: DeckViewModel, deck: Deck) {
                             onClick = { showAddCards = true },
                             modifier = Modifier.weight(1f),
                             contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp),
-                        ) { Icon(Icons.Filled.Add, null, Modifier.size(18.dp)); Text(" Přidat", maxLines = 1) }
+                        ) { Icon(Icons.Filled.Add, null, Modifier.size(18.dp)); Text(tr(" Přidat"), maxLines = 1) }
                         if (!format.isLimited) androidx.compose.material3.OutlinedButton(
                             onClick = { deckTakePhoto.launch(deckPhotoUri) },
                             enabled = !poolScanBusy,
@@ -326,7 +328,7 @@ internal fun DeckDetailView(vm: DeckViewModel, deck: Deck) {
             IconButton(onClick = { settings.setDeckGrid(!gridMode) }) {
                 Icon(
                     if (gridMode) Icons.AutoMirrored.Filled.ViewList else Icons.Filled.GridView,
-                    contentDescription = if (gridMode) "Seznam" else "Mřížka",
+                    contentDescription = if (gridMode) tr("Seznam") else tr("Mřížka"),
                 )
             }
             androidx.compose.material3.BadgedBox(
@@ -337,7 +339,7 @@ internal fun DeckDetailView(vm: DeckViewModel, deck: Deck) {
                 IconButton(onClick = { showTypeFilter = true }) {
                     Icon(
                         Icons.Filled.FilterList,
-                        contentDescription = "Filtr",
+                        contentDescription = tr("Filtr"),
                         tint = if (deckFilter.isActive) MaterialTheme.colorScheme.primary
                         else MaterialTheme.colorScheme.onSurface,
                     )
@@ -364,7 +366,7 @@ internal fun DeckDetailView(vm: DeckViewModel, deck: Deck) {
         val lands = if (allMode) emptyList() else allLands.filterNot { isBasicLand(it.card) }.sortedBy { it.card.name.lowercase() }
         val others = if (allMode) (allLands.filterNot { isBasicLand(it.card) } + allOthers).sortedBy { it.card.name.lowercase() }
         else allOthers.sortedBy { it.card.name.lowercase() }
-        val othersLabel = if (allMode) "Vše" else "Spell"
+        val othersLabel = if (allMode) tr("Vše") else "Spell"
         val showBasicPanel = sectionMode != DeckSectionMode.OTHERS
         // Výchozí: rozbalené, dokud v balíku nejsou žádné základní země
         val basicsExpanded = basicsOpen ?: deckCards.none { isBasicLand(it.card) }
@@ -415,7 +417,7 @@ internal fun DeckDetailView(vm: DeckViewModel, deck: Deck) {
                 onApplyLands = applyLimitedLands,
             )
             if (showBasicPanel) BasicLandPanel(basicCounts, onBasicInc, onBasicDec, basicsExpanded, { basicsOpen = !basicsExpanded }, deckColorSet)
-            androidx.compose.runtime.CompositionLocalProvider(com.example.antimarcipan.ui.LocalCardList provides ((lands + others).map { it.card }), com.example.antimarcipan.ui.LocalCardRemoveAction provides ("Odebrat z balíku" to { c: CollectionCard -> pendingRemove = c })) {
+            androidx.compose.runtime.CompositionLocalProvider(com.example.antimarcipan.ui.LocalCardList provides ((lands + others).map { it.card }), com.example.antimarcipan.ui.LocalCardRemoveAction provides (tr("Odebrat z balíku") to { c: CollectionCard -> pendingRemove = c })) {
             DeckGrid(
                 lands = lands,
                 others = others,
@@ -426,12 +428,12 @@ internal fun DeckDetailView(vm: DeckViewModel, deck: Deck) {
             return@Column
         }
 
-        androidx.compose.runtime.CompositionLocalProvider(com.example.antimarcipan.ui.LocalCardList provides ((lands + others).map { it.card } + poolRows.map { it.card }), com.example.antimarcipan.ui.LocalCardRemoveAction provides ("Odebrat z balíku" to { c: CollectionCard -> pendingRemove = c })) {
+        androidx.compose.runtime.CompositionLocalProvider(com.example.antimarcipan.ui.LocalCardList provides ((lands + others).map { it.card } + poolRows.map { it.card }), com.example.antimarcipan.ui.LocalCardRemoveAction provides (tr("Odebrat z balíku") to { c: CollectionCard -> pendingRemove = c })) {
         LazyColumn(Modifier.fillMaxSize()) {
             if (deckCards.isEmpty()) {
                 item {
                     Text(
-                        "Zatím prázdný — přidej dole ze sbírky, nebo základní země přes menu.",
+                        tr("Zatím prázdný — přidej dole ze sbírky, nebo základní země přes menu."),
                         Modifier.padding(16.dp),
                         style = MaterialTheme.typography.bodySmall,
                     )
@@ -509,7 +511,7 @@ internal fun DeckDetailView(vm: DeckViewModel, deck: Deck) {
             if (deckFilter.isActive && allLands.isEmpty() && allOthers.isEmpty() && deckCards.isNotEmpty()) {
                 item {
                     Text(
-                        "Filtru neodpovídá žádná karta.",
+                        tr("Filtru neodpovídá žádná karta."),
                         Modifier.padding(16.dp),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
@@ -521,7 +523,7 @@ internal fun DeckDetailView(vm: DeckViewModel, deck: Deck) {
                 item { SectionHeader("Pool (${poolRows.sumOf { it.deckQuantity }})") }
                 if (poolRows.isEmpty()) item {
                     Text(
-                        "Pool je prázdný. V rádci nahoře ťukni na „Vyfotit karty“ a vyfoť karty z boosterů.",
+                        tr("Pool je prázdný. V rádci nahoře ťukni na „Vyfotit karty“ a vyfoť karty z boosterů."),
                         Modifier.padding(16.dp), style = MaterialTheme.typography.bodySmall,
                     )
                 }
@@ -535,22 +537,22 @@ internal fun DeckDetailView(vm: DeckViewModel, deck: Deck) {
                         com.example.antimarcipan.ui.CardListInfo(card = row.card, modifier = Modifier.weight(1f))
                         Text("$free/${row.deckQuantity}", style = MaterialTheme.typography.labelMedium)
                         IconButton(onClick = { pendingPoolRemove = row.card to row.deckQuantity }) {
-                            Icon(Icons.Filled.Delete, contentDescription = "Odebrat z poolu")
+                            Icon(Icons.Filled.Delete, contentDescription = tr("Odebrat z poolu"))
                         }
                         IconButton(onClick = { addFromPool(row.card) }, enabled = free > 0) {
-                            Icon(Icons.Filled.Add, contentDescription = "Do balíku")
+                            Icon(Icons.Filled.Add, contentDescription = tr("Do balíku"))
                         }
                     }
                     HorizontalDivider()
                 }
             }
-            if (!format.isLimited) item { SectionHeader("Přidat ze sbírky") }
+            if (!format.isLimited) item { SectionHeader(tr("Přidat ze sbírky")) }
             val inDeckIds = deckCards.map { it.card.scryfallId }.toSet()
             val addable = if (format.isLimited) emptyList() else collection.filter { it.scryfallId !in inDeckIds }
             if (addable.isEmpty() && !format.isLimited) {
                 item {
                     Text(
-                        "Všechny karty ze sbírky už jsou v balíku (nebo je sbírka prázdná).",
+                        tr("Všechny karty ze sbírky už jsou v balíku (nebo je sbírka prázdná)."),
                         Modifier.padding(16.dp),
                         style = MaterialTheme.typography.bodySmall,
                     )
@@ -563,7 +565,7 @@ internal fun DeckDetailView(vm: DeckViewModel, deck: Deck) {
                 ) {
                     com.example.antimarcipan.ui.CardListInfo(card = card, modifier = Modifier.weight(1f))
                     IconButton(onClick = { vm.addCard(card) }) {
-                        Icon(Icons.Filled.Add, contentDescription = "Přidat")
+                        Icon(Icons.Filled.Add, contentDescription = tr("Přidat"))
                     }
                 }
                 HorizontalDivider()
@@ -574,7 +576,7 @@ internal fun DeckDetailView(vm: DeckViewModel, deck: Deck) {
 
     if (showRename) {
         DeckNameDialog(
-            title = "Název a barvy",
+            title = tr("Název a barvy"),
             initial = deck.name,
             initialColors = deck.colors,
             onDismiss = { showRename = false },
@@ -594,18 +596,18 @@ internal fun DeckDetailView(vm: DeckViewModel, deck: Deck) {
     )
     pendingPoolRemove?.let { (card, q) ->
         ConfirmDialog(
-            title = "Odebrat z poolu?",
+            title = tr("Odebrat z poolu?"),
             message = "Odebrat 1 kus „${card.name}“ z poolu?",
-            confirmText = "Odebrat",
+            confirmText = tr("Odebrat"),
             onConfirm = { vm.setPoolQty(deck.id, card.scryfallId, q - 1); pendingPoolRemove = null },
             onDismiss = { pendingPoolRemove = null },
         )
     }
     pendingRemove?.let { card ->
         ConfirmDialog(
-            title = "Odebrat z balíku?",
-            message = "Odebrat „${card.name}“ z balíku? Karta zůstane ve sbírce.",
-            confirmText = "Odebrat",
+            title = tr("Odebrat z balíku?"),
+            message = tr("Odebrat „{0}“ z balíku? Karta zůstane ve sbírce.", (card.name)),
+            confirmText = tr("Odebrat"),
             onConfirm = { vm.removeCard(card); pendingRemove = null },
             onDismiss = { pendingRemove = null },
         )
@@ -645,7 +647,7 @@ internal fun shareDecklist(context: Context, deckName: String, cards: List<Colle
         putExtra(Intent.EXTRA_TEXT, text)
     }
     context.startActivity(
-        Intent.createChooser(intent, "Sdílet decklist").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        Intent.createChooser(intent, tr("Sdílet decklist")).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
     )
 }
 
@@ -670,14 +672,14 @@ internal fun AddCardsDialog(
         .sortedBy { it.name.lowercase() }.take(80)
     com.example.antimarcipan.ui.GoldDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Přidat kartu ze sbírky") },
+        title = { Text(tr("Přidat kartu ze sbírky")) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 androidx.compose.material3.OutlinedTextField(
                     q, { q = it }, singleLine = true, modifier = Modifier.fillMaxWidth(),
-                    label = { Text("Hledat jméno nebo typ") },
+                    label = { Text(tr("Hledat jméno nebo typ")) },
                 )
-                if (shown.isEmpty()) Text("Nic nenalezeno.", style = MaterialTheme.typography.bodySmall)
+                if (shown.isEmpty()) Text(tr("Nic nenalezeno."), style = MaterialTheme.typography.bodySmall)
                 shown.forEach { c ->
                     val n = inDeck[c.scryfallId] ?: 0
                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -685,17 +687,17 @@ internal fun AddCardsDialog(
                         Column(Modifier.weight(1f).padding(horizontal = 8.dp)) {
                             Text(c.name, style = MaterialTheme.typography.bodyMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
                             Text(
-                                (c.typeLine?.substringBefore("—")?.trim() ?: "") + if (n > 0) " · v balíku $n×" else "",
+                                (c.typeLine?.substringBefore("—")?.trim() ?: "") + if (n > 0) tr(" · v balíku {0}×", n) else "",
                                 style = MaterialTheme.typography.labelSmall, maxLines = 1,
                                 color = if (n > 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                             )
                         }
-                        IconButton(onClick = { onAdd(c) }) { Icon(Icons.Filled.Add, contentDescription = "Přidat", tint = MaterialTheme.colorScheme.primary) }
+                        IconButton(onClick = { onAdd(c) }) { Icon(Icons.Filled.Add, contentDescription = tr("Přidat"), tint = MaterialTheme.colorScheme.primary) }
                     }
                 }
-                if (shown.size == 80) Text("Zobrazeno prvních 80 — upřesni hledání.", style = MaterialTheme.typography.labelSmall)
+                if (shown.size == 80) Text(tr("Zobrazeno prvních 80 — upřesni hledání."), style = MaterialTheme.typography.labelSmall)
             }
         },
-        confirmButton = { androidx.compose.material3.TextButton(onClick = onDismiss) { Text("Hotovo") } },
+        confirmButton = { androidx.compose.material3.TextButton(onClick = onDismiss) { Text(tr("Hotovo")) } },
     )
 }

@@ -1,5 +1,7 @@
 package com.example.antimarcipan.data.backup
 
+import com.example.antimarcipan.i18n.tr
+
 import android.content.Context
 import android.net.Uri
 import com.example.antimarcipan.data.local.AppDatabase
@@ -25,7 +27,7 @@ class BackupRepository(
             val dbFile = context.getDatabasePath(dbName)
             context.contentResolver.openOutputStream(uri)?.use { out ->
                 dbFile.inputStream().use { it.copyTo(out) }
-            } ?: error("Nepodařilo se otevřít cílový soubor.")
+            } ?: error(tr("Nepodařilo se otevřít cílový soubor."))
             Unit
         }
     }
@@ -44,7 +46,7 @@ class BackupRepository(
             context.getDatabasePath("$dbName-shm").delete()
             context.contentResolver.openInputStream(uri)?.use { input ->
                 dbFile.outputStream().use { input.copyTo(it) }
-            } ?: error("Nepodařilo se otevřít zálohu.")
+            } ?: error(tr("Nepodařilo se otevřít zálohu."))
             Unit
         }
     }

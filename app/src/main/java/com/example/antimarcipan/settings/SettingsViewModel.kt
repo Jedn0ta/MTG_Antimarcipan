@@ -1,5 +1,7 @@
 package com.example.antimarcipan.settings
 
+import com.example.antimarcipan.i18n.tr
+
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -46,15 +48,15 @@ class SettingsViewModel(
     fun exportBackup(uri: Uri, onResult: (String) -> Unit) {
         viewModelScope.launch {
             backup.exportTo(uri)
-                .onSuccess { onResult("Záloha uložena.") }
-                .onFailure { onResult("Záloha selhala: ${it.message}") }
+                .onSuccess { onResult(tr("Záloha uložena.")) }
+                .onFailure { onResult(tr("Záloha selhala: {0}", (it.message))) }
         }
     }
 
     fun importBackup(uri: Uri, onResult: (String) -> Unit) {
         viewModelScope.launch {
             backup.importFrom(uri)
-                .onSuccess { onResult("Obnoveno. Restartuj aplikaci, aby se data načetla.") }
+                .onSuccess { onResult(tr("Obnoveno. Restartuj aplikaci, aby se data načetla.")) }
                 .onFailure { onResult("Obnova selhala: ${it.message}") }
         }
     }
@@ -67,8 +69,8 @@ class SettingsViewModel(
                 phase = UpdatePhase.IDLE,
                 status = result,
                 message = when (result) {
-                    is UpdateStatus.UpToDate -> "Máš nejnovější verzi."
-                    is UpdateStatus.Available -> "K dispozici je novější verze."
+                    is UpdateStatus.UpToDate -> tr("Máš nejnovější verzi.")
+                    is UpdateStatus.Available -> tr("K dispozici je novější verze.")
                     is UpdateStatus.Error -> "Chyba: ${result.message}"
                 },
             )
@@ -91,12 +93,12 @@ class SettingsViewModel(
                 _state.value = _state.value.copy(
                     phase = UpdatePhase.READY_TO_INSTALL,
                     downloadedApk = file,
-                    message = "Staženo. Spusť instalaci.",
+                    message = tr("Staženo. Spusť instalaci."),
                 )
             }.onFailure { e ->
                 _state.value = _state.value.copy(
                     phase = UpdatePhase.IDLE,
-                    message = "Stažení selhalo: ${e.message}",
+                    message = tr("Stažení selhalo: {0}", (e.message)),
                 )
             }
         }

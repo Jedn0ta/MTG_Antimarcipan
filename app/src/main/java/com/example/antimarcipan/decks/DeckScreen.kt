@@ -1,5 +1,7 @@
 package com.example.antimarcipan.decks
 
+import com.example.antimarcipan.i18n.tr
+
 import android.content.Context
 import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -140,7 +142,7 @@ internal fun DeckListView(vm: DeckViewModel) {
         ) {
             Button(onClick = { showNewDeck = true }) {
                 Icon(Icons.Filled.Add, contentDescription = null)
-                Text(" Nový balík")
+                Text(tr(" Nový balík"))
             }
         }
         HorizontalDivider()
@@ -148,7 +150,7 @@ internal fun DeckListView(vm: DeckViewModel) {
         if (decks.isEmpty()) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Text(
-                    "Zatím žádný balík. Vytvoř první tlačítkem „Nový“.",
+                    tr("Zatím žádný balík. Vytvoř první tlačítkem „Nový“."),
                     Modifier.padding(32.dp),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
@@ -181,9 +183,9 @@ internal fun DeckListView(vm: DeckViewModel) {
 
     pendingDeleteDeck?.let { deck ->
         ConfirmDialog(
-            title = "Smazat balík?",
-            message = "Opravdu smazat balík „${deck.name}“? Karty zůstanou ve sbírce.",
-            confirmText = "Smazat",
+            title = tr("Smazat balík?"),
+            message = tr("Opravdu smazat balík „{0}“? Karty zůstanou ve sbírce.", (deck.name)),
+            confirmText = tr("Smazat"),
             onConfirm = { vm.deleteDeck(deck.id); pendingDeleteDeck = null },
             onDismiss = { pendingDeleteDeck = null },
         )
@@ -230,7 +232,7 @@ internal fun DeckListRow(
             }
         }
         IconButton(onClick = onDelete) {
-            Icon(Icons.Filled.Delete, contentDescription = "Smazat balík")
+            Icon(Icons.Filled.Delete, contentDescription = tr("Smazat balík"))
         }
     }
 }
@@ -243,7 +245,7 @@ internal fun FormatDialog(
 ) {
     com.example.antimarcipan.ui.GoldDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Formát balíku") },
+        title = { Text(tr("Formát balíku")) },
         text = {
             Column {
                 DeckFormat.entries.forEach { f ->
@@ -269,7 +271,7 @@ internal fun FormatDialog(
             }
         },
         confirmButton = {},
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Zavřít") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(tr("Zavřít")) } },
     )
 }
 
@@ -285,16 +287,16 @@ internal fun NewDeckDialog(
     val colors = remember { androidx.compose.runtime.mutableStateListOf<String>() }
     com.example.antimarcipan.ui.GoldDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Nový balík") },
+        title = { Text(tr("Nový balík")) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
-                    label = { Text("Název balíku") },
+                    label = { Text(tr("Název balíku")) },
                     singleLine = true,
                 )
-                Text("Formát", style = MaterialTheme.typography.labelMedium)
+                Text(tr("Formát"), style = MaterialTheme.typography.labelMedium)
                 DeckFormat.entries.forEach { f ->
                     Row(
                         Modifier.fillMaxWidth().clickable { format = f }.padding(vertical = 6.dp),
@@ -315,15 +317,15 @@ internal fun NewDeckDialog(
                 if (format.isLimited) {
                     Text(
                         if (format == DeckFormat.SEALED)
-                            "Sealed: otevři 6 boosterů a v balíku je přes „Vyfotit karty“ vyfoť do poolu (ne do sbírky). Rádce v balíku pak doporučí barvy, nejlepší karty a rozpis 17 zemí."
+                            tr("Sealed: otevři 6 boosterů a v balíku je přes „Vyfotit karty“ vyfoť do poolu (ne do sbírky). Rádce v balíku pak doporučí barvy, nejlepší karty a rozpis 17 zemí.")
                         else
-                            "Draft: z každého boosteru si vybereš 1 kartu a zbytek posíláš dál. Vydraftované karty vyfoť přímo v balíku přes „Vyfotit karty“, rádce pomůže se stavbou. Do sbírky je přidáš hromadně až na konci.",
+                            tr("Draft: z každého boosteru si vybereš 1 kartu a zbytek posíláš dál. Vydraftované karty vyfoť přímo v balíku přes „Vyfotit karty“, rádce pomůže se stavbou. Do sbírky je přidáš hromadně až na konci."),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.primary,
                     )
-                    TextButton(onClick = { guideFor = format }) { Text("Jak se ${format.label} hraje a staví") }
+                    TextButton(onClick = { guideFor = format }) { Text(tr("Jak se {0} hraje a staví", (format.label))) }
                 }
-                Text("Barvy balíku", style = MaterialTheme.typography.labelMedium)
+                Text(tr("Barvy balíku"), style = MaterialTheme.typography.labelMedium)
                 ColorPicker(colors.toSet()) { c ->
                     if (colors.contains(c)) colors.remove(c) else colors.add(c)
                 }
@@ -334,9 +336,9 @@ internal fun NewDeckDialog(
             }
         },
         confirmButton = {
-            TextButton(onClick = { onConfirm(name, format, serializeColors(colors)) }) { Text("Vytvořit") }
+            TextButton(onClick = { onConfirm(name, format, serializeColors(colors)) }) { Text(tr("Vytvořit")) }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Zrušit") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(tr("Zrušit")) } },
     )
 }
 
@@ -379,10 +381,10 @@ internal fun DeckNameDialog(
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
-                    label = { Text("Název balíku") },
+                    label = { Text(tr("Název balíku")) },
                     singleLine = true,
                 )
-                Text("Barvy balíku", style = MaterialTheme.typography.labelMedium)
+                Text(tr("Barvy balíku"), style = MaterialTheme.typography.labelMedium)
                 ColorPicker(colors.toSet()) { c ->
                     if (colors.contains(c)) colors.remove(c) else colors.add(c)
                 }
@@ -392,7 +394,7 @@ internal fun DeckNameDialog(
                 }
             }
         },
-        confirmButton = { TextButton(onClick = { onConfirm(name, serializeColors(colors)) }) { Text("Uložit") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Zrušit") } },
+        confirmButton = { TextButton(onClick = { onConfirm(name, serializeColors(colors)) }) { Text(tr("Uložit")) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(tr("Zrušit")) } },
     )
 }

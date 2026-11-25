@@ -1,5 +1,7 @@
 package com.example.antimarcipan.ui
 
+import com.example.antimarcipan.i18n.tr
+
 import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -26,7 +28,7 @@ fun OracleText(oracle: String?, style: TextStyle) {
         if (annotated.contains('')) {
             TextButton(onClick = { czech = !czech }) {
                 Text(
-                    if (czech) "Vysvětlivky anglicky" else "Přeložit vysvětlivky do češtiny",
+                    if (czech) tr("Vysvětlivky anglicky") else tr("Přeložit vysvětlivky do češtiny"),
                     style = MaterialTheme.typography.labelSmall,
                 )
             }

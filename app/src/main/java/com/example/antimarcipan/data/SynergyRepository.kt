@@ -1,5 +1,7 @@
 package com.example.antimarcipan.data
 
+import com.example.antimarcipan.i18n.tr
+
 import com.example.antimarcipan.data.edhrec.EdhrecApi
 import com.example.antimarcipan.data.edhrec.Slug
 import com.example.antimarcipan.data.local.CollectionDao
@@ -51,7 +53,7 @@ class SynergyRepository(
                     name = name,
                     synergy = 0.0,
                     numDecks = 0,
-                    category = "Návrh (Scryfall)",
+                    category = tr("Návrh (Scryfall)"),
                     owned = owned.contains(name.lowercase()),
                 )
             }

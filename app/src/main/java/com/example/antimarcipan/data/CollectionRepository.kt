@@ -1,5 +1,7 @@
 package com.example.antimarcipan.data
 
+import com.example.antimarcipan.i18n.tr
+
 import android.content.Context
 import com.example.antimarcipan.data.local.CollectionCard
 import com.example.antimarcipan.data.local.CollectionDao
@@ -60,7 +62,7 @@ class CollectionRepository(
     /** Najde kartu podle levého spodního rohu (číslo + kód edice) — i pro cizojazyčné karty. */
     suspend fun lookupByCorner(rawText: String, strict: Boolean = false): Result<ScryfallCard> = runCatching {
         val (numbers, sets) = OcrParser.parseCorner(rawText, strict)
-        require(numbers.isNotEmpty() && sets.isNotEmpty()) { "V rohu není čitelné číslo a edice" }
+        require(numbers.isNotEmpty() && sets.isNotEmpty()) { tr("V rohu není čitelné číslo a edice") }
         // Málo pokusů — Scryfall jinak dočasně blokuje dotazy (429) a pak se nenajde nic.
         val maxTries = if (strict) 1 else 4
         var tries = 0
@@ -69,7 +71,7 @@ class CollectionRepository(
             runCatching { scryfall.cardBySetAndNumber(set.lowercase(Locale.ROOT), n) }
                 .getOrNull()?.let { return@runCatching it }
         }
-        error("Kombinace edice a čísla nenalezena")
+        error(tr("Kombinace edice a čísla nenalezena"))
     }
 
     /** Jen podle jména (fuzzy), bez náhradního hledání podle rohu — pro multisken. */
@@ -82,9 +84,9 @@ class CollectionRepository(
     @Volatile var lastForeign: String? = null
 
     private val LANG_CS = mapOf(
-        "de" to "němčina", "fr" to "francouzština", "it" to "italština", "es" to "španělština",
-        "pt" to "portugalština", "ru" to "ruština", "ja" to "japonština", "ko" to "korejština",
-        "zhs" to "čínština", "zht" to "čínština", "ph" to "phyrexianština",
+        "de" to tr("němčina"), "fr" to tr("francouzština"), "it" to tr("italština"), "es" to tr("španělština"),
+        "pt" to tr("portugalština"), "ru" to tr("ruština"), "ja" to tr("japonština"), "ko" to tr("korejština"),
+        "zhs" to tr("čínština"), "zht" to tr("čínština"), "ph" to tr("phyrexianština"),
     )
 
     /**
@@ -107,7 +109,7 @@ class CollectionRepository(
     suspend fun lookup(rawText: String): Result<ScryfallCard> = runCatching {
         lastForeign = null
         val parsed = OcrParser.parse(rawText)
-        require(parsed.nameGuess.length >= 3) { "Text příliš krátký na jméno karty" }
+        require(parsed.nameGuess.length >= 3) { tr("Text příliš krátký na jméno karty") }
 
         val fuzzy = runCatching { scryfall.cardByFuzzyName(parsed.nameGuess) }
         // Fuzzy občas „najde“ podobně znějící anglickou kartu i pro cizí jméno — ověř začátek jména.
@@ -145,7 +147,7 @@ class CollectionRepository(
 
     /** Vyhledání karet podle jména (pro ruční přidání). */
     suspend fun searchByName(query: String): Result<List<ScryfallCard>> = runCatching {
-        require(query.trim().length >= 2) { "Zadej aspoň 2 znaky" }
+        require(query.trim().length >= 2) { tr("Zadej aspoň 2 znaky") }
         scryfall.search(
             query = query.trim(),
             order = "name",

@@ -1,5 +1,7 @@
 package com.example.antimarcipan.decks
 
+import com.example.antimarcipan.i18n.tr
+
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -161,7 +163,7 @@ fun LimitedAdvisorPanel(
         Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Row(Modifier.fillMaxWidth().clickable { expanded = !expanded }, verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    "Rádce · ${format.label}",
+                    tr("Rádce · {0}", (format.label)),
                     Modifier.weight(1f),
                     style = MaterialTheme.typography.titleSmall,
                     color = MaterialTheme.colorScheme.primary,
@@ -172,7 +174,7 @@ fun LimitedAdvisorPanel(
 
             // Pool
             Text(
-                "Pool: ${pool.sumOf { it.quantity }} karet" + if (poolImported) " · přidáno do sbírky ✓" else "",
+                "Pool: ${pool.sumOf { it.quantity }} karet" + if (poolImported) tr(" · přidáno do sbírky ✓") else "",
                 style = MaterialTheme.typography.bodySmall,
             )
             val ctx = androidx.compose.ui.platform.LocalContext.current
@@ -189,15 +191,15 @@ fun LimitedAdvisorPanel(
                 androidx.activity.result.contract.ActivityResultContracts.GetContent()
             ) { uri -> if (uri != null) onPhoto(uri) }
             Text(
-                "Rozlož karty z boosteru lícem nahoru vedle sebe a vyfoť je — přidají se rovnou do poolu.",
+                tr("Rozlož karty z boosteru lícem nahoru vedle sebe a vyfoť je — přidají se rovnou do poolu."),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
             )
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 androidx.compose.material3.Button(onClick = { takePhoto.launch(photoUri) }, enabled = !scanBusy) {
-                    Text("Vyfotit karty")
+                    Text(tr("Vyfotit karty"))
                 }
-                OutlinedButton(onClick = { pickPhoto.launch("image/*") }, enabled = !scanBusy) { Text("Z galerie") }
+                OutlinedButton(onClick = { pickPhoto.launch("image/*") }, enabled = !scanBusy) { Text(tr("Z galerie")) }
             }
             if (scanStatus != null) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -208,17 +210,17 @@ fun LimitedAdvisorPanel(
                 }
             }
             OutlinedButton(onClick = { confirmImport = true }, enabled = pool.isNotEmpty() && !poolImported) {
-                Text("Pool do sbírky")
+                Text(tr("Pool do sbírky"))
             }
             TextButton(onClick = { showGuide = true }) { Text("Jak se ${format.label} hraje") }
 
             // Kontrola struktury
-            Check("Karet v balíku", "${deckCards.size} / 40", deckCards.size >= 40)
-            Check("Země", "${nonBasicLands + basics} (doporučeno $landTarget)", nonBasicLands + basics in (landTarget - 1)..(landTarget + 1))
-            Check("Tvorové", "$creatures (ideál 15–17)", creatures in 14..18)
-            Check("Removal", "$removal (čím víc, tím líp, aspoň 3)", removal >= 3)
-            Check("Levní tvorové (MV ≤ 2)", "$twoDrops (aspoň 4–5)", twoDrops >= 4)
-            Check("Drahá kouzla (MV ≥ 6)", "$top (max 2–3)", top <= 3)
+            Check(tr("Karet v balíku"), "${deckCards.size} / 40", deckCards.size >= 40)
+            Check(tr("Země"), tr("{0} (doporučeno {1})", (nonBasicLands + basics), landTarget), nonBasicLands + basics in (landTarget - 1)..(landTarget + 1))
+            Check(tr("Tvorové"), tr("{0} (ideál 15–17)", creatures), creatures in 14..18)
+            Check("Removal", tr("{0} (čím víc, tím líp, aspoň 3)", removal), removal >= 3)
+            Check(tr("Levní tvorové (MV ≤ 2)"), tr("{0} (aspoň 4–5)", twoDrops), twoDrops >= 4)
+            Check(tr("Drahá kouzla (MV ≥ 6)"), "$top (max 2–3)", top <= 3)
             Check("Barvy", if (deckCols.isEmpty()) "—" else deckCols.joinToString(""), deckCols.size in 1..2)
 
             HorizontalDivider(Modifier.padding(vertical = 2.dp))
@@ -230,8 +232,8 @@ fun LimitedAdvisorPanel(
             )
             if (pair.isNotEmpty() && scores.values.any { it > 0 }) {
                 Text(
-                    "Doporučení: hraj ${pair.joinToString(" + ")}" +
-                        if (format == DeckFormat.DRAFT) " — ale v draftu sleduj, které barvy ti chodí (jsou „otevřené“)." else ".",
+                    tr("Doporučení: hraj {0}", (pair.joinToString(" + "))) +
+                        if (format == DeckFormat.DRAFT) tr(" — ale v draftu sleduj, které barvy ti chodí (jsou „otevřené“).") else ".",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.primary,
                 )
@@ -241,7 +243,7 @@ fun LimitedAdvisorPanel(
             val split = LimitedAdvisor.basicSplit(spells, basicsNeeded)
             if (split.isNotEmpty()) {
                 OutlinedButton(onClick = { onApplyLands(split) }) {
-                    Text("Nastavit země: " + split.entries.joinToString(", ") { "${it.value}× ${it.key}" })
+                    Text(tr("Nastavit země: ") + split.entries.joinToString(", ") { "${it.value}× ${it.key}" })
                 }
             }
 
@@ -254,7 +256,7 @@ fun LimitedAdvisorPanel(
                     .sortedByDescending { LimitedAdvisor.rating(it) }
                     .take(8)
                 if (suggestions.isNotEmpty()) {
-                    Text("Nejlepší karty z poolu v barvách ${pair.joinToString("")}:", style = MaterialTheme.typography.labelLarge)
+                    Text(tr("Nejlepší karty z poolu v barvách {0}:", (pair.joinToString(""))), style = MaterialTheme.typography.labelLarge)
                     suggestions.forEach { c ->
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             InteractiveThumb(c, width = 36.dp, height = 50.dp)
@@ -262,7 +264,7 @@ fun LimitedAdvisorPanel(
                                 Text(c.name, maxLines = 1, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.bodyMedium)
                                 Text(
                                     buildString {
-                                        append("hodnocení %.1f".format(LimitedAdvisor.rating(c)))
+                                        append(tr("hodnocení %.1f").format(LimitedAdvisor.rating(c)))
                                         if (LimitedAdvisor.isRemoval(c)) append(" · removal")
                                         c.cmc?.let { append(" · MV ${it.toInt()}") }
                                     },
@@ -270,7 +272,7 @@ fun LimitedAdvisorPanel(
                                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                                 )
                             }
-                            TextButton(onClick = { onAddCard(c) }) { Text("+ Přidat") }
+                            TextButton(onClick = { onAddCard(c) }) { Text(tr("+ Přidat")) }
                         }
                     }
                 }
@@ -282,10 +284,10 @@ fun LimitedAdvisorPanel(
     if (confirmImport) {
         com.example.antimarcipan.ui.GoldDialog(
             onDismissRequest = { confirmImport = false },
-            title = { Text("Přidat pool do sbírky?") },
-            text = { Text("Všech ${pool.sumOf { it.quantity }} karet z poolu se přidá do sbírky (počty se přičtou).") },
-            confirmButton = { TextButton(onClick = { onImportPool(); confirmImport = false }) { Text("Přidat") } },
-            dismissButton = { TextButton(onClick = { confirmImport = false }) { Text("Zrušit") } },
+            title = { Text(tr("Přidat pool do sbírky?")) },
+            text = { Text(tr("Všech {0} karet z poolu se přidá do sbírky (počty se přičtou).", (pool.sumOf { it.quantity }))) },
+            confirmButton = { TextButton(onClick = { onImportPool(); confirmImport = false }) { Text(tr("Přidat")) } },
+            dismissButton = { TextButton(onClick = { confirmImport = false }) { Text(tr("Zrušit")) } },
         )
     }
 }
@@ -358,7 +360,7 @@ fun LimitedGuideDialog(format: DeckFormat, onDismiss: () -> Unit) {
                 Text(limitedGuide(format), style = MaterialTheme.typography.bodySmall)
             }
         },
-        confirmButton = { TextButton(onClick = onDismiss) { Text("Rozumím") } },
+        confirmButton = { TextButton(onClick = onDismiss) { Text(tr("Rozumím")) } },
     )
 }
 

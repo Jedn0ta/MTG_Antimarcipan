@@ -1,5 +1,7 @@
 package com.example.antimarcipan.ui
 
+import com.example.antimarcipan.i18n.tr
+
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -74,187 +76,187 @@ private class GuideNode(
 
 private val NODES: Map<String, GuideNode> = listOf(
     GuideNode(
-        "root", "Průvodce aplikací",
-        "Vyber téma. Každé má ilustraci obrazovky, popis a odkazy na podrobnosti.",
+        "root", tr("Průvodce aplikací"),
+        tr("Vyber téma. Každé má ilustraci obrazovky, popis a odkazy na podrobnosti."),
         mock = { MockHome() },
         children = listOf("gestures", "scan", "collection", "decks", "advisor", "life", "settings"),
     ),
     // ---------- Gesta
     GuideNode(
-        "gestures", "Základní gesta",
-        "Appka se ovládá hlavně gesty na kartách:\n• Ťuk na náhled → detail karty.\n• Podržení náhledu → velká karta.\n• Swipe řádku doprava → do balíku.\n• Dlouhé podržení s kolečkem → akce, která se nemá stát omylem.",
-        mock = { MockCardRow(highlightThumb = true, label = "ťukni / podrž") },
+        "gestures", tr("Základní gesta"),
+        tr("Appka se ovládá hlavně gesty na kartách:\n• Ťuk na náhled → detail karty.\n• Podržení náhledu → velká karta.\n• Swipe řádku doprava → do balíku.\n• Dlouhé podržení s kolečkem → akce, která se nemá stát omylem."),
+        mock = { MockCardRow(highlightThumb = true, label = tr("ťukni / podrž")) },
         children = listOf("g_tap", "g_hold", "g_swipe", "g_long"),
     ),
     GuideNode(
-        "g_tap", "Ťuknutí na náhled",
-        "Otevře detail: jméno, mana cost, edice, typ, textace se symboly many a vysvětlivky vlastností (anglicky, s tlačítkem pro český překlad). Dole poznámka a tlačítko pro odebrání/smazání.",
+        "g_tap", tr("Ťuknutí na náhled"),
+        tr("Otevře detail: jméno, mana cost, edice, typ, textace se symboly many a vysvětlivky vlastností (anglicky, s tlačítkem pro český překlad). Dole poznámka a tlačítko pro odebrání/smazání."),
         mock = { MockDetailDialog() },
     ),
     GuideNode(
-        "g_hold", "Podržení náhledu",
-        "Podrž náhled — po chvilce se ukáže kolečko a pak se otevře celá karta ve velkém se zlatým rámečkem. Swipem doleva/doprava listuješ celým seznamem, ve kterém jsi.",
+        "g_hold", tr("Podržení náhledu"),
+        tr("Podrž náhled — po chvilce se ukáže kolečko a pak se otevře celá karta ve velkém se zlatým rámečkem. Swipem doleva/doprava listuješ celým seznamem, ve kterém jsi."),
         mock = { MockBigCard() },
     ),
     GuideNode(
-        "g_swipe", "Swipe řádku",
-        "Ve sbírce chyť řádek za levý okraj a táhni doprava. Až přejedeš půlku displeje, pusť — vybereš balík a karta se přidá (pokud tam je, přidá se kus). Ve Wishlistu, Draftu a Playgroundu swipe přesune kartu do sbírky.",
+        "g_swipe", tr("Swipe řádku"),
+        tr("Ve sbírce chyť řádek za levý okraj a táhni doprava. Až přejedeš půlku displeje, pusť — vybereš balík a karta se přidá (pokud tam je, přidá se kus). Ve Wishlistu, Draftu a Playgroundu swipe přesune kartu do sbírky."),
         mock = { MockSwipe() },
     ),
     GuideNode(
-        "g_long", "Dlouhé podržení",
-        "U akcí, které nechceš spustit omylem, se plní kolečko (2–3 s). Např. podržení ikony knížky otevře Gatherer. Mazání karet je vždy jen z detailu karty a s potvrzením.",
+        "g_long", tr("Dlouhé podržení"),
+        tr("U akcí, které nechceš spustit omylem, se plní kolečko (2–3 s). Např. podržení ikony knížky otevře Gatherer. Mazání karet je vždy jen z detailu karty a s potvrzením."),
         mock = { MockHoldRing() },
     ),
     // ---------- Sken
     GuideNode(
-        "scan", "Skenování",
-        "Záložka Sken. Nahoře přepínáš režim: Jméno, Roh nebo Multisken. Vpravo nahoře ✕ skener vypne, pod tím blesk zapne světlo.",
+        "scan", tr("Skenování"),
+        tr("Záložka Sken. Nahoře přepínáš režim: Jméno, Roh nebo Multisken. Vpravo nahoře ✕ skener vypne, pod tím blesk zapne světlo."),
         mock = { MockScanner(mode = 0) },
         children = listOf("s_name", "s_found", "s_corner", "s_multi", "s_manual"),
     ),
     GuideNode(
-        "s_name", "Režim Jméno",
-        "Namiř na jméno karty (horní řádek). Appka ho přečte a najde kartu ve Scryfallu. Drž telefon rovně, při slabém světle zapni blesk.",
+        "s_name", tr("Režim Jméno"),
+        tr("Namiř na jméno karty (horní řádek). Appka ho přečte a najde kartu ve Scryfallu. Drž telefon rovně, při slabém světle zapni blesk."),
         mock = { MockScanner(mode = 0) },
     ),
     GuideNode(
-        "s_found", "Nalezená karta",
-        "Karta zůstane na obrazovce, dokud nerozhodneš:\n• Do sbírky / Do balíku\n• Wishlist / Playground (odložit k prozkoumání)\n• Skenovat dál\nŤukem na edici vybereš jiný tisk (obrázek i cena).",
+        "s_found", tr("Nalezená karta"),
+        tr("Karta zůstane na obrazovce, dokud nerozhodneš:\n• Do sbírky / Do balíku\n• Wishlist / Playground (odložit k prozkoumání)\n• Skenovat dál\nŤukem na edici vybereš jiný tisk (obrázek i cena)."),
         mock = { MockFoundButtons() },
     ),
     GuideNode(
-        "s_corner", "Režim Roh — cizojazyčné karty",
-        "Německé, japonské a jiné karty najdeš podle levého spodního rohu: číslo karty (123/280) a kód edice s jazykem (DMU • DE). Namiř roh do zlatého rámečku. Funguje u karet zhruba od roku 2015.",
+        "s_corner", tr("Režim Roh — cizojazyčné karty"),
+        tr("Německé, japonské a jiné karty najdeš podle levého spodního rohu: číslo karty (123/280) a kód edice s jazykem (DMU • DE). Namiř roh do zlatého rámečku. Funguje u karet zhruba od roku 2015."),
         mock = { MockScanner(mode = 1) },
     ),
     GuideNode(
         "s_multi", "Multisken z fotky",
-        "Rozlož karty lícem nahoru vedle sebe a ťukni „Vyfotit karty“ (nebo vyber fotku z galerie). Appka přečte všechny názvy, ukáže průběh a nalezené karty potvrdíš najednou.",
+        tr("Rozlož karty lícem nahoru vedle sebe a ťukni „Vyfotit karty“ (nebo vyber fotku z galerie). Appka přečte všechny názvy, ukáže průběh a nalezené karty potvrdíš najednou."),
         mock = { MockMulti() },
     ),
     GuideNode(
-        "s_manual", "Ruční přidání",
-        "Ikona + v horní liště: napiš jméno, vyber kartu (ťuk na náhled = detail) a přidej do sbírky, na wishlist nebo do balíku.",
+        "s_manual", tr("Ruční přidání"),
+        tr("Ikona + v horní liště: napiš jméno, vyber kartu (ťuk na náhled = detail) a přidej do sbírky, na wishlist nebo do balíku."),
         mock = { MockTopBar() },
     ),
     // ---------- Sbírka
     GuideNode(
-        "collection", "Sbírka",
-        "Nahoře záložky Sbírka / Wishlist / Draft / Playground, pod nimi počet kusů a cena. Vpravo přepínač seznam/mřížka a filtr.",
+        "collection", tr("Sbírka"),
+        tr("Nahoře záložky Sbírka / Wishlist / Draft / Playground, pod nimi počet kusů a cena. Vpravo přepínač seznam/mřížka a filtr."),
         mock = { MockCollection() },
         children = listOf("c_tabs", "c_filter", "c_edition", "c_gatherer", "c_notes", "c_delete"),
     ),
     GuideNode(
-        "c_tabs", "Záložky",
-        "• Sbírka — co vlastníš.\n• Wishlist — co chceš (s poznámkou, např. ke kterému kombu).\n• Draft — karty z poolu draftu/sealedu, ještě nejsou ve sbírce.\n• Playground — karty odložené ze skeneru k prozkoumání.",
-        mock = { MockChips(listOf("Sbírka", "Wishlist", "Draft", "Playground"), 1) },
+        "c_tabs", tr("Záložky"),
+        tr("• Sbírka — co vlastníš.\n• Wishlist — co chceš (s poznámkou, např. ke kterému kombu).\n• Draft — karty z poolu draftu/sealedu, ještě nejsou ve sbírce.\n• Playground — karty odložené ze skeneru k prozkoumání."),
+        mock = { MockChips(listOf(tr("Sbírka"), "Wishlist", "Draft", "Playground"), 1) },
     ),
     GuideNode(
-        "c_filter", "Filtr a řazení",
-        "Ikona filtru otevře panel: jméno, text, barvy, mana value, typy, tribal, vlastnosti (flying, lifelink…), edice, rarita. Řádek Vše/Land/Spell a vpravo řazení (jméno, cena, MV…).",
-        mock = { MockChips(listOf("Vše", "Land", "Spell"), 0, trailing = "Jméno ↑") },
+        "c_filter", tr("Filtr a řazení"),
+        tr("Ikona filtru otevře panel: jméno, text, barvy, mana value, typy, tribal, vlastnosti (flying, lifelink…), edice, rarita. Řádek Vše/Land/Spell a vpravo řazení (jméno, cena, MV…)."),
+        mock = { MockChips(listOf(tr("Vše"), "Land", "Spell"), 0, trailing = tr("Jméno ↑")) },
     ),
     GuideNode(
-        "c_edition", "Změna edice",
-        "Ikona ⇄ u karty: vybereš jiný tisk. Změní se obrázek i cena a karta se přepíše i v balících.",
+        "c_edition", tr("Změna edice"),
+        tr("Ikona ⇄ u karty: vybereš jiný tisk. Změní se obrázek i cena a karta se přepíše i v balících."),
         mock = { MockCardRow(highlightIcon = 0, label = "⇄ edice") },
     ),
     GuideNode(
         "c_gatherer", "Gatherer a rulings",
-        "Ikona knížky:\n• ťuk → oficiální rulings (výklady pravidel),\n• podržení 3 s → otevře kartu na Gathereru (oficiální web Wizards of the Coast).",
+        tr("Ikona knížky:\n• ťuk → oficiální rulings (výklady pravidel),\n• podržení 3 s → otevře kartu na Gathereru (oficiální web Wizards of the Coast)."),
         mock = { MockCardRow(highlightIcon = 1, label = "📖 rulings") },
     ),
     GuideNode(
-        "c_notes", "Poznámky",
-        "V detailu karty „Přidat poznámku“. Poznámka se ukáže fialově pod jménem v seznamu. Karty přidané z Rádce na wishlist dostanou poznámku automaticky (např. „Kombo: …“).",
+        "c_notes", tr("Poznámky"),
+        tr("V detailu karty „Přidat poznámku“. Poznámka se ukáže fialově pod jménem v seznamu. Karty přidané z Rádce na wishlist dostanou poznámku automaticky (např. „Kombo: …“)."),
         mock = { MockCardRow(note = "📝 Kombo: A + B → infinite mana") },
     ),
     GuideNode(
-        "c_delete", "Smazání karty",
-        "Jen z detailu karty: ťuk na náhled → červené „Odstranit ze sbírky“ → potvrdit. Ve Wishlistu/Playgroundu se karta jen odebere ze záložky.",
+        "c_delete", tr("Smazání karty"),
+        tr("Jen z detailu karty: ťuk na náhled → červené „Odstranit ze sbírky“ → potvrdit. Ve Wishlistu/Playgroundu se karta jen odebere ze záložky."),
         mock = { MockDetailDialog(showDelete = true) },
     ),
     // ---------- Balíky
     GuideNode(
-        "decks", "Balíky",
-        "„+ Nový balík“ a formát: Commander, Jednokarťák, Standard, Draft, Sealed, Volný. V detailu balíku: panel základních zemí, Vše/Land/Spell, mana curve, cena.",
+        "decks", tr("Balíky"),
+        tr("„+ Nový balík“ a formát: Commander, Jednokarťák, Standard, Draft, Sealed, Volný. V detailu balíku: panel základních zemí, Vše/Land/Spell, mana curve, cena."),
         mock = { MockDeck() },
         children = listOf("d_basics", "d_curve", "d_remove", "d_limited"),
     ),
     GuideNode(
-        "d_basics", "Základní země",
-        "Panel nahoře: ťuk na symbol many přidá zemi, „−“ ubere. Basicy se jinde v balíku nezobrazují.",
+        "d_basics", tr("Základní země"),
+        tr("Panel nahoře: ťuk na symbol many přidá zemi, „−“ ubere. Basicy se jinde v balíku nezobrazují."),
         mock = { MockBasics() },
     ),
     GuideNode(
         "d_curve", "Mana curve",
-        "Ikona grafu v liště balíku zobrazí/skryje nízký graf křivky: počty karet podle MV, tvorové zlatě, ostatní fialově, vpravo průměr.",
+        tr("Ikona grafu v liště balíku zobrazí/skryje nízký graf křivky: počty karet podle MV, tvorové zlatě, ostatní fialově, vpravo průměr."),
         mock = { MockCurve() },
     ),
     GuideNode(
-        "d_remove", "Odebrání karty",
-        "Ťuk na náhled → „Odebrat z balíku“, nebo podržení řádku. Vždy s potvrzením; karta zůstane ve sbírce.",
-        mock = { MockDetailDialog(showDelete = true, deleteLabel = "Odebrat z balíku") },
+        "d_remove", tr("Odebrání karty"),
+        tr("Ťuk na náhled → „Odebrat z balíku“, nebo podržení řádku. Vždy s potvrzením; karta zůstane ve sbírce."),
+        mock = { MockDetailDialog(showDelete = true, deleteLabel = tr("Odebrat z balíku")) },
     ),
     GuideNode(
         "d_limited", "Draft a Sealed",
-        "Limited balík se staví z poolu: v rádci balíku „Vyfotit karty“ → karty jdou do poolu. Rádce hlídá 40 karet a 17 zemí, doporučí barvy a nejlepší karty. Na konci „Pool do sbírky“.",
+        tr("Limited balík se staví z poolu: v rádci balíku „Vyfotit karty“ → karty jdou do poolu. Rádce hlídá 40 karet a 17 zemí, doporučí barvy a nejlepší karty. Na konci „Pool do sbírky“."),
         mock = { MockPool() },
     ),
     // ---------- Rádce
     GuideNode(
-        "advisor", "Rádce",
-        "Rozcestník nástrojů — ťukni na dlaždici.",
+        "advisor", tr("Rádce"),
+        tr("Rozcestník nástrojů — ťukni na dlaždici."),
         mock = { MockHub() },
         children = listOf("a_analyze", "a_build", "a_combos", "a_hand"),
     ),
     GuideNode(
-        "a_analyze", "Analýza balíku",
-        "Vyber balík: mana curve, zdraví (země, ramp, dobírání, removal), témata, karty, které nesedí, i s náhradami a návrhy. U návrhů „+ Wishlist“.",
+        "a_analyze", tr("Analýza balíku"),
+        tr("Vyber balík: mana curve, zdraví (země, ramp, dobírání, removal), témata, karty, které nesedí, i s náhradami a návrhy. U návrhů „+ Wishlist“."),
         mock = { MockCurve() },
     ),
     GuideNode(
-        "a_build", "Postavit balík ze sbírky",
-        "Formát, barvy (nebo velitel z mřížky s hledáním) → „Navrhnout balík“. Uvidíš počty, křivku a seznam; „Vytvořit balík a otevřít“ ho uloží.",
+        "a_build", tr("Postavit balík ze sbírky"),
+        tr("Formát, barvy (nebo velitel z mřížky s hledáním) → „Navrhnout balík“. Uvidíš počty, křivku a seznam; „Vytvořit balík a otevřít“ ho uloží."),
         mock = { MockCommanderGrid() },
     ),
     GuideNode(
-        "a_combos", "Komba",
-        "Najde komba v celé sbírce nebo v balíku (databáze Commander Spellbook, potřebuje internet). Kompletní komba a komba, kterým chybí jedna karta — tu přidáš na wishlist s poznámkou.",
+        "a_combos", tr("Komba"),
+        tr("Najde komba v celé sbírce nebo v balíku (databáze Commander Spellbook, potřebuje internet). Kompletní komba a komba, kterým chybí jedna karta — tu přidáš na wishlist s poznámkou."),
         mock = { MockCombo() },
     ),
     GuideNode(
-        "a_hand", "Zkušební ruka",
-        "Zamíchá balík a lízne 7 karet. Ukáže počet zemí a radu (drž / mulligan). Tlačítka Mulligan, Líznout, Nová.",
+        "a_hand", tr("Zkušební ruka"),
+        tr("Zamíchá balík a lízne 7 karet. Ukáže počet zemí a radu (drž / mulligan). Tlačítka Mulligan, Líznout, Nová."),
         mock = { MockHand() },
     ),
     // ---------- Počítadlo
     GuideNode(
-        "life", "Počítadlo životů",
-        "Ikona počítadla v horní liště. Levá půlka dlaždice −1, pravá +1, podržení ±5. ☠ = jed. Kulaté tlačítko uprostřed = nastavení.",
+        "life", tr("Počítadlo životů"),
+        tr("Ikona počítadla v horní liště. Levá půlka dlaždice −1, pravá +1, podržení ±5. ☠ = jed. Kulaté tlačítko uprostřed = nastavení."),
         mock = { MockLife() },
         children = listOf("l_menu", "l_turns", "l_history"),
     ),
     GuideNode(
-        "l_menu", "Nastavení hry",
-        "Hráči 2–6, životy 20/30/40, den/noc (swipem kolečka přepneš), nezhasínání + úspora baterie, celá obrazovka, nová hra.",
+        "l_menu", tr("Nastavení hry"),
+        tr("Hráči 2–6, životy 20/30/40, den/noc (swipem kolečka přepneš), nezhasínání + úspora baterie, celá obrazovka, nová hra."),
         mock = { MockLifeMenu() },
     ),
     GuideNode(
-        "l_turns", "Režim tahů",
-        "Hráč na tahu má zlatý rámeček, v rohu čas a dole „Konec tahu“. Křivka doporučeného času: po překročení dlaždice bliká a telefon zavibruje.",
+        "l_turns", tr("Režim tahů"),
+        tr("Hráč na tahu má zlatý rámeček, v rohu čas a dole „Konec tahu“. Křivka doporučeného času: po překročení dlaždice bliká a telefon zavibruje."),
         mock = { MockTurnTile() },
     ),
     GuideNode(
-        "l_history", "Historie životů",
-        "Graf a seznam dávek změn i konců tahů. ↶ u záznamu vrátí hru přesně do toho stavu.",
+        "l_history", tr("Historie životů"),
+        tr("Graf a seznam dávek změn i konců tahů. ↶ u záznamu vrátí hru přesně do toho stavu."),
         mock = { MockHistory() },
     ),
     // ---------- Nastavení
     GuideNode(
-        "settings", "Nastavení",
-        "Aktualizace appky z GitHubu, záloha a obnova dat, O aplikaci (verze, průvodce, log pádů — tlačítkem ho zkopíruješ a pošleš).",
+        "settings", tr("Nastavení"),
+        tr("Aktualizace appky z GitHubu, záloha a obnova dat, O aplikaci (verze, průvodce, log pádů — tlačítkem ho zkopíruješ a pošleš)."),
         mock = { MockSettings() },
     ),
 ).associateBy { it.id }
@@ -289,7 +291,7 @@ fun GuideOverlay(onClose: () -> Unit) {
                         if (n.children.isNotEmpty()) {
                             Spacer(Modifier.height(12.dp))
                             Text(
-                                if (n.id == "root") "Témata" else "Víc informací",
+                                if (n.id == "root") tr("Témata") else tr("Víc informací"),
                                 style = MaterialTheme.typography.labelLarge, color = Gold,
                             )
                             n.children.forEach { id ->
@@ -312,9 +314,9 @@ fun GuideOverlay(onClose: () -> Unit) {
                     }
                 }
                 Row(Modifier.fillMaxWidth().padding(top = 8.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-                    if (stack.size > 1) TextButton(onClick = { stack.removeAt(stack.lastIndex) }) { Text("‹ Zpět") }
+                    if (stack.size > 1) TextButton(onClick = { stack.removeAt(stack.lastIndex) }) { Text(tr("‹ Zpět")) }
                     else Spacer(Modifier.width(1.dp))
-                    TextButton(onClick = onClose) { Text("Zavřít") }
+                    TextButton(onClick = onClose) { Text(tr("Zavřít")) }
                 }
             }
         }
@@ -404,7 +406,7 @@ private fun MockCardRow(
 }
 
 @Composable
-private fun MockDetailDialog(showDelete: Boolean = false, deleteLabel: String = "Odstranit ze sbírky") {
+private fun MockDetailDialog(showDelete: Boolean = false, deleteLabel: String = tr("Odstranit ze sbírky")) {
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Column(
             Modifier.fillMaxWidth(0.85f).clip(RoundedCornerShape(14.dp))
@@ -417,13 +419,13 @@ private fun MockDetailDialog(showDelete: Boolean = false, deleteLabel: String = 
             Line(0.6f, Muted, 5)
             Text("{T}: Add {G}.", fontSize = 10.sp, color = Color.White)
             Text("Flying (can't be blocked except by…)", fontSize = 9.sp, color = Lav, fontWeight = FontWeight.Light)
-            Text("Přeložit vysvětlivky do češtiny", fontSize = 9.sp, color = Gold)
+            Text(tr("Přeložit vysvětlivky do češtiny"), fontSize = 9.sp, color = Gold)
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                 if (showDelete) Box {
                     Text(deleteLabel, fontSize = 10.sp, color = Color(0xFFFF8A8A))
                     TapHint(Modifier.offset(20.dp, (-4).dp))
                 }
-                Spacer(Modifier.width(14.dp)); Text("Zavřít", fontSize = 10.sp, color = Gold)
+                Spacer(Modifier.width(14.dp)); Text(tr("Zavřít"), fontSize = 10.sp, color = Gold)
             }
         }
     }
@@ -450,7 +452,7 @@ private fun MockSwipe() {
     Box(Modifier.fillMaxSize()) {
         Box(Modifier.fillMaxWidth().height(60.dp).align(Alignment.Center).background(Color(0x332E9E5B), RoundedCornerShape(8.dp)))
         Box(Modifier.fillMaxWidth(0.5f).fillMaxHeight().align(Alignment.CenterEnd).border(1.dp, Color(0x55FFFFFF), RoundedCornerShape(4.dp)))
-        Text("půlka displeje", Modifier.align(Alignment.TopCenter), fontSize = 9.sp, color = Muted)
+        Text(tr("půlka displeje"), Modifier.align(Alignment.TopCenter), fontSize = 9.sp, color = Muted)
         Row(
             Modifier.fillMaxWidth().align(Alignment.Center).offset(x = (150 * t).dp)
                 .background(Panel, RoundedCornerShape(8.dp)).padding(6.dp),
@@ -458,7 +460,7 @@ private fun MockSwipe() {
         ) {
             MiniCard(); Spacer(Modifier.width(8.dp)); Column(Modifier.weight(1f)) { Line(0.6f); Spacer(Modifier.height(4.dp)); Line(0.4f, Gold, 5) }
         }
-        Text("→ do balíku", Modifier.align(Alignment.BottomEnd), color = Green, fontSize = 11.sp)
+        Text(tr("→ do balíku"), Modifier.align(Alignment.BottomEnd), color = Green, fontSize = 11.sp)
     }
 }
 
@@ -468,7 +470,7 @@ private fun MockHoldRing() {
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         androidx.compose.material3.CircularProgressIndicator(progress = { t }, Modifier.size(70.dp), color = Gold, strokeWidth = 5.dp)
         Text("📖", fontSize = 26.sp)
-        Text("drž 3 s → Gatherer", Modifier.align(Alignment.BottomCenter), color = GoldLight, fontSize = 11.sp)
+        Text(tr("drž 3 s → Gatherer"), Modifier.align(Alignment.BottomCenter), color = GoldLight, fontSize = 11.sp)
     }
 }
 
@@ -499,7 +501,7 @@ private fun MockChips(labels: List<String>, selected: Int, trailing: String? = n
 private fun MockScanner(mode: Int) {
     Box(Modifier.fillMaxSize().clip(RoundedCornerShape(12.dp)).background(Color(0xFF2A2A2A))) {
         Row(Modifier.fillMaxWidth().padding(6.dp), horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
-            listOf("Jméno", "Roh", "Multisken").forEachIndexed { i, l ->
+            listOf(tr("Jméno"), tr("Roh"), tr("Multisken")).forEachIndexed { i, l ->
                 Text(l, Modifier.clip(RoundedCornerShape(6.dp)).background(if (i == mode) Gold else Color.Transparent).border(1.dp, Gold, RoundedCornerShape(6.dp)).padding(horizontal = 6.dp, vertical = 3.dp),
                     fontSize = 9.sp, color = if (i == mode) Ink else GoldLight)
             }
@@ -514,7 +516,7 @@ private fun MockScanner(mode: Int) {
                 Text("123/280 R\nDMU • DE", fontSize = 6.sp, color = Color.White, lineHeight = 7.sp, modifier = Modifier.padding(2.dp))
             }
         }
-        Text(if (mode == 0) "namiř na jméno" else "namiř na levý spodní roh", Modifier.align(Alignment.BottomCenter).padding(6.dp), fontSize = 10.sp, color = GoldLight)
+        Text(if (mode == 0) tr("namiř na jméno") else tr("namiř na levý spodní roh"), Modifier.align(Alignment.BottomCenter).padding(6.dp), fontSize = 10.sp, color = GoldLight)
     }
 }
 
@@ -523,9 +525,9 @@ private fun MockFoundButtons() {
     Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) { MiniCard(44, 61); Spacer(Modifier.width(8.dp)); Column { Text("Llanowar Elves", fontSize = 11.sp, color = Gold); Line(0.5f, Muted, 5) } }
         Spacer(Modifier.weight(1f))
-        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) { MockBtn("Do sbírky", true); MockBtn("Do balíku") }
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) { MockBtn(tr("Do sbírky"), true); MockBtn(tr("Do balíku")) }
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) { MockBtn("Wishlist"); MockBtn("Playground") }
-        Text("Skenovat dál", Modifier.fillMaxWidth(), textAlign = TextAlign.Center, fontSize = 11.sp, color = Gold)
+        Text(tr("Skenovat dál"), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, fontSize = 11.sp, color = Gold)
     }
 }
 
@@ -543,10 +545,10 @@ private fun RowScope.MockBtn(label: String, filled: Boolean = false) {
 private fun MockMulti() {
     Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) { repeat(4) { MiniCard(40, 56, listOf(Color(0xFF365A3A), Color(0xFF5B2E2E), Color(0xFF2E3E5B), Color(0xFF5B4A2E))[it]) } }
-        Text("Hledám karty 3/4… (nalezeno 3)", fontSize = 11.sp, color = Gold)
+        Text(tr("Hledám karty 3/4… (nalezeno 3)"), fontSize = 11.sp, color = Gold)
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text("Vyfotit karty", Modifier.clip(RoundedCornerShape(16.dp)).background(Color(0xFF6A4BC4)).padding(horizontal = 12.dp, vertical = 6.dp), fontSize = 11.sp, color = Color.White)
-            Text("Z galerie", Modifier.clip(RoundedCornerShape(16.dp)).border(1.dp, Gold, RoundedCornerShape(16.dp)).padding(horizontal = 12.dp, vertical = 6.dp), fontSize = 11.sp, color = GoldLight)
+            Text(tr("Vyfotit karty"), Modifier.clip(RoundedCornerShape(16.dp)).background(Color(0xFF6A4BC4)).padding(horizontal = 12.dp, vertical = 6.dp), fontSize = 11.sp, color = Color.White)
+            Text(tr("Z galerie"), Modifier.clip(RoundedCornerShape(16.dp)).border(1.dp, Gold, RoundedCornerShape(16.dp)).padding(horizontal = 12.dp, vertical = 6.dp), fontSize = 11.sp, color = GoldLight)
         }
     }
 }
@@ -555,13 +557,13 @@ private fun MockMulti() {
 private fun MockTopBar() {
     Column(Modifier.fillMaxSize()) {
         Row(Modifier.fillMaxWidth().background(Panel, RoundedCornerShape(8.dp)).padding(10.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text("Sbírka", fontSize = 16.sp, color = Gold, fontWeight = FontWeight.Bold)
+            Text(tr("Sbírka"), fontSize = 16.sp, color = Gold, fontWeight = FontWeight.Bold)
             Spacer(Modifier.weight(1f))
             Text("⊞", fontSize = 18.sp, color = Color.White); Spacer(Modifier.width(18.dp))
             Box { Text("+", fontSize = 22.sp, color = Color.White); TapHint(Modifier.offset((-6).dp, (-2).dp)) }
         }
         Spacer(Modifier.height(10.dp))
-        Text("⊞ = počítadlo životů   + = ruční přidání", fontSize = 10.sp, color = Muted)
+        Text(tr("⊞ = počítadlo životů   + = ruční přidání"), fontSize = 10.sp, color = Muted)
     }
 }
 
@@ -569,7 +571,7 @@ private fun MockTopBar() {
 private fun MockCollection() {
     Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-            listOf("Sbírka", "Wishlist", "Draft", "Playground").forEachIndexed { i, l ->
+            listOf(tr("Sbírka"), "Wishlist", "Draft", "Playground").forEachIndexed { i, l ->
                 Text(l, Modifier.clip(RoundedCornerShape(6.dp)).background(if (i == 0) Gold else Color.Transparent).border(1.dp, Gold, RoundedCornerShape(6.dp)).padding(horizontal = 5.dp, vertical = 3.dp), fontSize = 9.sp, color = if (i == 0) Ink else GoldLight)
             }
         }
@@ -586,7 +588,7 @@ private fun MockCollection() {
 private fun MockDeck() {
     Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("Elfové · 60/60 · 84,20 €", fontSize = 11.sp, color = Gold, modifier = Modifier.weight(1f))
+            Text(tr("Elfové · 60/60 · 84,20 €"), fontSize = 11.sp, color = Gold, modifier = Modifier.weight(1f))
             Text("📊", fontSize = 12.sp); Spacer(Modifier.width(8.dp)); Text("⚙", fontSize = 12.sp, color = Color.White)
         }
         MockBasicsRow()
@@ -631,12 +633,12 @@ private fun MockCurve() {
 @Composable
 private fun MockPool() {
     Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        Text("Rádce · Sealed deck", fontSize = 11.sp, color = Gold)
-        Text("✓ Karet 40/40   ! Removal 2 (aspoň 3)", fontSize = 10.sp, color = Color.White)
-        Text("Doporučení: hraj G + R", fontSize = 10.sp, color = Gold)
+        Text(tr("Rádce · Sealed deck"), fontSize = 11.sp, color = Gold)
+        Text(tr("✓ Karet 40/40   ! Removal 2 (aspoň 3)"), fontSize = 10.sp, color = Color.White)
+        Text(tr("Doporučení: hraj G + R"), fontSize = 10.sp, color = Gold)
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            Box { Text("Vyfotit karty", Modifier.clip(RoundedCornerShape(14.dp)).background(Gold).padding(horizontal = 10.dp, vertical = 5.dp), fontSize = 10.sp, color = Ink); TapHint(Modifier.align(Alignment.Center)) }
-            Text("Pool do sbírky", Modifier.clip(RoundedCornerShape(14.dp)).border(1.dp, Gold, RoundedCornerShape(14.dp)).padding(horizontal = 10.dp, vertical = 5.dp), fontSize = 10.sp, color = GoldLight)
+            Box { Text(tr("Vyfotit karty"), Modifier.clip(RoundedCornerShape(14.dp)).background(Gold).padding(horizontal = 10.dp, vertical = 5.dp), fontSize = 10.sp, color = Ink); TapHint(Modifier.align(Alignment.Center)) }
+            Text(tr("Pool do sbírky"), Modifier.clip(RoundedCornerShape(14.dp)).border(1.dp, Gold, RoundedCornerShape(14.dp)).padding(horizontal = 10.dp, vertical = 5.dp), fontSize = 10.sp, color = GoldLight)
         }
     }
 }
@@ -644,7 +646,7 @@ private fun MockPool() {
 @Composable
 private fun MockHub() {
     Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        listOf("📈 Analýza balíku", "🛠 Postavit balík ze sbírky", "⇄ Průvodce Draft / Sealed", "✨ Komba ze sbírky").forEachIndexed { i, t ->
+        listOf(tr("📈 Analýza balíku"), tr("🛠 Postavit balík ze sbírky"), tr("⇄ Průvodce Draft / Sealed"), tr("✨ Komba ze sbírky")).forEachIndexed { i, t ->
             Box(Modifier.fillMaxWidth()) {
                 Text(t, Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).border(1.dp, GoldBorderBrush, RoundedCornerShape(12.dp)).background(Gold.copy(alpha = 0.08f)).padding(9.dp), fontSize = 11.sp, color = Color.White)
                 if (i == 0) TapHint(Modifier.align(Alignment.CenterEnd).padding(end = 10.dp))
@@ -656,14 +658,14 @@ private fun MockHub() {
 @Composable
 private fun MockCommanderGrid() {
     Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        Text("Hledat velitele…", Modifier.fillMaxWidth().border(1.dp, Muted, RoundedCornerShape(6.dp)).padding(5.dp), fontSize = 10.sp, color = Muted)
+        Text(tr("Hledat velitele…"), Modifier.fillMaxWidth().border(1.dp, Muted, RoundedCornerShape(6.dp)).padding(5.dp), fontSize = 10.sp, color = Muted)
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
             repeat(3) { i ->
                 Box { MiniCard(52, 72, listOf(Color(0xFF365A3A), Color(0xFF5B2E2E), Color(0xFF2E3E5B))[i])
                     if (i == 1) Text("✓", Modifier.align(Alignment.TopEnd).padding(2.dp).size(16.dp).clip(CircleShape).background(Gold), textAlign = TextAlign.Center, fontSize = 10.sp, color = Ink) }
             }
         }
-        Text("Navrhnout balík", Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(Gold).padding(6.dp), textAlign = TextAlign.Center, fontSize = 11.sp, color = Ink)
+        Text(tr("Navrhnout balík"), Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(Gold).padding(6.dp), textAlign = TextAlign.Center, fontSize = 11.sp, color = Ink)
     }
 }
 
@@ -671,18 +673,18 @@ private fun MockCommanderGrid() {
 private fun MockCombo() {
     Column(Modifier.fillMaxSize().border(1.dp, Color(0x55B9A7EC), RoundedCornerShape(12.dp)).padding(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) { MiniCard(44, 61, Color(0xFF2E3E5B)); MiniCard(44, 61, Color(0xFF3A2A3A)); Box { MiniCard(44, 61, Color(0xFF444444)); Text("✗", Modifier.align(Alignment.Center), color = Color(0xFFFFA0A0), fontSize = 20.sp) } }
-        Text("Výsledek: Infinite mana", fontSize = 10.sp, color = Green)
-        Box { Text("Na wishlist", Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).border(1.dp, Gold, RoundedCornerShape(14.dp)).padding(5.dp), textAlign = TextAlign.Center, fontSize = 10.sp, color = GoldLight); TapHint(Modifier.align(Alignment.Center)) }
+        Text(tr("Výsledek: Infinite mana"), fontSize = 10.sp, color = Green)
+        Box { Text(tr("Na wishlist"), Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).border(1.dp, Gold, RoundedCornerShape(14.dp)).padding(5.dp), textAlign = TextAlign.Center, fontSize = 10.sp, color = GoldLight); TapHint(Modifier.align(Alignment.Center)) }
     }
 }
 
 @Composable
 private fun MockHand() {
     Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        Text("V ruce 7 karet · zemí 3", fontSize = 10.sp, color = Color.White)
-        Text("Hratelná ruka — drž.", fontSize = 11.sp, color = Gold, fontWeight = FontWeight.Bold)
+        Text(tr("V ruce 7 karet · zemí 3"), fontSize = 10.sp, color = Color.White)
+        Text(tr("Hratelná ruka — drž."), fontSize = 11.sp, color = Gold, fontWeight = FontWeight.Bold)
         Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) { repeat(7) { MiniCard(30, 42, if (it < 3) Color(0xFF6B6B4A) else Color(0xFF365A3A)) } }
-        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) { MockBtn("Mulligan"); MockBtn("Líznout"); MockBtn("Nová", true) }
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) { MockBtn("Mulligan"); MockBtn(tr("Líznout")); MockBtn(tr("Nová"), true) }
     }
 }
 
@@ -706,16 +708,16 @@ private fun MockLife() {
 @Composable
 private fun MockLifeMenu() {
     Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        Text("Hra", fontSize = 10.sp, color = GoldLight)
+        Text(tr("Hra"), fontSize = 10.sp, color = GoldLight)
         Row(Modifier.fillMaxWidth().border(1.dp, GoldBorderBrush, RoundedCornerShape(8.dp))) {
             (2..6).forEach { n -> Text("$n", Modifier.weight(1f).background(if (n == 4) Gold else Color.Transparent).padding(4.dp), textAlign = TextAlign.Center, fontSize = 10.sp, color = if (n == 4) Ink else GoldLight) }
         }
-        Text("Den a noc", fontSize = 10.sp, color = GoldLight)
+        Text(tr("Den a noc"), fontSize = 10.sp, color = GoldLight)
         Row(Modifier.fillMaxWidth().border(1.dp, GoldBorderBrush, RoundedCornerShape(8.dp))) {
             listOf("Vypnuto", "☀ Den", "☾ Noc").forEachIndexed { i, l -> Text(l, Modifier.weight(1f).background(if (i == 1) Gold else Color.Transparent).padding(4.dp), textAlign = TextAlign.Center, fontSize = 10.sp, color = if (i == 1) Ink else GoldLight) }
         }
-        Row(verticalAlignment = Alignment.CenterVertically) { Text("Nezhasínat obrazovku", Modifier.weight(1f), fontSize = 10.sp, color = Color.White); Box(Modifier.size(28.dp, 14.dp).clip(CircleShape).background(Gold)) }
-        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) { MockBtn("Historie"); MockBtn("Nová hra", true) }
+        Row(verticalAlignment = Alignment.CenterVertically) { Text(tr("Nezhasínat obrazovku"), Modifier.weight(1f), fontSize = 10.sp, color = Color.White); Box(Modifier.size(28.dp, 14.dp).clip(CircleShape).background(Gold)) }
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) { MockBtn("Historie"); MockBtn(tr("Nová hra"), true) }
     }
 }
 
@@ -723,10 +725,10 @@ private fun MockLifeMenu() {
 private fun MockTurnTile() {
     Box(Modifier.fillMaxSize().clip(RoundedCornerShape(12.dp)).background(Color(0xFF8E2C3A)).border(3.dp, GoldBorderBrush, RoundedCornerShape(12.dp))) {
         Text("⏱ 1:23 / 2:00", Modifier.align(Alignment.TopStart).padding(8.dp).background(Color.Black.copy(alpha = 0.4f), RoundedCornerShape(6.dp)).padding(horizontal = 6.dp, vertical = 2.dp), fontSize = 11.sp, color = GoldLight)
-        Text("Tah 3", Modifier.align(Alignment.TopEnd).padding(10.dp), fontSize = 10.sp, color = GoldLight)
+        Text(tr("Tah 3"), Modifier.align(Alignment.TopEnd).padding(10.dp), fontSize = 10.sp, color = GoldLight)
         Text("20", Modifier.align(Alignment.Center), fontSize = 40.sp, color = Color.White, fontWeight = FontWeight.Bold)
         Box(Modifier.align(Alignment.BottomCenter).padding(8.dp)) {
-            Text("Konec tahu", Modifier.clip(RoundedCornerShape(16.dp)).background(Gold).padding(horizontal = 14.dp, vertical = 6.dp), fontSize = 11.sp, color = Ink, fontWeight = FontWeight.Bold)
+            Text(tr("Konec tahu"), Modifier.clip(RoundedCornerShape(16.dp)).background(Gold).padding(horizontal = 14.dp, vertical = 6.dp), fontSize = 11.sp, color = Ink, fontWeight = FontWeight.Bold)
             TapHint(Modifier.align(Alignment.Center))
         }
     }
@@ -747,11 +749,11 @@ private fun MockHistory() {
 @Composable
 private fun MockSettings() {
     Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        Text("O aplikaci", fontSize = 12.sp, color = Gold)
-        Text("Grimoar · verze …", fontSize = 10.sp, color = Muted)
-        Text("Spustit průvodce", Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(Gold).padding(6.dp), textAlign = TextAlign.Center, fontSize = 11.sp, color = Ink)
-        Text("Log pádů: zaznamenáno 1 pádů.", fontSize = 10.sp, color = Color(0xFFFF9A9A))
-        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) { MockBtn("Zkopírovat log", true); MockBtn("Smazat log") }
+        Text(tr("O aplikaci"), fontSize = 12.sp, color = Gold)
+        Text(tr("Grimoar · verze …"), fontSize = 10.sp, color = Muted)
+        Text(tr("Spustit průvodce"), Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(Gold).padding(6.dp), textAlign = TextAlign.Center, fontSize = 11.sp, color = Ink)
+        Text(tr("Log pádů: zaznamenáno 1 pádů."), fontSize = 10.sp, color = Color(0xFFFF9A9A))
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) { MockBtn(tr("Zkopírovat log"), true); MockBtn(tr("Smazat log")) }
     }
 }
 
@@ -760,10 +762,10 @@ private fun MockHome() {
     Column(Modifier.fillMaxSize()) {
         Spacer(Modifier.weight(1f))
         Row(Modifier.fillMaxWidth().background(Panel, RoundedCornerShape(10.dp)).padding(8.dp), horizontalArrangement = Arrangement.SpaceEvenly) {
-            listOf("Sken", "Sbírka", "Balíky", "Rádce", "Nastavení").forEachIndexed { i, l ->
+            listOf(tr("Sken"), tr("Sbírka"), tr("Balíky"), tr("Rádce"), tr("Nastavení")).forEachIndexed { i, l ->
                 Text(l, Modifier.clip(RoundedCornerShape(10.dp)).background(if (i == 1) Gold else Color.Transparent).padding(horizontal = 5.dp, vertical = 3.dp), fontSize = 9.sp, color = if (i == 1) Ink else Color.White)
             }
         }
-        Text("Spodní lišta = hlavní části appky", Modifier.fillMaxWidth().padding(top = 6.dp), textAlign = TextAlign.Center, fontSize = 10.sp, color = Muted)
+        Text(tr("Spodní lišta = hlavní části appky"), Modifier.fillMaxWidth().padding(top = 6.dp), textAlign = TextAlign.Center, fontSize = 10.sp, color = Muted)
     }
 }

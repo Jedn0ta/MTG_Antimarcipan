@@ -1,5 +1,7 @@
 package com.example.antimarcipan.collection
 
+import com.example.antimarcipan.i18n.tr
+
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.antimarcipan.data.CollectionRepository
@@ -41,7 +43,7 @@ class CollectionViewModel(
             val r = repo.refreshPrices(force = true)
             priceRefreshing.value = false
             priceUpdatedAt.value = repo.lastPriceUpdate()
-            onDone(r.fold({ "Ceny aktualizovány ($it karet)" }, { "Ceny se nepodařilo aktualizovat — internet?" }))
+            onDone(r.fold({ tr("Ceny aktualizovány ({0} karet)", it) }, { tr("Ceny se nepodařilo aktualizovat — internet?") }))
         }
     }
 

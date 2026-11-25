@@ -1,11 +1,13 @@
 package com.example.antimarcipan.collection
 
+import com.example.antimarcipan.i18n.tr
+
 import com.example.antimarcipan.data.colorIdentityList
 import com.example.antimarcipan.data.local.CollectionCard
 
 enum class CardColor(val code: String, val label: String) {
-    W("W", "Bílá"), U("U", "Modrá"), B("B", "Černá"),
-    R("R", "Červená"), G("G", "Zelená"), C("C", "Bezbarvá"),
+    W("W", tr("Bílá")), U("U", tr("Modrá")), B("B", tr("Černá")),
+    R("R", tr("Červená")), G("G", tr("Zelená")), C("C", tr("Bezbarvá")),
 }
 
 enum class CardType(val needle: String, val label: String) {
@@ -27,8 +29,8 @@ enum class Rarity(val code: String, val label: String) {
 }
 
 enum class SortBy(val label: String) {
-    ADDED("Nejnovější"),
-    NAME("Jméno"),
+    ADDED(tr("Nejnovější")),
+    NAME(tr("Jméno")),
     CMC("Mana value"),
     PRICE("Cena"),
     RARITY("Rarita"),

@@ -1,5 +1,7 @@
 package com.example.antimarcipan.ui
 
+import com.example.antimarcipan.i18n.tr
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.animation.core.animateFloat
@@ -84,7 +86,7 @@ fun CardThumb(
                     is AsyncImagePainter.State.Error ->
                         Icon(
                             Icons.Filled.BrokenImage,
-                            contentDescription = "náhled se nenačetl",
+                            contentDescription = tr("náhled se nenačetl"),
                             tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                             modifier = Modifier.size((width.value * 0.4f).dp),
                         )

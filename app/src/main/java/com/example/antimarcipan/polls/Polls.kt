@@ -1,5 +1,7 @@
 package com.example.antimarcipan.polls
 
+import com.example.antimarcipan.i18n.tr
+
 import android.content.Context
 import android.util.Base64
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -75,7 +77,7 @@ object PollStore {
     val unreadCount: Int get() = _polls.value.count { it.unread }
 
     fun create(title: String, place: String, options: List<Long>, people: List<String>, myVote: List<Int>): Poll {
-        val me = myName().ifBlank { "Já" }
+        val me = myName().ifBlank { tr("Já") }
         val p = Poll(
             id = (1..10).map { "abcdefghjkmnpqrstuvwxyz23456789".random() }.joinToString(""),
             title = title.trim(), place = place.trim(), options = options.sorted(), owner = me, mine = true,
@@ -96,15 +98,15 @@ object PollStore {
         val code = enc(json.encodeToString(Invite.serializer(), Invite(p.id, p.title, p.place, p.options, p.owner, p.people, p.chosen, p.votes)))
         return buildString {
             if (p.chosen != null) {
-                appendLine("🎲 ${p.title} — termín je domluvený!")
+                appendLine(tr("🎲 {0} — termín je domluvený!", (p.title)))
                 appendLine("📅 ${label(p.options[p.chosen])}")
             } else {
-                appendLine("🎲 ${p.title} — kdy můžeš? Hlasuj v aplikaci Grimoar.")
+                appendLine(tr("🎲 {0} — kdy můžeš? Hlasuj v aplikaci Grimoar.", (p.title)))
                 p.options.forEachIndexed { i, o -> appendLine("${i + 1}) ${label(o)}") }
             }
             if (p.place.isNotBlank()) appendLine("📍 ${p.place}")
             appendLine()
-            appendLine("Zkopíruj tuto zprávu a otevři Grimoar (nebo ji do Grimoaru sdílej).")
+            appendLine(tr("Zkopíruj tuto zprávu a otevři Grimoar (nebo ji do Grimoaru sdílej)."))
             append("AMPOLL1:$code")
         }
     }
@@ -112,8 +114,8 @@ object PollStore {
     /** Text s mým hlasem pro organizátora. */
     fun voteText(p: Poll, me: String, v: List<Int>): String {
         val code = enc(json.encodeToString(Vote.serializer(), Vote(p.id, me, v)))
-        val can = if (v.isEmpty()) "nemůžu ani jeden termín" else v.joinToString(", ") { label(p.options[it]) }
-        return "🎲 ${p.title}: $me — $can\nZkopíruj tuto zprávu a otevři Grimoar.\nAMVOTE1:$code"
+        val can = if (v.isEmpty()) tr("nemůžu ani jeden termín") else v.joinToString(", ") { label(p.options[it]) }
+        return tr("🎲 {0}: {1} — {2}\nZkopíruj tuto zprávu a otevři Grimoar.\nAMVOTE1:{3}", (p.title), me, can, code)
     }
 
     /** Zpracuje přijatý text s kódem. Vrací true, pokud v něm kód byl. */
@@ -128,15 +130,15 @@ object PollStore {
                     people = inv.pp, votes = inv.v, myVote = old?.myVote, chosen = inv.c, unread = true,
                 )
             )
-            notice.value = if (inv.c != null) "${inv.t}: termín potvrzen — ${label(inv.o[inv.c])}"
-            else if (old == null) "Nová anketa od ${inv.w}: ${inv.t}" else "Anketa ${inv.t} aktualizována"
+            notice.value = if (inv.c != null) tr("{0}: termín potvrzen — {1}", (inv.t), (label(inv.o[inv.c])))
+            else if (old == null) tr("Nová anketa od {0}: {1}", (inv.w), (inv.t)) else tr("Anketa {0} aktualizována", (inv.t))
             openRequest.value = inv.id
             return true
         }
         Regex("""AMVOTE1:([A-Za-z0-9_\-=]+)""").find(text)?.let { m ->
             val v = runCatching { json.decodeFromString(Vote.serializer(), dec(m.groupValues[1])) }.getOrNull() ?: return false
             val p = _polls.value.firstOrNull { it.id == v.id }
-            if (p == null || !p.mine) { notice.value = "Hlas patří k anketě, kterou tady nemáš."; return true }
+            if (p == null || !p.mine) { notice.value = tr("Hlas patří k anketě, kterou tady nemáš."); return true }
             upsert(
                 p.copy(
                     votes = p.votes + (v.n to v.v.filter { it in p.options.indices }),
@@ -144,7 +146,7 @@ object PollStore {
                     unread = true,
                 )
             )
-            notice.value = "${v.n} hlasoval v anketě ${p.title}"
+            notice.value = tr("{0} hlasoval v anketě {1}", (v.n), (p.title))
             openRequest.value = p.id
             return true
         }

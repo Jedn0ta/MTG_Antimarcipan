@@ -1,5 +1,7 @@
 package com.example.antimarcipan.ui
 
+import com.example.antimarcipan.i18n.tr
+
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -11,7 +13,7 @@ fun ConfirmDialog(
     title: String,
     message: String,
     confirmText: String = "Potvrdit",
-    dismissText: String = "Zrušit",
+    dismissText: String = tr("Zrušit"),
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
 ) {

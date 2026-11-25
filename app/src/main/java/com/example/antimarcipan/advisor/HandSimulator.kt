@@ -1,5 +1,7 @@
 package com.example.antimarcipan.advisor
 
+import com.example.antimarcipan.i18n.tr
+
 import com.example.antimarcipan.data.local.CollectionCard
 import com.example.antimarcipan.decks.LimitedAdvisor
 import kotlin.random.Random
@@ -107,23 +109,23 @@ object HandSimulator {
 
     /** Slovní vyhodnocení. */
     fun verdict(s: SimResult, deckSize: Int): List<String> = buildList {
-        add("Průměrně %.1f zemí v úvodní ruce.".format(s.avgLands7))
+        add(tr("Průměrně %.1f zemí v úvodní ruce.").format(s.avgLands7))
         when {
-            s.keep7 < 0.6 -> add("Jen %.0f %% rukou je hratelných na 7 — balík často mulliganuje. Uprav počet zemí nebo zlevni křivku.".format(s.keep7 * 100))
-            s.keep7 < 0.75 -> add("%.0f %% rukou hratelných na 7 — průměr, dá se vylepšit.".format(s.keep7 * 100))
-            else -> add("%.0f %% rukou hratelných na 7 — výborná stabilita.".format(s.keep7 * 100))
+            s.keep7 < 0.6 -> add(tr("Jen %.0f %% rukou je hratelných na 7 — balík často mulliganuje. Uprav počet zemí nebo zlevni křivku.").format(s.keep7 * 100))
+            s.keep7 < 0.75 -> add(tr("%.0f %% rukou hratelných na 7 — průměr, dá se vylepšit.").format(s.keep7 * 100))
+            else -> add(tr("%.0f %% rukou hratelných na 7 — výborná stabilita.").format(s.keep7 * 100))
         }
         val screw = s.landDist[0] + s.landDist[1]
         val flood = (5..7).sumOf { s.landDist[it] }
-        if (screw > 0.2) add("%.0f %% rukou má 0–1 zemi (málo zemí) — zvaž přidat země.".format(screw * 100))
-        if (flood > 0.2) add("%.0f %% rukou má 5+ zemí (moc zemí) — zvaž ubrat země nebo přidat dobírání.".format(flood * 100))
+        if (screw > 0.2) add(tr("%.0f %% rukou má 0–1 zemi (málo zemí) — zvaž přidat země.").format(screw * 100))
+        if (flood > 0.2) add(tr("%.0f %% rukou má 5+ zemí (moc zemí) — zvaž ubrat země nebo přidat dobírání.").format(flood * 100))
         s.landDrops.firstOrNull { it.first == 4 }?.let {
-            if (it.second < 0.6) add("Čtvrtou zemi do 4. tahu trefíš jen v %.0f %% her.".format(it.second * 100))
+            if (it.second < 0.6) add(tr("Čtvrtou zemi do 4. tahu trefíš jen v %.0f %% her.").format(it.second * 100))
         }
         s.colorBy3.filter { it.second < 0.75 }.forEach {
-            add("Zdroj barvy ${it.first} do 3. tahu jen v %.0f %% her — přidej zdroje této barvy.".format(it.second * 100))
+            add(tr("Zdroj barvy {0} do 3. tahu jen v %.0f %% her — přidej zdroje této barvy.", (it.first)).format(it.second * 100))
         }
-        if (s.cheapInHand < 0.5) add("Kouzlo za 1–2 many má v ruce jen %.0f %% rukou — pomalý start.".format(s.cheapInHand * 100))
-        add("První kouzlo zahraješ průměrně v %.1f. tahu.".format(s.avgFirstPlay))
+        if (s.cheapInHand < 0.5) add(tr("Kouzlo za 1–2 many má v ruce jen %.0f %% rukou — pomalý start.").format(s.cheapInHand * 100))
+        add(tr("První kouzlo zahraješ průměrně v %.1f. tahu.").format(s.avgFirstPlay))
     }
 }

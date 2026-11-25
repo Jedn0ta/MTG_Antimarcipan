@@ -1,5 +1,7 @@
 package com.example.antimarcipan.ui
 
+import com.example.antimarcipan.i18n.tr
+
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
@@ -54,7 +56,7 @@ fun GathererRulingsButton(scryfallId: String, name: String, gathererUrl: String?
         Holdable(holdMs = 3000, onTap = { show = true }, onHold = { openGatherer() }, onProgress = { progress = it }) {
             Icon(
                 Icons.AutoMirrored.Filled.MenuBook,
-                contentDescription = "Rulings (ťuk) / Gatherer (podržení)",
+                contentDescription = tr("Rulings (ťuk) / Gatherer (podržení)"),
                 tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.padding(10.dp).size(iconSize),
             )
@@ -76,14 +78,14 @@ fun GathererRulingsButton(scryfallId: String, name: String, gathererUrl: String?
                 Box(Modifier.heightIn(max = 380.dp).verticalScroll(rememberScrollState())) {
                     val r = rulings
                     when {
-                        r == null -> Text("Načítám…")
-                        r.isEmpty() -> Text("Žádné rulings k této kartě.")
+                        r == null -> Text(tr("Načítám…"))
+                        r.isEmpty() -> Text(tr("Žádné rulings k této kartě."))
                         else -> SymbolText(r.joinToString("\n\n"), MaterialTheme.typography.bodyMedium)
                     }
                 }
             },
-            dismissButton = { TextButton(onClick = { openGatherer() }) { Text("Otevřít Gatherer") } },
-            confirmButton = { TextButton(onClick = { show = false }) { Text("Zavřít") } },
+            dismissButton = { TextButton(onClick = { openGatherer() }) { Text(tr("Otevřít Gatherer")) } },
+            confirmButton = { TextButton(onClick = { show = false }) { Text(tr("Zavřít")) } },
         )
     }
 }

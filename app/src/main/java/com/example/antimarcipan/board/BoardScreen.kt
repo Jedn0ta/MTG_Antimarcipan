@@ -1,5 +1,7 @@
 package com.example.antimarcipan.board
 
+import com.example.antimarcipan.i18n.tr
+
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
@@ -120,10 +122,10 @@ fun BoardScreen() {
         var n by remember { mutableStateOf("") }
         GoldDialog(
             onDismissRequest = { showNew = false },
-            title = { Text("Nová skupina") },
-            text = { OutlinedTextField(n, { n = it }, singleLine = true, label = { Text("Název (např. Herna u Petra)") }) },
-            confirmButton = { TextButton(onClick = { vm.createGroup(n); showNew = false; openId = vm.current.value?.secretHex }) { Text("Založit") } },
-            dismissButton = { TextButton(onClick = { showNew = false }) { Text("Zrušit") } },
+            title = { Text(tr("Nová skupina")) },
+            text = { OutlinedTextField(n, { n = it }, singleLine = true, label = { Text(tr("Název (např. Herna u Petra)")) }) },
+            confirmButton = { TextButton(onClick = { vm.createGroup(n); showNew = false; openId = vm.current.value?.secretHex }) { Text(tr("Založit")) } },
+            dismissButton = { TextButton(onClick = { showNew = false }) { Text(tr("Zrušit")) } },
         )
     }
     showJoin?.let { init ->
@@ -131,21 +133,21 @@ fun BoardScreen() {
         val inv = BoardGroup.fromInvite(t)
         GoldDialog(
             onDismissRequest = { showJoin = null },
-            title = { Text("Připojit ke skupině") },
+            title = { Text(tr("Připojit ke skupině")) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     if (inv != null) Text("Skupina: ${inv.name}", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
-                    else Text("Vlož pozvánku (text obsahující AMGROUP1:…).", style = MaterialTheme.typography.bodySmall)
-                    OutlinedTextField(t, { t = it }, label = { Text("Pozvánka") }, maxLines = 3, modifier = Modifier.fillMaxWidth())
+                    else Text(tr("Vlož pozvánku (text obsahující AMGROUP1:…)."), style = MaterialTheme.typography.bodySmall)
+                    OutlinedTextField(t, { t = it }, label = { Text(tr("Pozvánka")) }, maxLines = 3, modifier = Modifier.fillMaxWidth())
                 }
             },
             confirmButton = {
                 TextButton(enabled = inv != null, onClick = {
-                    if (vm.joinGroup(t)) { Toast.makeText(ctx, "Připojeno", Toast.LENGTH_SHORT).show(); openId = vm.current.value?.secretHex }
+                    if (vm.joinGroup(t)) { Toast.makeText(ctx, tr("Připojeno"), Toast.LENGTH_SHORT).show(); openId = vm.current.value?.secretHex }
                     showJoin = null
-                }) { Text("Připojit") }
+                }) { Text(tr("Připojit")) }
             },
-            dismissButton = { TextButton(onClick = { showJoin = null }) { Text("Zrušit") } },
+            dismissButton = { TextButton(onClick = { showJoin = null }) { Text(tr("Zrušit")) } },
         )
     }
 }
@@ -169,7 +171,7 @@ internal fun GroupList(
             androidx.compose.material3.ExtendedFloatingActionButton(
                 onClick = onNew,
                 icon = { Icon(Icons.Filled.AddCircle, null) },
-                text = { Text("Nová skupina") },
+                text = { Text(tr("Nová skupina")) },
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = Color(0xFF1E1633),
             )
@@ -180,18 +182,18 @@ internal fun GroupList(
                 Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = 8.dp)) {
                     Box(Modifier.size(8.dp).clip(CircleShape).background(if (status.first > 0) Color(0xFF5FD38A) else Color(0xFFD98324)))
                     Text(
-                        if (status.first > 0) "  Online (${status.first}/${status.second} relaye)" else "  Připojuji…",
+                        if (status.first > 0) "  Online (${status.first}/${status.second} relaye)" else tr("  Připojuji…"),
                         Modifier.weight(1f), style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.6f),
                     )
-                    TextButton(onClick = onJoin) { Text("Mám pozvánku") }
+                    TextButton(onClick = onJoin) { Text(tr("Mám pozvánku")) }
                 }
             }
             if (groups.isEmpty()) item {
                 Column(Modifier.fillMaxWidth().padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text("💬", fontSize = androidx.compose.ui.unit.TextUnit(48f, androidx.compose.ui.unit.TextUnitType.Sp))
-                    Text("Zatím žádná skupina", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
+                    Text(tr("Zatím žádná skupina"), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
                     Text(
-                        "Založ skupinu pro svou partu a pozvi přátele. Píšete si, plánujete schůzky a hlasujete — šifrovaně, bez účtu.",
+                        tr("Založ skupinu pro svou partu a pozvi přátele. Píšete si, plánujete schůzky a hlasujete — šifrovaně, bez účtu."),
                         style = MaterialTheme.typography.bodySmall, textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                     )
                 }
@@ -212,7 +214,7 @@ internal fun GroupList(
                     Column(Modifier.weight(1f).padding(horizontal = 12.dp)) {
                         Text(g.name, style = MaterialTheme.typography.titleSmall, fontWeight = if (u > 0) FontWeight.Bold else FontWeight.Normal, maxLines = 1)
                         Text(
-                            last?.let { preview(it) } ?: "Zatím žádné zprávy",
+                            last?.let { preview(it) } ?: tr("Zatím žádné zprávy"),
                             style = MaterialTheme.typography.bodySmall, maxLines = 1,
                             color = if (u > 0) Color.White else Color.White.copy(alpha = 0.6f),
                         )
@@ -237,7 +239,7 @@ internal fun preview(p: Post): String = when (p.p.y) {
     "msg" -> (if (p.mine) "Ty: " else "${p.p.n}: ") + p.p.x
     "meet" -> "📅 ${p.p.n}: ${p.p.ti}"
     "poll" -> "📊 ${p.p.n}: ${p.p.ti}"
-    "meta" -> "✏️ přejmenováno na ${p.p.ti}"
+    "meta" -> tr("✏️ přejmenováno na {0}", (p.p.ti))
     else -> ""
 }
 

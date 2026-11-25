@@ -1,5 +1,7 @@
 package com.example.antimarcipan.manual
 
+import com.example.antimarcipan.i18n.tr
+
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.antimarcipan.data.CollectionRepository
@@ -61,7 +63,7 @@ class ManualAddViewModel(
                     _state.value = _state.value.copy(
                         results = emptyList(),
                         loading = false,
-                        message = "Nenalezeno / chyba hledání",
+                        message = tr("Nenalezeno / chyba hledání"),
                     )
                 }
         }
@@ -70,7 +72,7 @@ class ManualAddViewModel(
     fun addToCollection(card: ScryfallCard, onDone: (String) -> Unit) {
         viewModelScope.launch {
             repo.addToCollection(card)
-            onDone("Přidáno do sbírky: ${card.name}")
+            onDone(tr("Přidáno do sbírky: {0}", (card.name)))
         }
     }
 
@@ -85,8 +87,8 @@ class ManualAddViewModel(
         viewModelScope.launch {
             repo.addToCollection(card)
             deckRepo.addCard(deckId, card.id)
-            val deckName = deckRepo.deck(deckId)?.name ?: "balíku"
-            onDone("Přidáno do „$deckName“: ${card.name}")
+            val deckName = deckRepo.deck(deckId)?.name ?: tr("balíku")
+            onDone(tr("Přidáno do „{0}“: {1}", deckName, (card.name)))
         }
     }
 
@@ -102,7 +104,7 @@ class ManualAddViewModel(
      */
     fun importList(text: String, target: Target, deckId: Long?, onDone: (String) -> Unit) {
         val entries = parseCardList(text)
-        if (entries.isEmpty()) { onDone("Seznam je prázdný"); return }
+        if (entries.isEmpty()) { onDone(tr("Seznam je prázdný")); return }
         viewModelScope.launch {
             _importBusy.value = true
             val (found, missing) = repo.resolveNames(entries.map { it.second })
@@ -120,7 +122,7 @@ class ManualAddViewModel(
             }
             _importBusy.value = false
             onDone(
-                "Přidáno $added karet" +
+                tr("Přidáno {0} karet", added) +
                     if (missing.isEmpty()) "." else ". Nenalezeno (${missing.size}): " + missing.joinToString(", ")
             )
         }

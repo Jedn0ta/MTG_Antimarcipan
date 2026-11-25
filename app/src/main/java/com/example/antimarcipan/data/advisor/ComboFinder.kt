@@ -1,5 +1,7 @@
 package com.example.antimarcipan.data.advisor
 
+import com.example.antimarcipan.i18n.tr
+
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
@@ -52,8 +54,8 @@ object ComboFinder {
                 .post(body.toRequestBody("application/json".toMediaType()))
                 .build()
             val text = client.newCall(req).execute().use { r ->
-                if (!r.isSuccessful) error("Commander Spellbook odpověděl ${r.code}")
-                r.body?.string() ?: error("Prázdná odpověď")
+                if (!r.isSuccessful) error(tr("Commander Spellbook odpověděl {0}", (r.code)))
+                r.body?.string() ?: error(tr("Prázdná odpověď"))
             }
             val root = json.parseToJsonElement(text) as JsonObject
             val results = (root["results"] as? JsonObject) ?: root

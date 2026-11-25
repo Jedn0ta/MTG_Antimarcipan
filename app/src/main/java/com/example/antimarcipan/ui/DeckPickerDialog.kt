@@ -1,5 +1,7 @@
 package com.example.antimarcipan.ui
 
+import com.example.antimarcipan.i18n.tr
+
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -26,10 +28,10 @@ fun DeckPickerDialog(
 ) {
     com.example.antimarcipan.ui.GoldDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Přidat do balíku") },
+        title = { Text(tr("Přidat do balíku")) },
         text = {
             if (decks.isEmpty()) {
-                Text("Zatím nemáš žádný balík. Založ ho v záložce Balíky.")
+                Text(tr("Zatím nemáš žádný balík. Založ ho v záložce Balíky."))
             } else {
                 // Bez vlastního scrollu — GoldDialog už scrolluje (vnořený scroll padal)
                 Column {
@@ -47,6 +49,6 @@ fun DeckPickerDialog(
             }
         },
         confirmButton = {},
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Zavřít") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(tr("Zavřít")) } },
     )
 }

@@ -1,5 +1,7 @@
 package com.example.antimarcipan.decks
 
+import com.example.antimarcipan.i18n.tr
+
 import android.content.Context
 import android.net.Uri
 import androidx.lifecycle.ViewModel
@@ -65,14 +67,14 @@ class DeckViewModel(
     fun scanPoolPhoto(deckId: Long, context: android.content.Context, uri: android.net.Uri) {
         if (poolScanBusy.value) return
         poolScanBusy.value = true
-        poolScanStatus.value = "Fotka pořízena · čtu text…"
+        poolScanStatus.value = tr("Fotka pořízena · čtu text…")
         viewModelScope.launch {
             val cards = runCatching {
                 com.example.antimarcipan.scan.PhotoCardRecognizer(collectionRepo).recognize(context, uri) { d, t, f ->
-                    poolScanStatus.value = "Hledám karty $d/$t… (nalezeno $f)"
+                    poolScanStatus.value = tr("Hledám karty {0}/{1}… (nalezeno {2})", d, t, f)
                 }
             }.getOrElse {
-                poolScanStatus.value = "Fotku se nepodařilo načíst — zkus to znovu"
+                poolScanStatus.value = tr("Fotku se nepodařilo načíst — zkus to znovu")
                 poolScanBusy.value = false
                 return@launch
             }
@@ -80,8 +82,8 @@ class DeckViewModel(
                 collectionRepo.ensureUnsorted(it)
                 deckRepo.addToPool(deckId, it.id)
             }
-            poolScanStatus.value = if (cards.isEmpty()) "Žádnou kartu se nepodařilo rozpoznat — zkus ostřejší fotku"
-            else "Do poolu přidáno ${cards.size} karet: " + cards.groupingBy { it.name }.eachCount()
+            poolScanStatus.value = if (cards.isEmpty()) tr("Žádnou kartu se nepodařilo rozpoznat — zkus ostřejší fotku")
+            else tr("Do poolu přidáno {0} karet: ", (cards.size)) + cards.groupingBy { it.name }.eachCount()
                 .entries.joinToString(", ") { if (it.value > 1) "${it.value}× ${it.key}" else it.key }
             poolScanBusy.value = false
         }
@@ -91,14 +93,14 @@ class DeckViewModel(
     fun scanDeckPhoto(deckId: Long, context: android.content.Context, uri: android.net.Uri) {
         if (poolScanBusy.value) return
         poolScanBusy.value = true
-        poolScanStatus.value = "Fotka pořízena · čtu text…"
+        poolScanStatus.value = tr("Fotka pořízena · čtu text…")
         viewModelScope.launch {
             val cards = runCatching {
                 com.example.antimarcipan.scan.PhotoCardRecognizer(collectionRepo).recognize(context, uri) { d, t, f ->
-                    poolScanStatus.value = "Hledám karty $d/$t… (nalezeno $f)"
+                    poolScanStatus.value = tr("Hledám karty {0}/{1}… (nalezeno {2})", d, t, f)
                 }
             }.getOrElse {
-                poolScanStatus.value = "Fotku se nepodařilo načíst — zkus to znovu"
+                poolScanStatus.value = tr("Fotku se nepodařilo načíst — zkus to znovu")
                 poolScanBusy.value = false
                 return@launch
             }
@@ -106,8 +108,8 @@ class DeckViewModel(
                 collectionRepo.addToCollection(it)
                 deckRepo.addCard(deckId, it.id)
             }
-            poolScanStatus.value = if (cards.isEmpty()) "Žádnou kartu se nepodařilo rozpoznat — zkus ostřejší fotku"
-            else "Do balíku přidáno ${cards.size} karet: " + cards.groupingBy { it.name }.eachCount()
+            poolScanStatus.value = if (cards.isEmpty()) tr("Žádnou kartu se nepodařilo rozpoznat — zkus ostřejší fotku")
+            else tr("Do balíku přidáno {0} karet: ", (cards.size)) + cards.groupingBy { it.name }.eachCount()
                 .entries.joinToString(", ") { if (it.value > 1) "${it.value}× ${it.key}" else it.key }
             poolScanBusy.value = false
         }
@@ -151,7 +153,7 @@ class DeckViewModel(
 
     fun createDeck(name: String, format: DeckFormat = DeckFormat.FREEFORM, colors: String? = null, poolSet: String? = null) {
         viewModelScope.launch {
-            val id = deckRepo.createDeck(name.ifBlank { "Nový balík" }, format.code, colors, poolSet)
+            val id = deckRepo.createDeck(name.ifBlank { tr("Nový balík") }, format.code, colors, poolSet)
             selectedDeckId.value = id
         }
     }

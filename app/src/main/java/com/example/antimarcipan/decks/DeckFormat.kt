@@ -1,14 +1,16 @@
 package com.example.antimarcipan.decks
 
+import com.example.antimarcipan.i18n.tr
+
 import com.example.antimarcipan.data.local.CollectionCard
 
 enum class DeckFormat(val code: String, val label: String) {
     COMMANDER("COMMANDER", "Commander"),
-    SINGLETON("SINGLETON", "Jednokarťák"),
+    SINGLETON("SINGLETON", tr("Jednokarťák")),
     STANDARD("STANDARD", "Standard"),
     DRAFT("DRAFT", "Draft"),
     SEALED("SEALED", "Sealed deck"),
-    FREEFORM("FREEFORM", "Volný");
+    FREEFORM("FREEFORM", tr("Volný"));
 
     /** Minimální počet karet pro formát (0 = bez omezení). */
     val minCards: Int
@@ -33,11 +35,11 @@ enum class DeckFormat(val code: String, val label: String) {
     val rules: String
         get() = when (this) {
             COMMANDER -> "100 karet, singleton, 1 velitel"
-            SINGLETON -> "jednokarťák: 100+ karet, singleton, bez velitele"
-            STANDARD -> "min. 60 karet, max. 4 kopie, jen karty z aktuálních edic Standardu"
-            DRAFT -> "limited: 3 boostery, výběr karet po jedné, balík min. 40 karet"
-            SEALED -> "limited: 6 boosterů do poolu, balík min. 40 karet"
-            FREEFORM -> "bez omezení"
+            SINGLETON -> tr("jednokarťák: 100+ karet, singleton, bez velitele")
+            STANDARD -> tr("min. 60 karet, max. 4 kopie, jen karty z aktuálních edic Standardu")
+            DRAFT -> tr("limited: 3 boostery, výběr karet po jedné, balík min. 40 karet")
+            SEALED -> tr("limited: 6 boosterů do poolu, balík min. 40 karet")
+            FREEFORM -> tr("bez omezení")
         }
 
     companion object {

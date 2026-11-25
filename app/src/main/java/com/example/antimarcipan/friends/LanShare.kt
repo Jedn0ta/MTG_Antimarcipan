@@ -1,5 +1,7 @@
 package com.example.antimarcipan.friends
 
+import com.example.antimarcipan.i18n.tr
+
 import android.content.Context
 import android.net.nsd.NsdManager
 import android.net.nsd.NsdServiceInfo
@@ -34,7 +36,7 @@ object LanShare {
     val acks = MutableStateFlow<String?>(null)
     /** Přítel potvrdil moji žádost o přátelství (přidá se automaticky). */
     val friendAccepted = MutableStateFlow<List<FriendCard>>(emptyList())
-    private var myName: String = "Hráč"
+    private var myName: String = tr("Hráč")
     private var myPort: Int = 0
 
     private var server: ServerSocket? = null
@@ -63,7 +65,7 @@ object LanShare {
     fun start(context: Context, myName: String) {
         if (running.value) return
         running.value = true
-        this.myName = myName.ifBlank { "Hráč" }
+        this.myName = myName.ifBlank { tr("Hráč") }
         peers.value = emptyList()
         val mgr = context.getSystemService(Context.NSD_SERVICE) as NsdManager
         nsd = mgr
@@ -103,7 +105,7 @@ object LanShare {
 
         // 2) Oznámení: „jsem tady“
         val info = NsdServiceInfo().apply {
-            serviceName = PREFIX + Me.uid + "~" + myName.ifBlank { "Hráč" }.take(20)
+            serviceName = PREFIX + Me.uid + "~" + myName.ifBlank { tr("Hráč") }.take(20)
             serviceType = TYPE
             port = ss.localPort
         }
@@ -199,6 +201,6 @@ object LanShare {
     suspend fun respond(inc: LanIncoming, accepted: Boolean, deckName: String) {
         incoming.value = incoming.value - inc
         val port = inc.port ?: return
-        raw(inc.host, port, header() + "AMACK1:" + (if (accepted) "✓ $myName přijal/a balík „$deckName“" else "✗ $myName odmítl/a balík „$deckName“"))
+        raw(inc.host, port, header() + "AMACK1:" + (if (accepted) tr("✓ {0} přijal/a balík „{1}“", myName, deckName) else tr("✗ {0} odmítl/a balík „{1}“", myName, deckName)))
     }
 }

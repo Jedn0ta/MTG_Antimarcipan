@@ -1,5 +1,7 @@
 package com.example.antimarcipan.ui.filter
 
+import com.example.antimarcipan.i18n.tr
+
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -50,7 +52,7 @@ import androidx.compose.ui.unit.dp
 import com.example.antimarcipan.R
 
 private val COLOR_LABEL = mapOf(
-    "W" to "Bílá", "U" to "Modrá", "B" to "Černá", "R" to "Červená", "G" to "Zelená", "C" to "Bezbarvá",
+    "W" to tr("Bílá"), "U" to tr("Modrá"), "B" to tr("Černá"), "R" to tr("Červená"), "G" to tr("Zelená"), "C" to tr("Bezbarvá"),
 )
 private val RARITY_LABEL = mapOf(
     "common" to "Common", "uncommon" to "Uncommon", "rare" to "Rare", "mythic" to "Mythic",
@@ -88,16 +90,16 @@ fun CardFilterSheet(
             item {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) {
-                        Text("Filtr", style = MaterialTheme.typography.titleLarge)
+                        Text(tr("Filtr"), style = MaterialTheme.typography.titleLarge)
                         Text(
-                            "Odpovídá: $resultCount",
+                            tr("Odpovídá: {0}", resultCount),
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.primary,
                         )
                     }
                     if (state.isActive) {
                         TextButton(onClick = { onChange(CardFilterState()) }) {
-                            Text("Zrušit vše (${state.activeCount})")
+                            Text(tr("Zrušit vše ({0})", (state.activeCount)))
                         }
                     }
                 }
@@ -109,7 +111,7 @@ fun CardFilterSheet(
                     OutlinedTextField(
                         value = state.name,
                         onValueChange = { onChange(state.copy(name = it)) },
-                        label = { Text("Název karty") },
+                        label = { Text(tr("Název karty")) },
                         leadingIcon = { Icon(Icons.Filled.Search, null) },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
@@ -117,7 +119,7 @@ fun CardFilterSheet(
                     OutlinedTextField(
                         value = state.text,
                         onValueChange = { onChange(state.copy(text = it)) },
-                        label = { Text("Text karty (např. „draw a card“, „sacrifice“)") },
+                        label = { Text(tr("Text karty (např. „draw a card“, „sacrifice“)")) },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
                     )
@@ -126,7 +128,7 @@ fun CardFilterSheet(
 
             // --- Barvy ---
             if (options.colors.isNotEmpty()) item {
-                Section("Barva") {
+                Section(tr("Barva")) {
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         options.colors.forEach { c ->
                             val on = c in state.colors
@@ -197,7 +199,7 @@ fun CardFilterSheet(
 
             // --- Select-listy (mnoho hodnot) ---
             if (options.tribes.isNotEmpty()) item {
-                MultiSelectField("Tribal (typ stvoření)", options.tribes.map { it to it }, state.tribes) {
+                MultiSelectField(tr("Tribal (typ stvoření)"), options.tribes.map { it to it }, state.tribes) {
                     onChange(state.copy(tribes = it))
                 }
             }
@@ -290,7 +292,7 @@ fun MultiSelectField(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    if (selected.isEmpty()) "Vše (${options.size} možností)" else "Vybráno: ${selected.size}",
+                    if (selected.isEmpty()) tr("Vše ({0} možností)", (options.size)) else tr("Vybráno: {0}", (selected.size)),
                     Modifier.weight(1f),
                     style = MaterialTheme.typography.bodyMedium,
                 )
@@ -325,7 +327,7 @@ fun MultiSelectField(
                     OutlinedTextField(
                         value = query,
                         onValueChange = { query = it },
-                        placeholder = { Text("Hledat…") },
+                        placeholder = { Text(tr("Hledat…")) },
                         leadingIcon = { Icon(Icons.Filled.Search, null) },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
@@ -346,14 +348,14 @@ fun MultiSelectField(
                             HorizontalDivider()
                         }
                         if (shown.isEmpty()) item {
-                            Text("Nic neodpovídá.", Modifier.padding(8.dp))
+                            Text(tr("Nic neodpovídá."), Modifier.padding(8.dp))
                         }
                     }
                 }
             },
-            confirmButton = { TextButton(onClick = { open = false }) { Text("Hotovo") } },
+            confirmButton = { TextButton(onClick = { open = false }) { Text(tr("Hotovo")) } },
             dismissButton = {
-                if (selected.isNotEmpty()) TextButton(onClick = { onChange(emptySet()) }) { Text("Vymazat") }
+                if (selected.isNotEmpty()) TextButton(onClick = { onChange(emptySet()) }) { Text(tr("Vymazat")) }
             },
         )
     }

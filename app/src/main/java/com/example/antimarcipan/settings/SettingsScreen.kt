@@ -1,5 +1,7 @@
 package com.example.antimarcipan.settings
 
+import com.example.antimarcipan.i18n.tr
+
 import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -68,7 +70,7 @@ fun SettingsScreen(
                 Modifier.fillMaxWidth().padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                Text("Aktualizace aplikace", style = MaterialTheme.typography.titleMedium)
+                Text(tr("Aktualizace aplikace"), style = MaterialTheme.typography.titleMedium)
                 Text(
                     "Verze ${BuildConfig.VERSION_NAME} · build ${state.currentSha}",
                     style = MaterialTheme.typography.bodySmall,
@@ -81,7 +83,7 @@ fun SettingsScreen(
                 )
 
                 when (state.phase) {
-                    UpdatePhase.CHECKING -> RowProgress("Zjišťuji dostupnou verzi…")
+                    UpdatePhase.CHECKING -> RowProgress(tr("Zjišťuji dostupnou verzi…"))
                     UpdatePhase.DOWNLOADING -> {
                         val p = state.downloadProgress
                         Text(
@@ -103,7 +105,7 @@ fun SettingsScreen(
                 val status = state.status
                 if (status is UpdateStatus.Available && state.phase != UpdatePhase.DOWNLOADING) {
                     Text(
-                        "Nová verze: ${status.versionName ?: status.latestSha} " +
+                        tr("Nová verze: {0} ", (status.versionName ?: status.latestSha)) +
                             "(${(status.sizeBytes / 1_000_000.0).roundToInt()} MB)",
                         style = MaterialTheme.typography.bodyMedium,
                     )
@@ -129,35 +131,35 @@ fun SettingsScreen(
                                 if (!ok) {
                                     Toast.makeText(
                                         context,
-                                        "Povol instalaci z neznámých zdrojů a zkus to znovu.",
+                                        tr("Povol instalaci z neznámých zdrojů a zkus to znovu."),
                                         Toast.LENGTH_LONG,
                                     ).show()
                                     context.startActivity(vm.unknownSourcesSettingsIntent())
                                 }
                             },
                             modifier = Modifier.fillMaxWidth(),
-                        ) { Text("Nainstalovat") }
+                        ) { Text(tr("Nainstalovat")) }
                     }
                     state.status is UpdateStatus.Available &&
                         state.phase != UpdatePhase.DOWNLOADING -> {
                         Button(
                             onClick = vm::downloadUpdate,
                             modifier = Modifier.fillMaxWidth(),
-                        ) { Text("Stáhnout a aktualizovat") }
+                        ) { Text(tr("Stáhnout a aktualizovat")) }
                     }
                     state.phase == UpdatePhase.IDLE -> {
                         Button(
                             onClick = vm::checkForUpdate,
                             modifier = Modifier.fillMaxWidth(),
-                        ) { Text("Zkontrolovat aktualizaci") }
+                        ) { Text(tr("Zkontrolovat aktualizaci")) }
                     }
                 }
             }
         }
 
         Text(
-            "Aktualizace stahuje APK přímo z GitHubu a spustí systémový instalátor. " +
-                "Při prvním použití Android vyzve k povolení instalace z této aplikace.",
+            tr("Aktualizace stahuje APK přímo z GitHubu a spustí systémový instalátor. ") +
+                tr("Při prvním použití Android vyzve k povolení instalace z této aplikace."),
             Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
@@ -196,9 +198,9 @@ private fun AppearanceCard(vm: SettingsViewModel) {
             Modifier.fillMaxWidth().padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            Text("Pozadí aplikace", style = MaterialTheme.typography.titleMedium)
+            Text(tr("Pozadí aplikace"), style = MaterialTheme.typography.titleMedium)
             Text(
-                "Krajina za celou aplikací. Vyber si podle nálady — nebo žádné.",
+                tr("Krajina za celou aplikací. Vyber si podle nálady — nebo žádné."),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
             )
@@ -251,7 +253,7 @@ private fun BackgroundSwatch(
                 Box(Modifier.fillMaxWidth().height(108.dp)
                     .clip(RoundedCornerShape(10.dp))) {
                     Text(
-                        "Bez\npozadí",
+                        tr("Bez\npozadí"),
                         Modifier.align(Alignment.Center),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
@@ -278,11 +280,11 @@ private fun AboutCard(sha: String) {
             Modifier.fillMaxWidth().padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            Text("O aplikaci", style = MaterialTheme.typography.titleMedium)
+            Text(tr("O aplikaci"), style = MaterialTheme.typography.titleMedium)
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Image(
                     painter = painterResource(R.drawable.splash_icon),
-                    contentDescription = "Ikona aplikace",
+                    contentDescription = tr("Ikona aplikace"),
                     modifier = Modifier.size(64.dp).clip(RoundedCornerShape(14.dp))
                         .background(androidx.compose.ui.graphics.Brush.radialGradient(listOf(androidx.compose.ui.graphics.Color(0xFF3A2C72), androidx.compose.ui.graphics.Color(0xFF140F28)))),
                 )
@@ -293,14 +295,14 @@ private fun AboutCard(sha: String) {
                 )
             }
             Text(
-                "Průvodce aplikací: krátký přehled, jak jednotlivé části fungují.",
+                tr("Průvodce aplikací: krátký přehled, jak jednotlivé části fungují."),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
             )
             Button(
                 onClick = { showGuide = true },
                 modifier = Modifier.fillMaxWidth(),
-            ) { Text("Spustit průvodce") }
+            ) { Text(tr("Spustit průvodce")) }
 
             // Log pádů
             val ctx = androidx.compose.ui.platform.LocalContext.current
@@ -308,13 +310,13 @@ private fun AboutCard(sha: String) {
             var logText by remember { mutableStateOf(logFile.takeIf { it.exists() }?.readText()) }
             if (logText.isNullOrBlank()) {
                 Text(
-                    "Log pádů: žádný pád nezaznamenán.",
+                    tr("Log pádů: žádný pád nezaznamenán."),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                 )
             } else {
                 Text(
-                    "Log pádů: zaznamenáno ${logText!!.split("=== ").count { it.isNotBlank() }} pádů. Zkopíruj ho a pošli vývojáři.",
+                    tr("Log pádů: zaznamenáno {0} pádů. Zkopíruj ho a pošli vývojáři.", (logText!!.split("=== ").count { it.isNotBlank() })),
                     style = MaterialTheme.typography.bodySmall,
                     color = androidx.compose.ui.graphics.Color(0xFFFF9A9A),
                 )
@@ -322,15 +324,15 @@ private fun AboutCard(sha: String) {
                     Button(
                         onClick = {
                             val cm = ctx.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
-                            cm.setPrimaryClip(android.content.ClipData.newPlainText("Grimoar crash log", logText))
-                            android.widget.Toast.makeText(ctx, "Log zkopírován do schránky", android.widget.Toast.LENGTH_SHORT).show()
+                            cm.setPrimaryClip(android.content.ClipData.newPlainText(tr("Grimoar crash log"), logText))
+                            android.widget.Toast.makeText(ctx, tr("Log zkopírován do schránky"), android.widget.Toast.LENGTH_SHORT).show()
                         },
                         modifier = Modifier.weight(1f),
-                    ) { Text("Zkopírovat log") }
+                    ) { Text(tr("Zkopírovat log")) }
                     androidx.compose.material3.OutlinedButton(
                         onClick = { logFile.delete(); logText = null },
                         modifier = Modifier.weight(1f),
-                    ) { Text("Smazat log") }
+                    ) { Text(tr("Smazat log")) }
                 }
             }
         }
@@ -364,22 +366,22 @@ private fun BackupCard(vm: SettingsViewModel) {
             Modifier.fillMaxWidth().padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            Text("Záloha dat", style = MaterialTheme.typography.titleMedium)
+            Text(tr("Záloha dat"), style = MaterialTheme.typography.titleMedium)
             Text(
-                "Sbírka i balíky se ukládají automaticky a přežijí aktualizaci. " +
-                    "Android je navíc zálohuje do cloudu (obnoví se po přeinstalaci). " +
-                    "Tady si můžeš udělat vlastní zálohu do souboru.",
+                tr("Sbírka i balíky se ukládají automaticky a přežijí aktualizaci. ") +
+                    tr("Android je navíc zálohuje do cloudu (obnoví se po přeinstalaci). ") +
+                    tr("Tady si můžeš udělat vlastní zálohu do souboru."),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
             )
             Button(
                 onClick = { exportLauncher.launch(vm.suggestedBackupName()) },
                 modifier = Modifier.fillMaxWidth(),
-            ) { Text("Zálohovat do souboru") }
+            ) { Text(tr("Zálohovat do souboru")) }
             Button(
                 onClick = { importLauncher.launch(arrayOf("application/octet-stream", "*/*")) },
                 modifier = Modifier.fillMaxWidth(),
-            ) { Text("Obnovit ze zálohy") }
+            ) { Text(tr("Obnovit ze zálohy")) }
         }
     }
 }
@@ -409,10 +411,10 @@ private fun ThumbSizeCard() {
     val sample = cards.take(6)
     Card(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp)) {
         Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text("Velikost náhledů karet", style = MaterialTheme.typography.titleMedium)
+            Text(tr("Velikost náhledů karet"), style = MaterialTheme.typography.titleMedium)
 
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("Seznam", Modifier.width(70.dp), style = MaterialTheme.typography.labelLarge)
+                Text(tr("Seznam"), Modifier.width(70.dp), style = MaterialTheme.typography.labelLarge)
                 androidx.compose.material3.Slider(
                     value = listScale, onValueChange = { settings.setListThumb((it * 10).toInt() / 10f) },
                     valueRange = 0.6f..1.8f, steps = 11, modifier = Modifier.weight(1f),
@@ -428,13 +430,13 @@ private fun ThumbSizeCard() {
                         .background(androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.2f)).padding(8.dp),
                     verticalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
-                    if (sample.isEmpty()) Text("Náhled se ukáže, až budeš mít karty ve sbírce.", style = MaterialTheme.typography.bodySmall)
+                    if (sample.isEmpty()) Text(tr("Náhled se ukáže, až budeš mít karty ve sbírce."), style = MaterialTheme.typography.bodySmall)
                     sample.take(2).forEach { com.example.antimarcipan.ui.CardListInfo(card = it) }
                 }
             }
 
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("Mřížka", Modifier.width(70.dp), style = MaterialTheme.typography.labelLarge)
+                Text(tr("Mřížka"), Modifier.width(70.dp), style = MaterialTheme.typography.labelLarge)
                 androidx.compose.material3.Slider(
                     value = gridScale, onValueChange = { settings.setGridThumb((it * 10).toInt() / 10f) },
                     valueRange = 0.6f..1.8f, steps = 11, modifier = Modifier.weight(1f),
@@ -452,7 +454,7 @@ private fun ThumbSizeCard() {
                     com.example.antimarcipan.ui.InteractiveThumb(c, width = (88 * gridScale).dp, height = (123 * gridScale).dp)
                 }
             }
-            TextButton(onClick = { settings.setListThumb(1f); settings.setGridThumb(1f) }) { Text("Výchozí velikost") }
+            TextButton(onClick = { settings.setListThumb(1f); settings.setGridThumb(1f) }) { Text(tr("Výchozí velikost")) }
         }
     }
 }
@@ -469,15 +471,15 @@ private fun SupportCard() {
         Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text("☕ Kafe pro autora", style = MaterialTheme.typography.titleMedium)
             if (supporter) {
-                Text("Díky! Jsi Mecenáš — kamarádi uvidí u tvých zpráv na Nástěnce zlatou hvězdičku ✦.", style = MaterialTheme.typography.bodySmall)
+                Text(tr("Díky! Jsi Mecenáš — kamarádi uvidí u tvých zpráv na Nástěnce zlatou hvězdičku ✦."), style = MaterialTheme.typography.bodySmall)
             } else {
                 Text(
-                    "Grimoar je zdarma a všechny funkce zůstanou zdarma. Pokud se ti líbí, můžeš autorovi koupit kafe. " +
-                        "Jako poděkování dostaneš zlatou hvězdičku ✦ u svých zpráv na Nástěnce — nic víc, jen pro radost.",
+                    tr("Grimoar je zdarma a všechny funkce zůstanou zdarma. Pokud se ti líbí, můžeš autorovi koupit kafe. ") +
+                        tr("Jako poděkování dostaneš zlatou hvězdičku ✦ u svých zpráv na Nástěnce — nic víc, jen pro radost."),
                     style = MaterialTheme.typography.bodySmall,
                 )
                 androidx.compose.material3.Button(onClick = { activity?.let { com.example.antimarcipan.support.SupportStore.buy(it) } }) {
-                    Text("Koupit kafe" + (price?.let { " · $it" } ?: ""))
+                    Text(tr("Koupit kafe") + (price?.let { " · $it" } ?: ""))
                 }
             }
             msg?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary) }

@@ -1,5 +1,7 @@
 package com.example.antimarcipan.scan
 
+import com.example.antimarcipan.i18n.tr
+
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -110,15 +112,15 @@ fun ScanScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Text(
-                    "Potřebuju přístup ke kameře",
+                    tr("Potřebuju přístup ke kameře"),
                     style = MaterialTheme.typography.titleMedium,
                     textAlign = TextAlign.Center,
                 )
                 Text(
                     if (deniedOnce)
-                        "Kamera je zakázaná. Povol ji tlačítkem níž, nebo přes nastavení aplikace, pokud se okno už neukazuje."
+                        tr("Kamera je zakázaná. Povol ji tlačítkem níž, nebo přes nastavení aplikace, pokud se okno už neukazuje.")
                     else
-                        "Grimoar skenuje karty foťákem a čte jejich jména.",
+                        tr("Grimoar skenuje karty foťákem a čte jejich jména."),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                     textAlign = TextAlign.Center,
@@ -128,7 +130,7 @@ fun ScanScreen(
                     onClick = { launcher.launch(Manifest.permission.CAMERA) },
                     modifier = Modifier.fillMaxWidth(),
                 ) {
-                    Text("Povolit kameru")
+                    Text(tr("Povolit kameru"))
                 }
                 // Vždy k dispozici — když je oprávnění zakázané natrvalo,
                 // systémové okno se už neukáže a tohle je jediná cesta.
@@ -142,7 +144,7 @@ fun ScanScreen(
                     },
                     modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                 ) {
-                    Text("Otevřít nastavení aplikace")
+                    Text(tr("Otevřít nastavení aplikace"))
                 }
             }
         } else if (!scanning) {
@@ -153,12 +155,12 @@ fun ScanScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Text(
-                    "Skenování karet",
+                    tr("Skenování karet"),
                     style = MaterialTheme.typography.titleMedium,
                     textAlign = TextAlign.Center,
                 )
                 Text(
-                    "Fotoaparát se zapne až po stisknutí tlačítka.",
+                    tr("Fotoaparát se zapne až po stisknutí tlačítka."),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                     textAlign = TextAlign.Center,
@@ -169,7 +171,7 @@ fun ScanScreen(
                     modifier = Modifier.fillMaxWidth(),
                 ) {
                     Icon(Icons.Filled.CameraAlt, contentDescription = null)
-                    Text("  Spustit skenování")
+                    Text(tr("  Spustit skenování"))
                 }
                 Button(
                     onClick = { vm.setMultiScan(true); scanning = true },
@@ -179,7 +181,7 @@ fun ScanScreen(
                         contentColor = androidx.compose.ui.graphics.Color.White,
                     ),
                 ) {
-                    Text("Multisken z fotky (víc karet naráz)")
+                    Text(tr("Multisken z fotky (víc karet naráz)"))
                 }
             }
         } else {
@@ -206,7 +208,7 @@ fun ScanScreen(
                     Icon(
                         if (torch) androidx.compose.material.icons.Icons.Filled.FlashOn
                         else androidx.compose.material.icons.Icons.Filled.FlashOff,
-                        contentDescription = if (torch) "Vypnout světlo" else "Zapnout světlo",
+                        contentDescription = if (torch) tr("Vypnout světlo") else tr("Zapnout světlo"),
                     )
                 }
                 if (state.cornerMode) {
@@ -219,7 +221,7 @@ fun ScanScreen(
                         contentAlignment = Alignment.BottomCenter,
                     ) {
                         Text(
-                            "levý spodní roh: 123/280 R · SET • JAZYK",
+                            tr("levý spodní roh: 123/280 R · SET • JAZYK"),
                             Modifier.padding(4.dp),
                             style = MaterialTheme.typography.labelSmall,
                             color = androidx.compose.ui.graphics.Color.White,
@@ -253,17 +255,17 @@ fun ScanScreen(
                     com.example.antimarcipan.ui.GoldChip(
                         selected = !state.multiScan && !state.cornerMode,
                         onClick = { vm.setMultiScan(false) },
-                        label = { Text("Jméno") },
+                        label = { Text(tr("Jméno")) },
                     )
                     com.example.antimarcipan.ui.GoldChip(
                         selected = state.cornerMode,
                         onClick = { vm.setCornerMode(true) },
-                        label = { Text("Roh") },
+                        label = { Text(tr("Roh")) },
                     )
                     com.example.antimarcipan.ui.GoldChip(
                         selected = state.multiScan,
                         onClick = { if (!state.multiScan) vm.setMultiScan(true) },
-                        label = { Text("Multisken") },
+                        label = { Text(tr("Multisken")) },
                     )
                 }
                 androidx.compose.material3.FilledIconButton(
@@ -274,7 +276,7 @@ fun ScanScreen(
                         contentColor = androidx.compose.ui.graphics.Color.White,
                     ),
                 ) {
-                    Icon(androidx.compose.material.icons.Icons.Filled.Close, contentDescription = "Vypnout skener")
+                    Icon(androidx.compose.material.icons.Icons.Filled.Close, contentDescription = tr("Vypnout skener"))
                 }
             }
 
@@ -384,7 +386,7 @@ private fun AddedConfirmation(tick: Int, text: String?, modifier: Modifier = Mod
                     modifier = Modifier.size(56.dp),
                 )
                 Text(
-                    text ?: "Uloženo do sbírky",
+                    text ?: tr("Uloženo do sbírky"),
                     color = androidx.compose.ui.graphics.Color.White,
                     style = MaterialTheme.typography.titleMedium,
                 )
@@ -406,14 +408,14 @@ private fun MultiScanBar(
             Text(state.status, style = MaterialTheme.typography.bodyMedium)
 
             Text(
-                "Rozlož karty vedle sebe lícem nahoru, aby byly vidět názvy, a vyfoť je. Fotka se zpracuje až po vyfocení.",
+                tr("Rozlož karty vedle sebe lícem nahoru, aby byly vidět názvy, a vyfoť je. Fotka se zpracuje až po vyfocení."),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
             )
             if (state.capturing) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
-                    Text("  Zpracovávám fotku…", style = MaterialTheme.typography.labelLarge)
+                    Text(tr("  Zpracovávám fotku…"), style = MaterialTheme.typography.labelLarge)
                 }
             } else Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Button(onClick = onCapture, modifier = Modifier.weight(1f)) {
@@ -421,13 +423,13 @@ private fun MultiScanBar(
                     Text(if (state.rescanSlot != null) "  Vyfotit kartu" else "  Vyfotit karty")
                 }
                 OutlinedButton(onClick = onGallery, modifier = Modifier.weight(1f)) {
-                    Text("Z galerie")
+                    Text(tr("Z galerie"))
                 }
             }
 
             if (state.rescanSlot != null) {
                 OutlinedButton(onClick = onCancelRescan, modifier = Modifier.fillMaxWidth()) {
-                    Text("Zrušit přenačtení")
+                    Text(tr("Zrušit přenačtení"))
                 }
             } else {
                 OutlinedButton(
@@ -464,7 +466,7 @@ private fun MultiScanReviewSheet(
                 modifier = Modifier.padding(bottom = 4.dp),
             )
             Text(
-                "Špatně rozpoznanou kartu přenačti nebo odeber. Pak vyber, kam je uložit.",
+                tr("Špatně rozpoznanou kartu přenačti nebo odeber. Pak vyber, kam je uložit."),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                 modifier = Modifier.padding(bottom = 8.dp),
@@ -493,10 +495,10 @@ private fun MultiScanReviewSheet(
                             }
                         }
                         androidx.compose.material3.IconButton(onClick = { onRescan(item.slotId) }) {
-                            Icon(Icons.Filled.Refresh, contentDescription = "Přenačíst")
+                            Icon(Icons.Filled.Refresh, contentDescription = tr("Přenačíst"))
                         }
                         androidx.compose.material3.IconButton(onClick = { onRemove(item.slotId) }) {
-                            Icon(Icons.Filled.Close, contentDescription = "Odebrat")
+                            Icon(Icons.Filled.Close, contentDescription = tr("Odebrat"))
                         }
                     }
                     HorizontalDivider()
@@ -510,18 +512,18 @@ private fun MultiScanReviewSheet(
                     onClick = onToCollection,
                     enabled = pending.isNotEmpty(),
                     modifier = Modifier.fillMaxWidth(),
-                ) { Text("Do sbírky (${pending.size})") }
+                ) { Text(tr("Do sbírky ({0})", (pending.size))) }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedButton(
                         onClick = { showDeckPicker = true },
                         enabled = pending.isNotEmpty() && decks.isNotEmpty(),
                         modifier = Modifier.weight(1f),
-                    ) { Text("Do balíku") }
+                    ) { Text(tr("Do balíku")) }
                     OutlinedButton(
                         onClick = onToWishlist,
                         enabled = pending.isNotEmpty(),
                         modifier = Modifier.weight(1f),
-                    ) { Text("Na wishlist") }
+                    ) { Text(tr("Na wishlist")) }
                 }
             }
         }
@@ -593,7 +595,7 @@ private fun CandidateCard(
             },
             modifier = Modifier.padding(horizontal = 4.dp),
         ) {
-            Text(if (showEditions) "Skrýt edice" else "Jiná edice")
+            Text(if (showEditions) tr("Skrýt edice") else tr("Jiná edice"))
         }
         if (showEditions) {
             if (state.loadingPrints) {
@@ -630,10 +632,10 @@ private fun CandidateCard(
             // Dvě tlačítka na řádek, ať se nepřekrývají ani na úzkém displeji
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Button(onClick = onAddCollection, modifier = Modifier.weight(1f), contentPadding = pad) {
-                    Text("Do sbírky", maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, style = MaterialTheme.typography.labelLarge)
+                    Text(tr("Do sbírky"), maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, style = MaterialTheme.typography.labelLarge)
                 }
                 OutlinedButton(onClick = { showDeckPicker = true }, modifier = Modifier.weight(1f), contentPadding = pad) {
-                    Text("Do balíku", maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, style = MaterialTheme.typography.labelLarge)
+                    Text(tr("Do balíku"), maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, style = MaterialTheme.typography.labelLarge)
                 }
             }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -645,7 +647,7 @@ private fun CandidateCard(
                 }
             }
             TextButton(onClick = onDismiss, modifier = Modifier.fillMaxWidth()) {
-                Text("Skenovat dál", style = MaterialTheme.typography.labelLarge)
+                Text(tr("Skenovat dál"), style = MaterialTheme.typography.labelLarge)
             }
         }
     }

@@ -1,5 +1,7 @@
 package com.example.antimarcipan.synergy
 
+import com.example.antimarcipan.i18n.tr
+
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.antimarcipan.data.DeckRepository
@@ -84,7 +86,7 @@ class SynergyViewModel(
                 if (cards.isEmpty()) {
                     _state.value = SynergyUiState(
                         deckName = deck?.name,
-                        error = "Balík je prázdný. Přidej karty v záložce Balíky.",
+                        error = tr("Balík je prázdný. Přidej karty v záložce Balíky."),
                     )
                     return@launch
                 }
@@ -109,10 +111,10 @@ class SynergyViewModel(
                         val frag = report.topThemes.firstNotNullOfOrNull { themeQuery[it] }
                         val recs = synergyRepo.suggestFromScryfall(report.colors, frag, exclude)
                             .getOrElse { emptyList() }
-                        recs to "Scryfall · barvy + téma"
+                        recs to tr("Scryfall · barvy + téma")
                     }
                 } catch (e: Exception) {
-                    emptyList<SynergyRecommendation>() to "Návrhy se nenačetly"
+                    emptyList<SynergyRecommendation>() to tr("Návrhy se nenačetly")
                 }
 
                 _state.value = SynergyUiState(
@@ -157,7 +159,7 @@ class SynergyViewModel(
                 } catch (_: Exception) { /* obrázky jsou volitelné */ }
             } catch (e: Exception) {
                 _state.value = SynergyUiState(
-                    error = "Analýza selhala: ${e.message ?: e.javaClass.simpleName}",
+                    error = tr("Analýza selhala: {0}", (e.message ?: e.javaClass.simpleName)),
                 )
             }
         }

@@ -1,5 +1,7 @@
 package com.example.antimarcipan.friends
 
+import com.example.antimarcipan.i18n.tr
+
 import android.content.Context
 import android.graphics.Bitmap
 import android.util.Base64
@@ -48,7 +50,7 @@ object Me {
     }
 
     val uid: String get() = profile.value.uid
-    val name: String get() = profile.value.name.ifBlank { "Hráč" }
+    val name: String get() = profile.value.name.ifBlank { tr("Hráč") }
 }
 
 /** Kód přítele (QR / odkaz): AMFRIEND1:<base64 JSON>. */
@@ -66,7 +68,7 @@ object FriendCode {
     }
 
     fun inviteText(): String =
-        "Přidej si mě jako přítele v Grimoaru (${Me.name}). Zkopíruj tuto zprávu a otevři Grimoar → Přátelé.\n" + mine()
+        tr("Přidej si mě jako přítele v Grimoaru ({0}). Zkopíruj tuto zprávu a otevři Grimoar → Přátelé.\n", (Me.name)) + mine()
 
     fun decode(text: String): FriendCard? = runCatching {
         val i = text.indexOf(PREFIX); if (i < 0) return null

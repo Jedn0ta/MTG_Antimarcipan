@@ -1,5 +1,7 @@
 package com.example.antimarcipan.claude
 
+import com.example.antimarcipan.i18n.tr
+
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -29,7 +31,7 @@ object PcBridge {
     fun start(text: String) {
         prompt = text
         if (server != null) return
-        val ip = localIp() ?: run { url.value = "Telefon není připojený k Wi-Fi"; return }
+        val ip = localIp() ?: run { url.value = tr("Telefon není připojený k Wi-Fi"); return }
         token = (1..6).map { "abcdefghjkmnpqrstuvwxyz23456789".random() }.joinToString("")
         val ss = runCatching { ServerSocket(8765) }.getOrElse { ServerSocket(0) }
         server = ss
@@ -82,7 +84,7 @@ object PcBridge {
                 incoming.value = String(buf, 0, read, Charsets.UTF_8)
                 reply("200 OK", "text/plain", "ok")
             }
-            else -> reply("404 Not Found", "text/plain", "Grimoar: neplatná adresa")
+            else -> reply("404 Not Found", "text/plain", tr("Grimoar: neplatná adresa"))
         }
     }
 

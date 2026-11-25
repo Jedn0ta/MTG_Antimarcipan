@@ -1,5 +1,7 @@
 package com.example.antimarcipan.data.settings
 
+import com.example.antimarcipan.i18n.tr
+
 import android.content.Context
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -7,10 +9,10 @@ import kotlinx.coroutines.flow.asStateFlow
 
 /** Krajinná pozadí aplikace (5 barev MTG + pustina), volitelná v nastavení. */
 enum class AppBackground(val code: String, val label: String) {
-    NONE("none", "Žádné"),
-    PLAINS("plains", "Pláně"),
+    NONE("none", tr("Žádné")),
+    PLAINS("plains", tr("Pláně")),
     ISLAND("island", "Ostrov"),
-    SWAMP("swamp", "Bažina"),
+    SWAMP("swamp", tr("Bažina")),
     MOUNTAIN("mountain", "Hory"),
     FOREST("forest", "Les"),
     WASTES("wastes", "Pustina");

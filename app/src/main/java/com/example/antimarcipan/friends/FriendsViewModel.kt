@@ -1,5 +1,7 @@
 package com.example.antimarcipan.friends
 
+import com.example.antimarcipan.i18n.tr
+
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -69,7 +71,7 @@ class FriendsViewModel(
         val deck = deckRepo.deck(deckId) ?: return ""
         val cards = deckRepo.deckCardsWithQty(deckId).first()
         val shared = SharedDeck(
-            owner = myName.value.ifBlank { "Kamarád" },
+            owner = myName.value.ifBlank { tr("Kamarád") },
             uid = Me.uid,
             name = deck.name,
             format = deck.format,
@@ -83,7 +85,7 @@ class FriendsViewModel(
             },
         )
         val list = cards.sortedBy { it.card.name }.joinToString("\n") { "${it.deckQuantity} ${it.card.name}" }
-        return "Balík „${deck.name}“ od ${shared.owner} (${shared.total} karet) — otevři v appce Grimoar:\n\n$list\n\n" +
+        return tr("Balík „{0}“ od {1} ({2} karet) — otevři v appce Grimoar:\n\n{3}\n\n", (deck.name), (shared.owner), (shared.total), list) +
             DeckShareCodec.encode(shared)
     }
 

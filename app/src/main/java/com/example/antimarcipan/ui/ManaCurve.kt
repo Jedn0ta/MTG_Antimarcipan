@@ -1,5 +1,7 @@
 package com.example.antimarcipan.ui
 
+import com.example.antimarcipan.i18n.tr
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -43,7 +45,7 @@ fun ManaCurveCard(curve: List<Pair<Int, Int>>, avgMv: Double, lands: Int, compac
         Column(Modifier.padding(if (compact) 10.dp else 14.dp)) {
             Text("Mana curve", style = if (compact) MaterialTheme.typography.titleSmall else MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
             Text(
-                "Průměrná MV %.2f · kouzel %d · zemí %d".format(
+                tr("Průměrná MV %.2f · kouzel %d · zemí %d").format(
                     avgMv, curve.sumOf { it.first + it.second }, lands,
                 ),
                 style = MaterialTheme.typography.bodySmall,
@@ -94,8 +96,8 @@ fun ManaCurveCard(curve: List<Pair<Int, Int>>, avgMv: Double, lands: Int, compac
                 Modifier.padding(top = 8.dp),
                 horizontalArrangement = Arrangement.spacedBy(14.dp),
             ) {
-                Text("■ Tvorové", color = creature, style = MaterialTheme.typography.labelMedium)
-                Text("■ Ostatní kouzla", color = other, style = MaterialTheme.typography.labelMedium)
+                Text(tr("■ Tvorové"), color = creature, style = MaterialTheme.typography.labelMedium)
+                Text(tr("■ Ostatní kouzla"), color = other, style = MaterialTheme.typography.labelMedium)
             }
         }
     }

@@ -1,5 +1,7 @@
 package com.example.antimarcipan.board
 
+import com.example.antimarcipan.i18n.tr
+
 import android.content.Context
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -79,7 +81,7 @@ object Board {
     }
 
     private fun myName(): String =
-        ctx.getSharedPreferences("friends", Context.MODE_PRIVATE).getString("myName", "")?.ifBlank { null } ?: "Hráč"
+        ctx.getSharedPreferences("friends", Context.MODE_PRIVATE).getString("myName", "")?.ifBlank { null } ?: tr("Hráč")
 
     private fun loadGroups(): List<BoardGroup> =
         (prefs.getString("groups", "") ?: "").lines().mapNotNull { l ->

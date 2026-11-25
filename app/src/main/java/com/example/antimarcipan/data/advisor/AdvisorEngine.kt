@@ -1,5 +1,7 @@
 package com.example.antimarcipan.data.advisor
 
+import com.example.antimarcipan.i18n.tr
+
 import com.example.antimarcipan.data.colorIdentityList
 import com.example.antimarcipan.data.local.CollectionCard
 
@@ -35,8 +37,8 @@ object AdvisorEngine {
         if (deck.isEmpty()) {
             return listOf(
                 AdvisorTip(
-                    "Prázdný balík",
-                    "Přidej karty do balíku a Grimoar ti řekne, co doladit.",
+                    tr("Prázdný balík"),
+                    tr("Přidej karty do balíku a Grimoar ti řekne, co doladit."),
                     TipLevel.TIP,
                 )
             )
@@ -52,18 +54,18 @@ object AdvisorEngine {
         // 1) Land count
         tips += when {
             landCount < TARGET_LANDS - 3 -> AdvisorTip(
-                "Málo zemí ($landCount)",
-                "Cílíš kolem $TARGET_LANDS zemí. S tímhle počtem budeš často bez many — přidej ${TARGET_LANDS - landCount} zemí nebo ramp.",
+                tr("Málo zemí ({0})", landCount),
+                tr("Cílíš kolem {0} zemí. S tímhle počtem budeš často bez many — přidej {1} zemí nebo ramp.", TARGET_LANDS, (TARGET_LANDS - landCount)),
                 TipLevel.WARN,
             )
             landCount > TARGET_LANDS + 4 -> AdvisorTip(
-                "Hodně zemí ($landCount)",
-                "Můžeš pár zemí vyměnit za ramp nebo card draw, ať neflodíš prázdné tahy.",
+                tr("Hodně zemí ({0})", landCount),
+                tr("Můžeš pár zemí vyměnit za ramp nebo card draw, ať neflodíš prázdné tahy."),
                 TipLevel.WARN,
             )
             else -> AdvisorTip(
-                "Zem v pohodě ($landCount)",
-                "Počet zemí sedí kolem doporučených $TARGET_LANDS.",
+                tr("Zem v pohodě ({0})", landCount),
+                tr("Počet zemí sedí kolem doporučených {0}.", TARGET_LANDS),
                 TipLevel.GOOD,
             )
         }
@@ -72,24 +74,24 @@ object AdvisorEngine {
         val ramp = nonLands.count { it.isRamp() }
         tips += healthTip(
             count = ramp, target = TARGET_RAMP, label = "ramp",
-            lowMsg = "Jen $ramp zdrojů rampu. Přidej mana rocky/dorky (cíl ~$TARGET_RAMP), ať rozjedeš velitele dřív.",
-            okMsg = "Rampu máš dost ($ramp).",
+            lowMsg = tr("Jen {0} zdrojů rampu. Přidej mana rocky/dorky (cíl ~{1}), ať rozjedeš velitele dřív.", ramp, TARGET_RAMP),
+            okMsg = tr("Rampu máš dost ({0}).", ramp),
         )
 
         // 3) Card draw
         val draw = nonLands.count { it.drawsCards() }
         tips += healthTip(
             count = draw, target = TARGET_DRAW, label = "card draw",
-            lowMsg = "Málo dobírání ($draw). Bez karet dojdeš dechem — cíl je ~$TARGET_DRAW zdrojů.",
-            okMsg = "Dobírání karet je OK ($draw).",
+            lowMsg = tr("Málo dobírání ({0}). Bez karet dojdeš dechem — cíl je ~{1} zdrojů.", draw, TARGET_DRAW),
+            okMsg = tr("Dobírání karet je OK ({0}).", draw),
         )
 
         // 4) Removal / interaction
         val removal = nonLands.count { it.isRemoval() }
         tips += healthTip(
             count = removal, target = TARGET_REMOVAL, label = "removal",
-            lowMsg = "Jen $removal removalů. V multiplayeru potřebuješ odpovědi — přidej spoty a board wipy (cíl ~$TARGET_REMOVAL).",
-            okMsg = "Removalu máš rozumně ($removal).",
+            lowMsg = tr("Jen {0} removalů. V multiplayeru potřebuješ odpovědi — přidej spoty a board wipy (cíl ~{1}).", removal, TARGET_REMOVAL),
+            okMsg = tr("Removalu máš rozumně ({0}).", removal),
         )
 
         // 5) Mana curve
@@ -98,12 +100,12 @@ object AdvisorEngine {
             .average()
             .takeIf { !it.isNaN() } ?: 0.0
         tips += if (avgCmc > 3.6) AdvisorTip(
-            "Těžká křivka (prům. CMC %.1f)".format(avgCmc),
-            "Balík je drahý. Přidej levné karty (1–2 many) nebo víc rampu, ať nejsi v early game bezbranný.",
+            tr("Těžká křivka (prům. CMC %.1f)").format(avgCmc),
+            tr("Balík je drahý. Přidej levné karty (1–2 many) nebo víc rampu, ať nejsi v early game bezbranný."),
             TipLevel.WARN,
         ) else AdvisorTip(
-            "Křivka v pohodě (prům. CMC %.1f)".format(avgCmc),
-            "Rozložení ceny karet je zdravé.",
+            tr("Křivka v pohodě (prům. CMC %.1f)").format(avgCmc),
+            tr("Rozložení ceny karet je zdravé."),
             TipLevel.GOOD,
         )
 
@@ -116,7 +118,7 @@ object AdvisorEngine {
             if (offColor.isNotEmpty()) {
                 tips += AdvisorTip(
                     "Karty mimo barvu velitele (${offColor.size})",
-                    "V Commanderu nesmí být karty mimo barevnou identitu velitele. Zkontroluj: ${offColor.take(5).joinToString { it.name }}${if (offColor.size > 5) "…" else ""}.",
+                    tr("V Commanderu nesmí být karty mimo barevnou identitu velitele. Zkontroluj: {0}{1}.", (offColor.take(5).joinToString { it.name }), (if (offColor.size > 5) "…" else "")),
                     TipLevel.WARN,
                 )
             }
@@ -131,21 +133,21 @@ object AdvisorEngine {
     private fun healthTip(
         count: Int, target: Int, label: String, lowMsg: String, okMsg: String,
     ): AdvisorTip =
-        if (count < target - 2) AdvisorTip("Málo: $label ($count)", lowMsg, TipLevel.WARN)
+        if (count < target - 2) AdvisorTip(tr("Málo: {0} ({1})", label, count), lowMsg, TipLevel.WARN)
         else AdvisorTip("$label OK ($count)", okMsg, TipLevel.GOOD)
 
     private fun inGameTips(
         landCount: Int, total: Int, commander: CollectionCard?,
     ): AdvisorTip {
         val idealOpener = when {
-            landCount <= 34 -> "2–4 zemí"
-            landCount >= 40 -> "3–5 zemí"
-            else -> "3–4 zemí"
+            landCount <= 34 -> tr("2–4 zemí")
+            landCount >= 40 -> tr("3–5 zemí")
+            else -> tr("3–4 zemí")
         }
-        val cmdLine = commander?.let { " Veliteli (${it.name}) nachystej ramp, ať ho zahraješ včas." } ?: ""
+        val cmdLine = commander?.let { tr(" Veliteli ({0}) nachystej ramp, ať ho zahraješ včas.", (it.name)) } ?: ""
         return AdvisorTip(
-            "Rádce Grimoaru radí při hře",
-            "Mulligan drž ruku s $idealOpener a aspoň jedním raným playem. Sekvencuj: nejdřív ramp, pak card draw, interakci si drž na klíčové hrozby.$cmdLine",
+            tr("Rádce Grimoaru radí při hře"),
+            tr("Mulligan drž ruku s {0} a aspoň jedním raným playem. Sekvencuj: nejdřív ramp, pak card draw, interakci si drž na klíčové hrozby.{1}", idealOpener, cmdLine),
             TipLevel.TIP,
         )
     }

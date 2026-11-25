@@ -1,5 +1,7 @@
 package com.example.antimarcipan.life
 
+import com.example.antimarcipan.i18n.tr
+
 import androidx.compose.ui.draw.drawBehind
 import android.content.Context
 import androidx.compose.animation.fadeIn
@@ -214,9 +216,9 @@ data class TimeCurve(val label: String, val baseSec: Int, val perTurnSec: Int, v
 
 val TIME_CURVES = listOf(
     TimeCurve("Bez limitu", 0, 0, 0),
-    TimeCurve("Rychlá", 45, 10, 180),
-    TimeCurve("Standardní", 60, 15, 240),
-    TimeCurve("Pohodová", 90, 20, 360),
+    TimeCurve(tr("Rychlá"), 45, 10, 180),
+    TimeCurve(tr("Standardní"), 60, 15, 240),
+    TimeCurve(tr("Pohodová"), 90, 20, 360),
 )
 
 /**
@@ -375,8 +377,8 @@ private fun Tile(index: Int, rotation: Float, modifier: Modifier, save: () -> Un
     val over = isStarter && lim != null && LifeState.now - LifeState.turnStart > lim
     // Blikání při překročení doporučeného času
     val blink = if (over) {
-        val tr = androidx.compose.animation.core.rememberInfiniteTransition(label = "blink")
-        tr.animateFloat(
+        val blinkTr = androidx.compose.animation.core.rememberInfiniteTransition(label = "blink")
+        blinkTr.animateFloat(
             0f, 1f,
             androidx.compose.animation.core.infiniteRepeatable(
                 androidx.compose.animation.core.tween(500),
@@ -432,7 +434,7 @@ private fun Tile(index: Int, rotation: Float, modifier: Modifier, save: () -> Un
                     colors = androidx.compose.material3.ButtonDefaults.buttonColors(
                         containerColor = Color(0xFFE2BC62), contentColor = Color(0xFF1E1633),
                     ),
-                ) { Text("Konec tahu", fontWeight = FontWeight.Bold) }
+                ) { Text(tr("Konec tahu"), fontWeight = FontWeight.Bold) }
             }
             Column(
                 Modifier.align(Alignment.Center),
@@ -455,7 +457,7 @@ private fun Tile(index: Int, rotation: Float, modifier: Modifier, save: () -> Un
                     fontWeight = FontWeight.Bold,
                 )
                 Text(
-                    "Hráč ${index + 1}",
+                    tr("Hráč {0}", (index + 1)),
                     color = Color.White.copy(alpha = 0.8f),
                     style = MaterialTheme.typography.labelMedium,
                 )
@@ -502,18 +504,18 @@ private fun CommanderDamageDialog(index: Int, onDismiss: () -> Unit, save: () ->
     val p = LifeState.players[index]
     com.example.antimarcipan.ui.GoldDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Commander damage – Hráč ${index + 1}") },
+        title = { Text(tr("Commander damage – Hráč {0}", (index + 1))) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
-                    "Poškození od velitele soupeře. Změna se odečte i ze životů. 21 od jednoho velitele = prohra.",
+                    tr("Poškození od velitele soupeře. Změna se odečte i ze životů. 21 od jednoho velitele = prohra."),
                     style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.65f),
                 )
                 for (j in 0 until LifeState.count) {
                     if (j == index) continue
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Box(Modifier.size(14.dp).clip(RoundedCornerShape(7.dp)).background(PLAYER_COLORS[j]))
-                        Text("  Hráč ${j + 1}", Modifier.weight(1f))
+                        Text(tr("  Hráč {0}", (j + 1)), Modifier.weight(1f))
                         TextButton(onClick = {
                             if (p.cmd[j] > 0) { p.cmd[j]--; p.life++; save() }
                         }) { Text("−", fontSize = 22.sp) }
@@ -526,7 +528,7 @@ private fun CommanderDamageDialog(index: Int, onDismiss: () -> Unit, save: () ->
                 }
             }
         },
-        confirmButton = { TextButton(onClick = onDismiss) { Text("Hotovo") } },
+        confirmButton = { TextButton(onClick = onDismiss) { Text(tr("Hotovo")) } },
     )
 }
 
@@ -621,7 +623,7 @@ private fun CenterButton(modifier: Modifier, onClick: () -> Unit) {
             2 -> Text("☾", fontSize = 36.sp, color = Color(0xFFAFC3FF))
             else -> Icon(
                 Icons.Filled.Settings,
-                contentDescription = "Nastavení hry",
+                contentDescription = tr("Nastavení hry"),
                 tint = Color(0xFFF3E7C4),
                 modifier = Modifier.size(38.dp),
             )
@@ -708,75 +710,75 @@ private fun LifeMenu(onDismiss: () -> Unit, save: () -> Unit) {
     if (confirmReset) {
         com.example.antimarcipan.ui.GoldDialog(
             onDismissRequest = { confirmReset = false },
-            title = { Text("Nová hra?") },
-            text = { Text("Životy, jedy, časy i historie se vynulují.") },
+            title = { Text(tr("Nová hra?")) },
+            text = { Text(tr("Životy, jedy, časy i historie se vynulují.")) },
             confirmButton = { TextButton(onClick = { LifeState.reset(); save(); confirmReset = false; onDismiss() }) { Text("Reset") } },
-            dismissButton = { TextButton(onClick = { confirmReset = false }) { Text("Zrušit") } },
+            dismissButton = { TextButton(onClick = { confirmReset = false }) { Text(tr("Zrušit")) } },
         )
         return
     }
     com.example.antimarcipan.ui.GoldDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Nastavení hry") },
+        title = { Text(tr("Nastavení hry")) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                MenuSection("Hra") {
-                    Text("Hráči", style = MaterialTheme.typography.labelMedium)
+                MenuSection(tr("Hra")) {
+                    Text(tr("Hráči"), style = MaterialTheme.typography.labelMedium)
                     Segmented((2..6).map { "$it" to it }, LifeState.count) { LifeState.count = it; if (LifeState.active >= it) LifeState.active = 0; save() }
-                    Text("Počáteční životy (změna = nová hra)", style = MaterialTheme.typography.labelMedium)
+                    Text(tr("Počáteční životy (změna = nová hra)"), style = MaterialTheme.typography.labelMedium)
                     Segmented(listOf(20, 30, 40).map { "$it" to it }, LifeState.startLife) {
                         if (it != LifeState.startLife) { LifeState.startLife = it; LifeState.reset(); save() }
                     }
                 }
-                MenuSection("Počítadla") {
-                    SwitchRow("Jed (infect / poison)", "☠ ťuk +1, podržet −1; 10 = prohra", LifeState.showPoison) {
+                MenuSection(tr("Počítadla")) {
+                    SwitchRow("Jed (infect / poison)", tr("☠ ťuk +1, podržet −1; 10 = prohra"), LifeState.showPoison) {
                         LifeState.showPoison = it; save()
                     }
-                    SwitchRow("Commander damage", "⚔ poškození od velitelů soupeřů; 21 = prohra", LifeState.showCmd) {
+                    SwitchRow("Commander damage", tr("⚔ poškození od velitelů soupeřů; 21 = prohra"), LifeState.showCmd) {
                         LifeState.showCmd = it; save()
                     }
                 }
-                MenuSection("Den a noc") {
+                MenuSection(tr("Den a noc")) {
                     Segmented(listOf("Vypnuto" to 0, "☀ Den" to 1, "☾ Noc" to 2), LifeState.dayNight) {
                         LifeState.dayNight = it; save()
                     }
                     if (LifeState.dayNight != 0) Text(
-                        "Tip: den ↔ noc přepneš i swipem kolečka uprostřed.",
+                        tr("Tip: den ↔ noc přepneš i swipem kolečka uprostřed."),
                         style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.6f),
                     )
                 }
                 MenuSection("Tahy") {
                     SwitchRow(
-                        "Režim tahů",
-                        "Konec tahu tlačítkem, měření času, záznam do historie",
+                        tr("Režim tahů"),
+                        tr("Konec tahu tlačítkem, měření času, záznam do historie"),
                         LifeState.turnMode,
                     ) {
                         LifeState.turnMode = it
                         if (it) LifeState.resetTurns()
                     }
                     if (LifeState.turnMode) {
-                        Text("Doporučený čas tahu", style = MaterialTheme.typography.labelMedium)
+                        Text(tr("Doporučený čas tahu"), style = MaterialTheme.typography.labelMedium)
                         Segmented(TIME_CURVES.mapIndexed { i, c -> (if (i == 0) "Bez" else c.label) to i }, LifeState.curve) {
                             LifeState.curve = it; LifeState.warned = false; save()
                         }
                         val c = TIME_CURVES[LifeState.curve]
                         if (c.baseSec > 0) Text(
                             "1. kolo ${formatDuration(c.limitFor(1)!!)} · 5. kolo ${formatDuration(c.limitFor(5)!!)} · " +
-                                "10. kolo ${formatDuration(c.limitFor(10)!!)}. Po překročení blikání a vibrace.",
+                                tr("10. kolo {0}. Po překročení blikání a vibrace.", (formatDuration(c.limitFor(10)!!))),
                             style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.6f),
                         )
                     }
                 }
                 MenuSection("Obrazovka") {
-                    SwitchRow("Nezhasínat obrazovku", null, LifeState.keepOn) { LifeState.keepOn = it; save() }
+                    SwitchRow(tr("Nezhasínat obrazovku"), null, LifeState.keepOn) { LifeState.keepOn = it; save() }
                     if (LifeState.keepOn) SwitchRow(
-                        "Šetřit baterii",
+                        tr("Šetřit baterii"),
                         "Po 1 min bez dotyku ztlumit jas",
                         LifeState.dimIdle,
                     ) { LifeState.dimIdle = it; save() }
                     SwitchRow(
-                        "Celá obrazovka",
-                        "Skryje lištu aplikace i systému",
+                        tr("Celá obrazovka"),
+                        tr("Skryje lištu aplikace i systému"),
                         LifeState.fullscreen,
                     ) { LifeState.fullscreen = it; if (it) onDismiss() }
                 }
@@ -794,12 +796,12 @@ private fun LifeMenu(onDismiss: () -> Unit, save: () -> Unit) {
                         ),
                     ) {
                         Icon(Icons.Filled.Refresh, contentDescription = null)
-                        Text(" Nová hra")
+                        Text(tr(" Nová hra"))
                     }
                 }
             }
         },
-        confirmButton = { TextButton(onClick = onDismiss) { Text("Hotovo") } },
+        confirmButton = { TextButton(onClick = onDismiss) { Text(tr("Hotovo")) } },
     )
 }
 
@@ -810,11 +812,11 @@ private fun HistoryDialog(onDismiss: () -> Unit) {
     val n = LifeState.count
     com.example.antimarcipan.ui.GoldDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Historie životů") },
+        title = { Text(tr("Historie životů")) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 if (h.size < 2) {
-                    Text("Zatím žádný záznam — změň životy nebo ukonči tah.", style = MaterialTheme.typography.bodySmall)
+                    Text(tr("Zatím žádný záznam — změň životy nebo ukonči tah."), style = MaterialTheme.typography.bodySmall)
                 } else {
                     // Graf
                     val maxL = (h.flatMap { it.lives }.maxOrNull() ?: 20).coerceAtLeast(1)
@@ -849,12 +851,12 @@ private fun HistoryDialog(onDismiss: () -> Unit) {
                     }
                     // Tabulka
                     Row {
-                        Text("Záznam", Modifier.width(92.dp), style = MaterialTheme.typography.labelMedium)
+                        Text(tr("Záznam"), Modifier.width(92.dp), style = MaterialTheme.typography.labelMedium)
                         (0 until n).forEach { Text("H${it + 1}", Modifier.weight(1f), style = MaterialTheme.typography.labelMedium) }
                         Text("    ", fontSize = 18.sp)
                     }
                     Text(
-                        "Ťukni na ↶ u záznamu a hra se vrátí přesně do stavu po něm.",
+                        tr("Ťukni na ↶ u záznamu a hra se vrátí přesně do stavu po něm."),
                         style = MaterialTheme.typography.labelSmall,
                         color = Color(0xFFB9A7EC),
                     )
@@ -893,13 +895,13 @@ private fun HistoryDialog(onDismiss: () -> Unit) {
                         }
                     }
                     Text(
-                        "Celkový čas: " + (0 until n).joinToString("  ") { "H${it + 1} ${formatDuration(LifeState.players[it].totalMs)}" },
+                        tr("Celkový čas: ") + (0 until n).joinToString("  ") { "H${it + 1} ${formatDuration(LifeState.players[it].totalMs)}" },
                         style = MaterialTheme.typography.labelSmall,
                     )
                 }
             }
         },
-        confirmButton = { TextButton(onClick = onDismiss) { Text("Zavřít") } },
+        confirmButton = { TextButton(onClick = onDismiss) { Text(tr("Zavřít")) } },
     )
 }
 

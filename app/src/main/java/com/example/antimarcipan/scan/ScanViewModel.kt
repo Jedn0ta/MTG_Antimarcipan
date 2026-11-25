@@ -1,5 +1,7 @@
 package com.example.antimarcipan.scan
 
+import com.example.antimarcipan.i18n.tr
+
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.antimarcipan.data.CollectionRepository
@@ -29,7 +31,7 @@ private val TYPE_LINE_HINTS = listOf(
 data class ScanUiState(
     val recognizedText: String = "",
     val candidate: ScryfallCard? = null,
-    val status: String = "Namiř foťák na jméno karty",
+    val status: String = tr("Namiř foťák na jméno karty"),
     val looking: Boolean = false,
     /** Dostupné edice kandidáta (pro ruční přepnutí). */
     val prints: List<ScryfallCard> = emptyList(),
@@ -80,8 +82,8 @@ class ScanViewModel(
             cornerMode = on,
             candidate = null,
             prints = emptyList(),
-            status = if (on) "Namiř na levý spodní roh karty — číslo a kód edice (např. 123/280 · DMU • DE)"
-            else "Namiř foťák na jméno karty",
+            status = if (on) tr("Namiř na levý spodní roh karty — číslo a kód edice (např. 123/280 · DMU • DE)")
+            else tr("Namiř foťák na jméno karty"),
         )
     }
 
@@ -92,8 +94,8 @@ class ScanViewModel(
             candidate = null,
             prints = emptyList(),
             rescanSlot = null,
-            status = if (on) "Rozlož karty na stůl a vyfoť je"
-            else "Namiř foťák na jméno karty",
+            status = if (on) tr("Rozlož karty na stůl a vyfoť je")
+            else tr("Namiř foťák na jméno karty"),
         )
         lastQuery = ""
         latestLines = emptyList()
@@ -126,7 +128,7 @@ class ScanViewModel(
         _state.value = _state.value.copy(
             recognizedText = firstLine,
             looking = true,
-            status = "Hledám „$firstLine“…",
+            status = tr("Hledám „{0}“…", firstLine),
             prints = emptyList(),
         )
 
@@ -136,15 +138,15 @@ class ScanViewModel(
                     _state.value = _state.value.copy(
                         candidate = card,
                         looking = false,
-                        status = editionLabel(card) + (repo.lastForeign?.let { "\nOriginál: $it · zobrazeno anglicky" } ?: ""),
+                        status = editionLabel(card) + (repo.lastForeign?.let { tr("\nOriginál: {0} · zobrazeno anglicky", it) } ?: ""),
                     )
                 }
                 .onFailure {
                     _state.value = _state.value.copy(
                         candidate = null,
                         looking = false,
-                        status = if (firstLine.any { it.code > 0x24F }) "Cizí písmo — přepni na „Roh“ a zaměř edici + číslo vlevo dole"
-                        else "Nenašlo se — zkus lepší světlo / úhel. Cizojazyčná karta? Zkus režim „Roh“.",
+                        status = if (firstLine.any { it.code > 0x24F }) tr("Cizí písmo — přepni na „Roh“ a zaměř edici + číslo vlevo dole")
+                        else tr("Nenašlo se — zkus lepší světlo / úhel. Cizojazyčná karta? Zkus režim „Roh“."),
                     )
                 }
         }
@@ -158,7 +160,7 @@ class ScanViewModel(
         lastQuery = key
         _state.value = _state.value.copy(
             looking = true,
-            status = "Hledám ${sets.first()} #${numbers.first()}…",
+            status = tr("Hledám {0} #{1}…", (sets.first()), (numbers.first())),
             prints = emptyList(),
         )
         viewModelScope.launch {
@@ -167,7 +169,7 @@ class ScanViewModel(
                     _state.value = _state.value.copy(candidate = card, looking = false, status = editionLabel(card) + "\nZobrazeno anglicky")
                 }
                 .onFailure {
-                    _state.value = _state.value.copy(looking = false, status = "Roh nečitelný — přibliž a přisviť (číslo + kód edice)")
+                    _state.value = _state.value.copy(looking = false, status = tr("Roh nečitelný — přibliž a přisviť (číslo + kód edice)"))
                 }
         }
     }
@@ -180,14 +182,14 @@ class ScanViewModel(
      */
     fun processPhoto(context: android.content.Context, uri: android.net.Uri) {
         if (_state.value.capturing) return
-        _state.value = _state.value.copy(capturing = true, status = "Fotka pořízena · čtu text…")
+        _state.value = _state.value.copy(capturing = true, status = tr("Fotka pořízena · čtu text…"))
         viewModelScope.launch {
             val cards = runCatching {
                 PhotoCardRecognizer(repo).recognize(context, uri) { d, t, f ->
-                    _state.value = _state.value.copy(status = "Hledám karty $d/$t… (nalezeno $f)")
+                    _state.value = _state.value.copy(status = tr("Hledám karty {0}/{1}… (nalezeno {2})", d, t, f))
                 }
             }.getOrElse {
-                _state.value = _state.value.copy(capturing = false, status = "Fotku se nepodařilo načíst — zkus to znovu")
+                _state.value = _state.value.copy(capturing = false, status = tr("Fotku se nepodařilo načíst — zkus to znovu"))
                 return@launch
             }
             val rescan = _state.value.rescanSlot
@@ -205,8 +207,8 @@ class ScanViewModel(
             _state.value = _state.value.copy(
                 capturing = false,
                 rescanSlot = null,
-                status = if (unique.isNotEmpty()) "Hotovo: rozpoznáno ${unique.size} karet · celkem ${_state.value.pending.size} k potvrzení"
-                else "Žádnou kartu se nepodařilo rozpoznat — zkus ostřejší fotku",
+                status = if (unique.isNotEmpty()) tr("Hotovo: rozpoznáno {0} karet · celkem {1} k potvrzení", (unique.size), (_state.value.pending.size))
+                else tr("Žádnou kartu se nepodařilo rozpoznat — zkus ostřejší fotku"),
             )
         }
     }
@@ -243,7 +245,7 @@ class ScanViewModel(
     fun rescanPending(slotId: Long) {
         _state.value = _state.value.copy(
             rescanSlot = slotId,
-            status = "Přenačítám — vyfoť správnou kartu",
+            status = tr("Přenačítám — vyfoť správnou kartu"),
         )
         lastQuery = ""
     }
@@ -252,7 +254,7 @@ class ScanViewModel(
         if (_state.value.rescanSlot == null) return
         _state.value = _state.value.copy(
             rescanSlot = null,
-            status = "Rozlož karty na stůl a vyfoť je",
+            status = tr("Rozlož karty na stůl a vyfoť je"),
         )
     }
 
@@ -262,7 +264,7 @@ class ScanViewModel(
         if (items.isEmpty()) return
         viewModelScope.launch {
             items.forEach { repo.addToCollection(it.card) }
-            finishBatch(items.size, "Uloženo ${items.size} karet do sbírky")
+            finishBatch(items.size, tr("Uloženo {0} karet do sbírky", (items.size)))
         }
     }
 
@@ -285,7 +287,7 @@ class ScanViewModel(
                 repo.addToCollection(it.card)
                 deckRepo.addCard(deckId, it.card.id)
             }
-            val deckName = deckRepo.deck(deckId)?.name ?: "balíku"
+            val deckName = deckRepo.deck(deckId)?.name ?: tr("balíku")
             finishBatch(items.size, "Do „$deckName“: ${items.size} karet")
         }
     }
@@ -294,7 +296,7 @@ class ScanViewModel(
         _state.value = _state.value.copy(
             pending = emptyList(),
             rescanSlot = null,
-            status = "Rozlož karty na stůl a vyfoť je",
+            status = tr("Rozlož karty na stůl a vyfoť je"),
             confirmTick = _state.value.confirmTick + 1,
             confirmText = message,
         )
@@ -309,7 +311,7 @@ class ScanViewModel(
         val card = _state.value.candidate ?: return
         viewModelScope.launch {
             repo.addToCollection(card)
-            flashAdded("Přidáno do sbírky: ${card.name}")
+            flashAdded(tr("Přidáno do sbírky: {0}", (card.name)))
         }
     }
 
@@ -319,15 +321,15 @@ class ScanViewModel(
             // Do balíku musí jít karta, kterou známe — ulož ji i do sbírky.
             repo.addToCollection(card)
             deckRepo.addCard(deckId, card.id)
-            val deckName = deckRepo.deck(deckId)?.name ?: "balíku"
-            flashAdded("Přidáno do „$deckName“: ${card.name}")
+            val deckName = deckRepo.deck(deckId)?.name ?: tr("balíku")
+            flashAdded(tr("Přidáno do „{0}“: {1}", deckName, (card.name)))
         }
     }
 
     fun setQuickMode(on: Boolean) {
         _state.value = _state.value.copy(
             quickMode = on, multiScan = false, cornerMode = false,
-            status = if (on) "Rychlý sken: namiř na jméno — karta se uloží do Playgroundu a ukážou se rulings" else _state.value.status,
+            status = if (on) tr("Rychlý sken: namiř na jméno — karta se uloží do Playgroundu a ukážou se rulings") else _state.value.status,
         )
     }
 
@@ -336,7 +338,7 @@ class ScanViewModel(
         val card = _state.value.candidate ?: return
         viewModelScope.launch {
             repo.addToPlayground(card)
-            _state.value = _state.value.copy(status = "Uloženo do Playgroundu: ${card.name}")
+            _state.value = _state.value.copy(status = tr("Uloženo do Playgroundu: {0}", (card.name)))
         }
     }
 
@@ -382,8 +384,8 @@ class ScanViewModel(
     fun dismissCandidate() {
         _state.value = _state.value.copy(
             candidate = null,
-            status = if (_state.value.multiScan) "Rozlož karty na stůl a vyfoť je"
-            else "Namiř foťák na jméno karty",
+            status = if (_state.value.multiScan) tr("Rozlož karty na stůl a vyfoť je")
+            else tr("Namiř foťák na jméno karty"),
             prints = emptyList(),
         )
         lastQuery = ""

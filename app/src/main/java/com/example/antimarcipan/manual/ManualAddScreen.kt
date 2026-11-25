@@ -1,5 +1,7 @@
 package com.example.antimarcipan.manual
 
+import com.example.antimarcipan.i18n.tr
+
 import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -54,7 +56,7 @@ fun ManualAddScreen(
             value = state.query,
             onValueChange = vm::setQuery,
             modifier = Modifier.fillMaxWidth().padding(12.dp),
-            placeholder = { Text("Jméno karty (i částečně)…") },
+            placeholder = { Text(tr("Jméno karty (i částečně)…")) },
             leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
             singleLine = true,
         )
@@ -64,7 +66,7 @@ fun ManualAddScreen(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp),
         ) {
             if (importBusy) CircularProgressIndicator(Modifier.padding(end = 8.dp).size(18.dp), strokeWidth = 2.dp)
-            Text(if (importBusy) "Importuji seznam…" else "Import seznamu karet (hromadně)")
+            Text(if (importBusy) "Importuji seznam…" else tr("Import seznamu karet (hromadně)"))
         }
         Text(
             "Pro karty, co nejdou naskenovat (fullarty, promo, tokeny).",
@@ -115,8 +117,8 @@ fun ManualAddScreen(
                             vm.addToCollection(card) { msg ->
                                 Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
                             }
-                        }) { Text("Sbírka") }
-                        OutlinedButton(onClick = { deckPickerFor = card }) { Text("Balík") }
+                        }) { Text(tr("Sbírka")) }
+                        OutlinedButton(onClick = { deckPickerFor = card }) { Text(tr("Balík")) }
                         OutlinedButton(onClick = {
                             vm.addToWishlist(card) { msg ->
                                 Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
@@ -140,7 +142,7 @@ fun ManualAddScreen(
     importResult?.let { msg ->
         com.example.antimarcipan.ui.GoldDialog(
             onDismissRequest = { importResult = null },
-            title = { Text("Import hotov") },
+            title = { Text(tr("Import hotov")) },
             text = { Text(msg) },
             confirmButton = { androidx.compose.material3.TextButton(onClick = { importResult = null }) { Text("OK") } },
         )
@@ -180,11 +182,11 @@ private fun ImportListDialog(
     val count = remember(text) { parseCardList(text).sumOf { it.first } }
     com.example.antimarcipan.ui.GoldDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Import seznamu") },
+        title = { Text(tr("Import seznamu")) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
-                    "Jedna karta na řádek, např. „4 Lightning Bolt“, „1x Sol Ring“. Funguje i export z Moxfield/Arena.",
+                    tr("Jedna karta na řádek, např. „4 Lightning Bolt“, „1x Sol Ring“. Funguje i export z Moxfield/Arena."),
                     style = MaterialTheme.typography.bodySmall,
                 )
                 OutlinedTextField(
@@ -196,21 +198,21 @@ private fun ImportListDialog(
                     OutlinedButton(onClick = {
                         val cm = context.getSystemService(android.content.ClipboardManager::class.java)
                         cm?.primaryClip?.getItemAt(0)?.coerceToText(context)?.toString()?.let { text = it }
-                    }) { Text("Vložit ze schránky") }
+                    }) { Text(tr("Vložit ze schránky")) }
                 }
-                Text("Kam přidat:", style = MaterialTheme.typography.labelMedium)
+                Text(tr("Kam přidat:"), style = MaterialTheme.typography.labelMedium)
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     listOf(
-                        "Sbírka" to ManualAddViewModel.Target.COLLECTION,
+                        tr("Sbírka") to ManualAddViewModel.Target.COLLECTION,
                         "Wishlist" to ManualAddViewModel.Target.WISHLIST,
-                        "Balík" to ManualAddViewModel.Target.DECK,
+                        tr("Balík") to ManualAddViewModel.Target.DECK,
                     ).forEach { (l, t) ->
                         androidx.compose.material3.FilterChip(
                             selected = target == t, onClick = { target = t }, label = { Text(l) },
                         )
                     }
                 }
-                Text("Rozpoznáno: $count karet", style = MaterialTheme.typography.labelSmall)
+                Text(tr("Rozpoznáno: {0} karet", count), style = MaterialTheme.typography.labelSmall)
             }
         },
         confirmButton = {
@@ -220,8 +222,8 @@ private fun ImportListDialog(
                     if (target == ManualAddViewModel.Target.DECK) pickDeck = true
                     else onImport(text, target, null)
                 },
-            ) { Text(if (target == ManualAddViewModel.Target.DECK) "Vybrat balík…" else "Importovat") }
+            ) { Text(if (target == ManualAddViewModel.Target.DECK) tr("Vybrat balík…") else "Importovat") }
         },
-        dismissButton = { androidx.compose.material3.TextButton(onClick = onDismiss) { Text("Zrušit") } },
+        dismissButton = { androidx.compose.material3.TextButton(onClick = onDismiss) { Text(tr("Zrušit")) } },
     )
 }

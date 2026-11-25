@@ -1,5 +1,7 @@
 package com.example.antimarcipan.ui
 
+import com.example.antimarcipan.i18n.tr
+
 import android.widget.Toast
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -34,7 +36,7 @@ fun scryfallImageByName(name: String, version: String = "normal"): String =
 fun WishlistButton(name: String, defaultNote: String, modifier: Modifier = Modifier, compact: Boolean = false) {
     var open by remember { mutableStateOf(false) }
     if (compact) TextButton(onClick = { open = true }, modifier = modifier) { Text("+ Wishlist", style = MaterialTheme.typography.labelMedium) }
-    else OutlinedButton(onClick = { open = true }, modifier = modifier) { Text("Na wishlist") }
+    else OutlinedButton(onClick = { open = true }, modifier = modifier) { Text(tr("Na wishlist")) }
     if (open) WishlistNoteDialog(name, defaultNote) { open = false }
 }
 
@@ -49,7 +51,7 @@ fun WishlistNoteDialog(name: String, defaultNote: String, onDismiss: () -> Unit)
         title = { Text("Na wishlist: $name") },
         text = {
             Column {
-                Text("Poznámka (proč ji chceš, ke kterému kombu…)", style = MaterialTheme.typography.labelMedium)
+                Text(tr("Poznámka (proč ji chceš, ke kterému kombu…)"), style = MaterialTheme.typography.labelMedium)
                 OutlinedTextField(
                     value = note, onValueChange = { note = it },
                     modifier = Modifier.fillMaxWidth().padding(top = 6.dp), minLines = 2,
@@ -62,12 +64,12 @@ fun WishlistNoteDialog(name: String, defaultNote: String, onDismiss: () -> Unit)
                 scope.launch {
                     repo(ctx).addToWishlistByName(name, note)
                         .onSuccess { Toast.makeText(ctx, "Na wishlistu: $it", Toast.LENGTH_SHORT).show() }
-                        .onFailure { Toast.makeText(ctx, "Kartu se nepodařilo najít (internet?)", Toast.LENGTH_SHORT).show() }
+                        .onFailure { Toast.makeText(ctx, tr("Kartu se nepodařilo najít (internet?)"), Toast.LENGTH_SHORT).show() }
                     onDismiss()
                 }
-            }) { Text(if (busy) "Ukládám…" else "Přidat") }
+            }) { Text(if (busy) tr("Ukládám…") else tr("Přidat")) }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Zrušit") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(tr("Zrušit")) } },
     )
 }
 
@@ -79,13 +81,13 @@ fun EditNoteDialog(scryfallId: String, current: String?, onDismiss: () -> Unit) 
     var note by remember { mutableStateOf(current ?: "") }
     GoldDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Poznámka") },
+        title = { Text(tr("Poznámka")) },
         text = {
             OutlinedTextField(value = note, onValueChange = { note = it }, modifier = Modifier.fillMaxWidth(), minLines = 3)
         },
         confirmButton = {
-            TextButton(onClick = { scope.launch { repo(ctx).setNote(scryfallId, note); onDismiss() } }) { Text("Uložit") }
+            TextButton(onClick = { scope.launch { repo(ctx).setNote(scryfallId, note); onDismiss() } }) { Text(tr("Uložit")) }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Zrušit") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(tr("Zrušit")) } },
     )
 }

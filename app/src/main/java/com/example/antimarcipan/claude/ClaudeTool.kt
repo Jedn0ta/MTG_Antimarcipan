@@ -1,5 +1,7 @@
 package com.example.antimarcipan.claude
 
+import com.example.antimarcipan.i18n.tr
+
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
@@ -80,7 +82,7 @@ fun ClaudeTool(vm: AdvisorViewModel, onBack: () -> Unit) {
         val t = pcIncoming ?: return@LaunchedEffect
         PcBridge.incoming.value = null
         val p = ClaudeBridge.parse(t)
-        if (p == null) result = "Odpověď z PC neobsahuje blok ${ClaudeBridge.START}… se změnami."
+        if (p == null) result = tr("Odpověď z PC neobsahuje blok {0}… se změnami.", (ClaudeBridge.START))
         else proposal = p
     }
     // Po návratu do aplikace zkontrolovat schránku
@@ -106,25 +108,25 @@ fun ClaudeTool(vm: AdvisorViewModel, onBack: () -> Unit) {
         HubBackRow("Zeptat se Clauda", onBack)
         Column(Modifier.padding(horizontal = 14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text(
-                "Grimoar připraví zadání pro Clauda (tvůj balík, analýzu, komba a sbírku). Vlož ho do Clauda a ptej se. " +
-                    "Když Claude navrhne změny, zkopíruj jeho odpověď — Grimoar ji pozná a změny provede.",
+                tr("Grimoar připraví zadání pro Clauda (tvůj balík, analýzu, komba a sbírku). Vlož ho do Clauda a ptej se. ") +
+                    tr("Když Claude navrhne změny, zkopíruj jeho odpověď — Grimoar ji pozná a změny provede."),
                 style = MaterialTheme.typography.bodySmall,
             )
-            Text("Balík", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+            Text(tr("Balík"), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
             Box0 {
                 OutlinedButton(onClick = { deckMenu = true }, modifier = Modifier.fillMaxWidth()) {
-                    Text(decks.firstOrNull { it.id == deckId }?.name ?: "Bez balíku (jen sbírka)")
+                    Text(decks.firstOrNull { it.id == deckId }?.name ?: tr("Bez balíku (jen sbírka)"))
                 }
                 DropdownMenu(expanded = deckMenu, onDismissRequest = { deckMenu = false }) {
-                    DropdownMenuItem(text = { Text("Bez balíku (jen sbírka)") }, onClick = { deckId = null; deckMenu = false })
+                    DropdownMenuItem(text = { Text(tr("Bez balíku (jen sbírka)")) }, onClick = { deckId = null; deckMenu = false })
                     decks.forEach { d -> DropdownMenuItem(text = { Text(d.name) }, onClick = { deckId = d.id; deckMenu = false }) }
                 }
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Checkbox(checked = withCollection, onCheckedChange = { withCollection = it })
-                Text("Přiložit sbírku (${owned.size} karet) — Claude radí z toho, co máš", style = MaterialTheme.typography.bodySmall)
+                Text(tr("Přiložit sbírku ({0} karet) — Claude radí z toho, co máš", (owned.size)), style = MaterialTheme.typography.bodySmall)
             }
-            Text("Otázka", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+            Text(tr("Otázka"), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
             androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 ClaudeBridge.QUESTIONS.forEachIndexed { i, (label, _) ->
                     FilterChip(selected = custom.isBlank() && preset == i, onClick = { preset = i; custom = "" }, label = { Text(label) })
@@ -133,31 +135,31 @@ fun ClaudeTool(vm: AdvisorViewModel, onBack: () -> Unit) {
             OutlinedTextField(
                 value = custom, onValueChange = { custom = it },
                 modifier = Modifier.fillMaxWidth(),
-                label = { Text("Nebo vlastní otázka") }, minLines = 2,
+                label = { Text(tr("Nebo vlastní otázka")) }, minLines = 2,
             )
 
             Button(onClick = {
                 scope.launch {
                     copyClip(ctx, prompt())
-                    Toast.makeText(ctx, "Zadání zkopírováno — vlož ho do Clauda", Toast.LENGTH_LONG).show()
+                    Toast.makeText(ctx, tr("Zadání zkopírováno — vlož ho do Clauda"), Toast.LENGTH_LONG).show()
                     openClaude(ctx)
                 }
-            }, modifier = Modifier.fillMaxWidth()) { Text("Kopírovat a otevřít Clauda") }
+            }, modifier = Modifier.fillMaxWidth()) { Text(tr("Kopírovat a otevřít Clauda")) }
 
             OutlinedButton(onClick = {
                 scope.launch { PcBridge.start(prompt()) }
-            }, modifier = Modifier.fillMaxWidth()) { Text(if (pcUrl == null) "Poslat na PC přes Wi-Fi" else "Aktualizovat zadání na PC") }
+            }, modifier = Modifier.fillMaxWidth()) { Text(if (pcUrl == null) tr("Poslat na PC přes Wi-Fi") else tr("Aktualizovat zadání na PC")) }
 
             pcUrl?.let { u ->
                 Card(Modifier.fillMaxWidth()) {
                     Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Text("Na počítači ve stejné Wi-Fi otevři v prohlížeči:", style = MaterialTheme.typography.bodySmall)
+                        Text(tr("Na počítači ve stejné Wi-Fi otevři v prohlížeči:"), style = MaterialTheme.typography.bodySmall)
                         SelectionContainer { Text(u, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary) }
                         Text(
-                            "Tam zkopíruješ zadání pro Clauda a jeho odpověď pošleš zpět do telefonu. Spojení běží, dokud jsi v tomhle nástroji.",
+                            tr("Tam zkopíruješ zadání pro Clauda a jeho odpověď pošleš zpět do telefonu. Spojení běží, dokud jsi v tomhle nástroji."),
                             style = MaterialTheme.typography.labelSmall,
                         )
-                        TextButton(onClick = { PcBridge.stop() }) { Text("Ukončit spojení s PC") }
+                        TextButton(onClick = { PcBridge.stop() }) { Text(tr("Ukončit spojení s PC")) }
                     }
                 }
             }
@@ -165,11 +167,11 @@ fun ClaudeTool(vm: AdvisorViewModel, onBack: () -> Unit) {
             OutlinedButton(onClick = {
                 val t = readClip(ctx)
                 val p = ClaudeBridge.parse(t)
-                if (p == null) result = "Ve schránce není blok ${ClaudeBridge.START}… od Clauda. Zkopíruj celou jeho odpověď (nebo jen ten blok)."
+                if (p == null) result = tr("Ve schránce není blok {0}… od Clauda. Zkopíruj celou jeho odpověď (nebo jen ten blok).", (ClaudeBridge.START))
                 else { lastClip = t; proposal = p }
-            }, modifier = Modifier.fillMaxWidth()) { Text("Vložit odpověď od Clauda ze schránky") }
+            }, modifier = Modifier.fillMaxWidth()) { Text(tr("Vložit odpověď od Clauda ze schránky")) }
             Text(
-                "Tip: Claude píše změny na konec odpovědi do bloku GRIMOAR-START … GRIMOAR-END. Stačí zkopírovat celou odpověď.",
+                tr("Tip: Claude píše změny na konec odpovědi do bloku GRIMOAR-START … GRIMOAR-END. Stačí zkopírovat celou odpověď."),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
             )
@@ -210,11 +212,11 @@ private fun ProposalDialog(
     val checked = remember(p) { mutableStateListOf(*Array(p.changes.size) { true }) }
     GoldDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Návrh od Clauda") },
+        title = { Text(tr("Návrh od Clauda")) },
         text = {
             Column(Modifier) {
                 Text(
-                    if (deckName != null) "Balík: $deckName" else "Bez balíku — přidávané karty půjdou na wishlist.",
+                    if (deckName != null) tr("Balík: {0}", deckName) else tr("Bez balíku — přidávané karty půjdou na wishlist."),
                     style = MaterialTheme.typography.bodySmall,
                 )
                 p.changes.forEachIndexed { i, c ->
@@ -231,16 +233,16 @@ private fun ProposalDialog(
                     }
                 }
                 Text(
-                    "Karty, které nemáš ve sbírce, se místo do balíku dají na wishlist.",
+                    tr("Karty, které nemáš ve sbírce, se místo do balíku dají na wishlist."),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                 )
             }
         },
         confirmButton = {
-            TextButton(onClick = { onApply(p.changes.filterIndexed { i, _ -> checked[i] }) }) { Text("Provést") }
+            TextButton(onClick = { onApply(p.changes.filterIndexed { i, _ -> checked[i] }) }) { Text(tr("Provést")) }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Zrušit") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(tr("Zrušit")) } },
     )
 }
 

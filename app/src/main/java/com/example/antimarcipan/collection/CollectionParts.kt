@@ -1,5 +1,7 @@
 package com.example.antimarcipan.collection
 
+import com.example.antimarcipan.i18n.tr
+
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.Image
@@ -235,7 +237,7 @@ internal fun CollectionRow(
             IconButton(onClick = onChangeEdition) {
                 Icon(
                     Icons.Filled.SwapHoriz,
-                    contentDescription = "Změnit edici",
+                    contentDescription = tr("Změnit edici"),
                     tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.75f),
                 )
             }
@@ -278,7 +280,7 @@ internal fun GathererButton(
     ) {
         Icon(
             Icons.AutoMirrored.Filled.MenuBook,
-            contentDescription = "Rulings (ťuk) / Gatherer (podržení)",
+            contentDescription = tr("Rulings (ťuk) / Gatherer (podržení)"),
             tint = MaterialTheme.colorScheme.primary,
             modifier = Modifier.padding(12.dp),
         )
@@ -298,8 +300,8 @@ internal fun GathererButton(
                         .verticalScroll(androidx.compose.foundation.rememberScrollState())
                 ) {
                     when {
-                        rulings == null -> Text("Načítám…")
-                        rulings!!.isEmpty() -> Text("Žádné rulings k této kartě.")
+                        rulings == null -> Text(tr("Načítám…"))
+                        rulings!!.isEmpty() -> Text(tr("Žádné rulings k této kartě."))
                         else -> com.example.antimarcipan.ui.SymbolText(
                             rulings!!.joinToString("\n\n"),
                             MaterialTheme.typography.bodyMedium,
@@ -308,7 +310,7 @@ internal fun GathererButton(
                 }
             },
             confirmButton = {
-                TextButton(onClick = { showRulings = false }) { Text("Zavřít") }
+                TextButton(onClick = { showRulings = false }) { Text(tr("Zavřít")) }
             },
         )
     }
@@ -334,7 +336,7 @@ internal fun EditionPickerDialog(
                 list == null -> Box(Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
                     androidx.compose.material3.CircularProgressIndicator()
                 }
-                list.isEmpty() -> Text("Nepodařilo se načíst edice (je potřeba internet).")
+                list.isEmpty() -> Text(tr("Nepodařilo se načíst edice (je potřeba internet)."))
                 else -> androidx.compose.foundation.lazy.grid.LazyVerticalGrid(
                     columns = androidx.compose.foundation.lazy.grid.GridCells.Adaptive(92.dp),
                     modifier = Modifier.heightIn(max = 460.dp),
@@ -379,6 +381,6 @@ internal fun EditionPickerDialog(
                 }
             }
         },
-        confirmButton = { TextButton(onClick = onDismiss) { Text("Zavřít") } },
+        confirmButton = { TextButton(onClick = onDismiss) { Text(tr("Zavřít")) } },
     )
 }

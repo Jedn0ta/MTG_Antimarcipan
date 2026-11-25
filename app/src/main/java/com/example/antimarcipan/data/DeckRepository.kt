@@ -1,5 +1,7 @@
 package com.example.antimarcipan.data
 
+import com.example.antimarcipan.i18n.tr
+
 import com.example.antimarcipan.data.local.CollectionCard
 import com.example.antimarcipan.data.local.Deck
 import com.example.antimarcipan.data.local.DeckCard
@@ -69,7 +71,7 @@ class DeckRepository(private val dao: DeckDao) {
         dao.setCommander(deckId, card.scryfallId, card.name)
 
     suspend fun rename(deckId: Long, name: String) =
-        dao.renameDeck(deckId, name.ifBlank { "Balík" })
+        dao.renameDeck(deckId, name.ifBlank { tr("Balík") })
 
     suspend fun setCover(deckId: Long, path: String?) = dao.setCover(deckId, path)
 

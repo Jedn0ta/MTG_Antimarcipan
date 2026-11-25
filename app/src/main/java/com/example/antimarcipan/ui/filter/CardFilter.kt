@@ -1,13 +1,15 @@
 package com.example.antimarcipan.ui.filter
 
+import com.example.antimarcipan.i18n.tr
+
 import com.example.antimarcipan.data.colorIdentityList
 import com.example.antimarcipan.data.local.CollectionCard
 
 /** Jak se mají vybrané barvy vyhodnotit. */
 enum class ColorMode(val label: String) {
-    ANY("Obsahuje některou"),
-    ALL("Obsahuje všechny"),
-    EXACT("Přesně tyto"),
+    ANY(tr("Obsahuje některou")),
+    ALL(tr("Obsahuje všechny")),
+    EXACT(tr("Přesně tyto")),
 }
 
 /**

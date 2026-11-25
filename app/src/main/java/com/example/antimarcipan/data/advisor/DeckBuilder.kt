@@ -1,12 +1,14 @@
 package com.example.antimarcipan.data.advisor
 
+import com.example.antimarcipan.i18n.tr
+
 import com.example.antimarcipan.data.local.CollectionCard
 import com.example.antimarcipan.decks.LimitedAdvisor
 
 /** Typ balíku, který Rádce staví ze sbírky. */
 enum class BuildFormat(val label: String, val size: Int, val lands: Int, val maxCopies: Int, val deckFormat: String) {
     COMMANDER("Commander (100)", 100, 37, 1, "COMMANDER"),
-    CASUAL60("Běžný 60 karet", 60, 24, 4, "FREEFORM"),
+    CASUAL60(tr("Běžný 60 karet"), 60, 24, 4, "FREEFORM"),
     STANDARD("Standard 60", 60, 24, 4, "STANDARD"),
     LIMITED40("Limited 40", 40, 17, 99, "FREEFORM"),
 }
@@ -114,7 +116,7 @@ object DeckBuilder {
                 bucketCount[b] = (bucketCount[b] ?: 0) + q
             }
         }
-        if (filled < spellSlots) notes += "Ve sbírce nemáš dost karet v barvách ${colors.joinToString("")}: chybí ${spellSlots - filled} kouzel."
+        if (filled < spellSlots) notes += tr("Ve sbírce nemáš dost karet v barvách {0}: chybí {1} kouzel.", (colors.joinToString("")), (spellSlots - filled))
 
         // Země: nebasic duální/užitečné až třetina slotů
         val nonBasic = pool.filter { LimitedAdvisor.isLand(it) }
@@ -138,10 +140,10 @@ object DeckBuilder {
         val creatures = sp.filter { LimitedAdvisor.isCreature(it.first) }.sumOf { it.second }
         val ramp = sp.filter { isRamp(it.first) }.sumOf { it.second }
         val draw = sp.filter { isDraw(it.first) }.sumOf { it.second }
-        notes += "Tvorové $creatures · removal $removal · ramp $ramp · dobírání $draw."
-        if (removal < (if (format == BuildFormat.COMMANDER) 6 else 4)) notes += "Málo removalu — doplň ho, až nějaký získáš."
-        if (format == BuildFormat.COMMANDER && ramp < 8) notes += "Commander chce ~10 rampu; máš $ramp."
-        if (format == BuildFormat.STANDARD) notes += "Legalitu ve Standardu appka nekontroluje — ověř si edice."
+        notes += tr("Tvorové {0} · removal {1} · ramp {2} · dobírání {3}.", creatures, removal, ramp, draw)
+        if (removal < (if (format == BuildFormat.COMMANDER) 6 else 4)) notes += tr("Málo removalu — doplň ho, až nějaký získáš.")
+        if (format == BuildFormat.COMMANDER && ramp < 8) notes += tr("Commander chce ~10 rampu; máš {0}.", ramp)
+        if (format == BuildFormat.STANDARD) notes += tr("Legalitu ve Standardu appka nekontroluje — ověř si edice.")
 
         return BuildResult(format, colors, commander, chosen.sortedWith(compareBy({ LimitedAdvisor.isLand(it.first) }, { it.first.cmc ?: 0.0 }, { it.first.name })), basics, notes)
     }

@@ -1,5 +1,7 @@
 package com.example.antimarcipan.friends
 
+import com.example.antimarcipan.i18n.tr
+
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Send
@@ -88,7 +90,7 @@ fun LanIncomingHost() {
         LanShare.friendAccepted.value = emptyList()
         list.forEach { c ->
             val n = vm.addVerified(c)
-            Toast.makeText(ctx, "$n tě přijal/a mezi přátele ✓", Toast.LENGTH_LONG).show()
+            Toast.makeText(ctx, tr("{0} tě přijal/a mezi přátele ✓", n), Toast.LENGTH_LONG).show()
         }
     }
     incoming.firstOrNull()?.let outer@{ inc ->
@@ -96,22 +98,22 @@ fun LanIncomingHost() {
         FriendCode.decode(inc.text)?.let { card ->
             GoldDialog(
                 onDismissRequest = {},
-                title = { Text("Žádost o přátelství") },
+                title = { Text(tr("Žádost o přátelství")) },
                 text = {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         FriendAvatar(card.n, card.c, card.a, 48.dp)
                         Column(Modifier.padding(start = 12.dp)) {
                             Text(card.n, style = MaterialTheme.typography.titleMedium)
-                            Text("chce si tě přidat mezi přátele v Grimoaru.", style = MaterialTheme.typography.bodySmall)
+                            Text(tr("chce si tě přidat mezi přátele v Grimoaru."), style = MaterialTheme.typography.bodySmall)
                         }
                     }
                 },
                 confirmButton = {
                     TextButton(onClick = {
                         scope.launch { vm.addVerified(card); LanShare.acceptFriend(inc) }
-                    }) { Text("Přijmout") }
+                    }) { Text(tr("Přijmout")) }
                 },
-                dismissButton = { TextButton(onClick = { LanShare.dismiss(inc) }) { Text("Odmítnout") } },
+                dismissButton = { TextButton(onClick = { LanShare.dismiss(inc) }) { Text(tr("Odmítnout")) } },
             )
             return@outer
         }
@@ -119,20 +121,20 @@ fun LanIncomingHost() {
         if (deck == null) LaunchedEffect(inc) { LanShare.respond(inc, false, "?") }
         else GoldDialog(
             onDismissRequest = {},
-            title = { Text("Příchozí balík") },
+            title = { Text(tr("Příchozí balík")) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text("${inc.from} ti posílá balík:", style = MaterialTheme.typography.bodyMedium)
+                    Text(tr("{0} ti posílá balík:", (inc.from)), style = MaterialTheme.typography.bodyMedium)
                     Text("„${deck.name}“ · ${deck.total} karet", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
                 }
             },
             confirmButton = {
                 TextButton(onClick = {
-                    vm.importDeck(deck.copy(uid = deck.uid ?: inc.uid), inc.from.takeIf { it != "?" } ?: deck.owner) { n -> Toast.makeText(ctx, "Balík uložen k: $n", Toast.LENGTH_SHORT).show() }
+                    vm.importDeck(deck.copy(uid = deck.uid ?: inc.uid), inc.from.takeIf { it != "?" } ?: deck.owner) { n -> Toast.makeText(ctx, tr("Balík uložen k: {0}", n), Toast.LENGTH_SHORT).show() }
                     scope.launch { LanShare.respond(inc, true, deck.name) }
-                }) { Text("Přijmout") }
+                }) { Text(tr("Přijmout")) }
             },
-            dismissButton = { TextButton(onClick = { scope.launch { LanShare.respond(inc, false, deck.name) } }) { Text("Odmítnout") } },
+            dismissButton = { TextButton(onClick = { scope.launch { LanShare.respond(inc, false, deck.name) } }) { Text(tr("Odmítnout")) } },
         )
     }
 }
@@ -145,7 +147,7 @@ fun FriendsScreen() {
 private fun lastSeenLabel(t: Long): String {
     if (t <= 0) return ""
     val d = (System.currentTimeMillis() - t) / 86_400_000L
-    return when { d < 1 -> "dnes"; d < 2 -> "včera"; d < 30 -> "před $d dny"; else -> "před ${d / 30} měs." }
+    return when { d < 1 -> "dnes"; d < 2 -> tr("včera"); d < 30 -> tr("před {0} dny", d); else -> tr("před {0} měs.", (d / 30)) }
 }
 
 @Composable
@@ -179,7 +181,7 @@ private fun FriendsList(vm: FriendsViewModel = viewModel(factory = AppViewModelF
     val lanOn by LanShare.running.collectAsStateWithLifecycle()
     val peers by LanShare.peers.collectAsStateWithLifecycle()
     val added: (String?) -> Unit = { n ->
-        Toast.makeText(ctx, if (n == null) "Kód přítele se nepodařilo přečíst" else "$n je teď tvůj přítel ✓", Toast.LENGTH_LONG).show()
+        Toast.makeText(ctx, if (n == null) tr("Kód přítele se nepodařilo přečíst") else tr("{0} je teď tvůj přítel ✓", n), Toast.LENGTH_LONG).show()
     }
     val scanQr = {
         com.google.mlkit.vision.codescanner.GmsBarcodeScanning.getClient(
@@ -188,7 +190,7 @@ private fun FriendsList(vm: FriendsViewModel = viewModel(factory = AppViewModelF
                 .setBarcodeFormats(com.google.mlkit.vision.barcode.common.Barcode.FORMAT_QR_CODE).build(),
         ).startScan()
             .addOnSuccessListener { b -> vm.addFromCode(b.rawValue.orEmpty(), added) }
-            .addOnFailureListener { Toast.makeText(ctx, "Skener QR není dostupný", Toast.LENGTH_SHORT).show() }
+            .addOnFailureListener { Toast.makeText(ctx, tr("Skener QR není dostupný"), Toast.LENGTH_SHORT).show() }
         Unit
     }
 
@@ -222,41 +224,41 @@ private fun FriendsList(vm: FriendsViewModel = viewModel(factory = AppViewModelF
                 Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                     FriendAvatar(Me.name, me.color, me.avatar, 56.dp)
                     Column(Modifier.weight(1f).padding(start = 14.dp)) {
-                        Text(me.name.ifBlank { "Nastav si jméno" }, style = MaterialTheme.typography.titleLarge)
-                        Text("Tvůj profil · ID ${me.uid.take(4)}…${me.uid.takeLast(4)}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
-                        TextButton(onClick = { editProfile = true }, contentPadding = PaddingValues(0.dp)) { Text("Upravit profil") }
+                        Text(me.name.ifBlank { tr("Nastav si jméno") }, style = MaterialTheme.typography.titleLarge)
+                        Text(tr("Tvůj profil · ID {0}…{1}", (me.uid.take(4)), (me.uid.takeLast(4))), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
+                        TextButton(onClick = { editProfile = true }, contentPadding = PaddingValues(0.dp)) { Text(tr("Upravit profil")) }
                     }
                     androidx.compose.material3.FilledTonalIconButton(onClick = { showQr = true }, modifier = Modifier.size(52.dp)) {
-                        Icon(Icons.Filled.QrCode2, contentDescription = "Můj QR kód")
+                        Icon(Icons.Filled.QrCode2, contentDescription = tr("Můj QR kód"))
                     }
                 }
             }
             Row(Modifier.fillMaxWidth().padding(top = 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Button(onClick = { addFriend = true }, modifier = Modifier.weight(1f)) {
-                    Icon(Icons.Filled.PersonAdd, null, Modifier.size(18.dp)); Text("  Přidat přítele")
+                    Icon(Icons.Filled.PersonAdd, null, Modifier.size(18.dp)); Text(tr("  Přidat přítele"))
                 }
                 OutlinedButton(onClick = { shareGeneric = true }, modifier = Modifier.weight(1f)) {
-                    Icon(Icons.Filled.Share, null, Modifier.size(18.dp)); Text("  Poslat balík")
+                    Icon(Icons.Filled.Share, null, Modifier.size(18.dp)); Text(tr("  Poslat balík"))
                 }
             }
             TextButton(onClick = {
                 val cm = ctx.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
                 val t = cm.primaryClip?.getItemAt(0)?.coerceToText(ctx)?.toString().orEmpty()
                 if (FriendCode.decode(t) != null) vm.addFromCode(t, added) else { importText = t; showImport = true }
-            }) { Icon(Icons.Filled.ContentPaste, null, Modifier.size(16.dp)); Text("  Vložit ze schránky (balík nebo pozvánka)") }
+            }) { Icon(Icons.Filled.ContentPaste, null, Modifier.size(16.dp)); Text(tr("  Vložit ze schránky (balík nebo pozvánka)")) }
         }
 
         // V okolí
         item {
-            SectionTitle("V okolí (Wi-Fi)") {
+            SectionTitle(tr("V okolí (Wi-Fi)")) {
                 androidx.compose.material3.Switch(checked = lanOn, onCheckedChange = { on -> LanShare.enable(ctx, on) })
             }
             if (!lanOn) Text(
-                "Zapni, a uvidíš kamarády s Grimoarem na stejné Wi-Fi. Přidáš je jedním ťuknutím a balíky si pošlete přímo.",
+                tr("Zapni, a uvidíš kamarády s Grimoarem na stejné Wi-Fi. Přidáš je jedním ťuknutím a balíky si pošlete přímo."),
                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f),
             ) else if (peers.isEmpty()) Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 6.dp)) {
                 androidx.compose.material3.CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp)
-                Text("  Hledám… kamarád musí mít Grimoar otevřený a viditelnost zapnutou.", style = MaterialTheme.typography.bodySmall)
+                Text(tr("  Hledám… kamarád musí mít Grimoar otevřený a viditelnost zapnutou."), style = MaterialTheme.typography.bodySmall)
             }
         }
         items(peers, key = { "p" + it.key }) { p ->
@@ -265,26 +267,26 @@ private fun FriendsList(vm: FriendsViewModel = viewModel(factory = AppViewModelF
                 FriendAvatar(p.name, friend?.color ?: 0, friend?.avatar, 40.dp, online = true)
                 Column(Modifier.weight(1f).padding(start = 12.dp)) {
                     Text(p.name, style = MaterialTheme.typography.bodyLarge)
-                    Text(if (friend != null) "přítel · v okolí" else "v okolí", style = MaterialTheme.typography.labelSmall, color = Color(0xFF8FD6A0))
+                    Text(if (friend != null) tr("přítel · v okolí") else tr("v okolí"), style = MaterialTheme.typography.labelSmall, color = Color(0xFF8FD6A0))
                 }
                 if (friend == null && p.uid != null) TextButton(onClick = {
                     scope.launch {
                         val r = LanShare.requestFriend(p)
-                        Toast.makeText(ctx, if (r.isSuccess) "Žádost odeslána — ${p.name} ji musí potvrdit" else "Nepodařilo se odeslat", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(ctx, if (r.isSuccess) tr("Žádost odeslána — {0} ji musí potvrdit", (p.name)) else tr("Nepodařilo se odeslat"), Toast.LENGTH_SHORT).show()
                     }
-                }) { Text("Přidat") }
-                OutlinedButton(onClick = { sendTo = p }) { Text("Balík") }
+                }) { Text(tr("Přidat")) }
+                OutlinedButton(onClick = { sendTo = p }) { Text(tr("Balík")) }
             }
         }
 
         // Přátelé
-        item { SectionTitle("Přátelé (${friends.size})") }
+        item { SectionTitle(tr("Přátelé ({0})", (friends.size))) }
         if (friends.isEmpty()) item {
             Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = Color.Black.copy(alpha = 0.2f))) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text("Zatím žádní přátelé", style = MaterialTheme.typography.titleSmall)
+                    Text(tr("Zatím žádní přátelé"), style = MaterialTheme.typography.titleSmall)
                     Text(
-                        "Přidej kamaráda naskenováním jeho QR kódu, v okolí na stejné Wi-Fi, nebo mu pošli pozvánku zprávou.",
+                        tr("Přidej kamaráda naskenováním jeho QR kódu, v okolí na stejné Wi-Fi, nebo mu pošli pozvánku zprávou."),
                         style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                     )
                 }
@@ -301,14 +303,14 @@ private fun FriendsList(vm: FriendsViewModel = viewModel(factory = AppViewModelF
                 Column(Modifier.weight(1f).padding(start = 12.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(f.name, style = MaterialTheme.typography.titleSmall)
-                        if (f.verified) Icon(Icons.Filled.Verified, "Ověřený přítel", Modifier.padding(start = 4.dp).size(14.dp), tint = MaterialTheme.colorScheme.primary)
+                        if (f.verified) Icon(Icons.Filled.Verified, tr("Ověřený přítel"), Modifier.padding(start = 4.dp).size(14.dp), tint = MaterialTheme.colorScheme.primary)
                     }
                     Text(
                         listOfNotNull(
-                            if (near) "v okolí" else lastSeenLabel(f.lastSeen).takeIf { it.isNotEmpty() }?.let { "naposledy $it" },
+                            if (near) tr("v okolí") else lastSeenLabel(f.lastSeen).takeIf { it.isNotEmpty() }?.let { "naposledy $it" },
                             if (n > 0) "$n ${if (n == 1) "balík" else if (n < 5) "balíky" else "balíků"}" else null,
-                            if (!f.verified) "nespárováno" else null,
-                        ).joinToString(" · ").ifEmpty { "přítel" },
+                            if (!f.verified) tr("nespárováno") else null,
+                        ).joinToString(" · ").ifEmpty { tr("přítel") },
                         style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                     )
                 }
@@ -321,17 +323,17 @@ private fun FriendsList(vm: FriendsViewModel = viewModel(factory = AppViewModelF
     sendTo?.let { peer ->
         GoldDialog(
             onDismissRequest = { sendTo = null },
-            title = { Text("Poslat balík: ${peer.name}") },
+            title = { Text(tr("Poslat balík: {0}", (peer.name))) },
             text = {
                 Column {
-                    if (myDecks.isEmpty()) Text("Nemáš žádný balík.")
+                    if (myDecks.isEmpty()) Text(tr("Nemáš žádný balík."))
                     myDecks.forEach { d ->
                         Text(
                             d.name,
                             Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).clickable {
                                 scope.launch {
                                     val res = LanShare.send(peer, vm.shareText(d.id))
-                                    Toast.makeText(ctx, if (res.isSuccess) "Odesláno: ${d.name} — čeká na potvrzení" else "Nepodařilo se odeslat — jste na stejné Wi-Fi?", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(ctx, if (res.isSuccess) tr("Odesláno: {0} — čeká na potvrzení", (d.name)) else tr("Nepodařilo se odeslat — jste na stejné Wi-Fi?"), Toast.LENGTH_SHORT).show()
                                     sendTo = null
                                 }
                             }.padding(12.dp),
@@ -341,7 +343,7 @@ private fun FriendsList(vm: FriendsViewModel = viewModel(factory = AppViewModelF
                     }
                 }
             },
-            confirmButton = { TextButton(onClick = { sendTo = null }) { Text("Zavřít") } },
+            confirmButton = { TextButton(onClick = { sendTo = null }) { Text(tr("Zavřít")) } },
         )
     }
     if (shareGeneric) ShareDeckDialog(myDecks, null, vm) { shareGeneric = false }
@@ -349,32 +351,32 @@ private fun FriendsList(vm: FriendsViewModel = viewModel(factory = AppViewModelF
     if (showQr) MyQrDialog(onDismiss = { showQr = false }, onScan = { showQr = false; scanQr() })
     if (addFriend) GoldDialog(
         onDismissRequest = { addFriend = false },
-        title = { Text("Přidat přítele") },
+        title = { Text(tr("Přidat přítele")) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                AddOption(Icons.Filled.QrCodeScanner, "Naskenovat QR kód", "Kamarád ti ukáže svůj kód v Přátelích") { addFriend = false; scanQr() }
-                AddOption(Icons.Filled.QrCode2, "Ukázat můj QR kód", "Kamarád si tě naskenuje") { addFriend = false; showQr = true }
-                AddOption(Icons.Filled.Wifi, "V okolí na Wi-Fi", "Zapni viditelnost a ťukni na Přidat") { addFriend = false; LanShare.enable(ctx, true) }
-                AddOption(Icons.Filled.Send, "Poslat pozvánku zprávou", "WhatsApp, SMS, e-mail…") {
+                AddOption(Icons.Filled.QrCodeScanner, tr("Naskenovat QR kód"), tr("Kamarád ti ukáže svůj kód v Přátelích")) { addFriend = false; scanQr() }
+                AddOption(Icons.Filled.QrCode2, tr("Ukázat můj QR kód"), tr("Kamarád si tě naskenuje")) { addFriend = false; showQr = true }
+                AddOption(Icons.Filled.Wifi, tr("V okolí na Wi-Fi"), tr("Zapni viditelnost a ťukni na Přidat")) { addFriend = false; LanShare.enable(ctx, true) }
+                AddOption(Icons.Filled.Send, tr("Poslat pozvánku zprávou"), "WhatsApp, SMS, e-mail…") {
                     addFriend = false
                     val i = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, FriendCode.inviteText())
-                    ctx.startActivity(Intent.createChooser(i, "Pozvat přítele").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                    ctx.startActivity(Intent.createChooser(i, tr("Pozvat přítele")).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
                 }
             }
         },
-        confirmButton = { TextButton(onClick = { addFriend = false }) { Text("Zavřít") } },
+        confirmButton = { TextButton(onClick = { addFriend = false }) { Text(tr("Zavřít")) } },
     )
     if (showImport) {
         val parsed = remember(importText) { DeckShareCodec.decode(importText) }
         var friendName by remember(parsed) { mutableStateOf(parsed?.owner ?: "") }
         GoldDialog(
             onDismissRequest = { showImport = false },
-            title = { Text("Přijmout balík") },
+            title = { Text(tr("Přijmout balík")) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     if (parsed == null) {
-                        Text("Vlož zprávu s balíkem (obsahuje kód AMDECK1:…). Zkopíruj ji v messengeru a ťukni na Vložit ze schránky.", style = MaterialTheme.typography.bodySmall)
-                        OutlinedTextField(importText, { importText = it }, label = { Text("Text / kód") }, modifier = Modifier.fillMaxWidth(), maxLines = 4)
+                        Text(tr("Vlož zprávu s balíkem (obsahuje kód AMDECK1:…). Zkopíruj ji v messengeru a ťukni na Vložit ze schránky."), style = MaterialTheme.typography.bodySmall)
+                        OutlinedTextField(importText, { importText = it }, label = { Text(tr("Text / kód")) }, modifier = Modifier.fillMaxWidth(), maxLines = 4)
                     } else {
                         Text("„${parsed.name}“ · ${parsed.total} karet", style = MaterialTheme.typography.titleSmall)
                         val known = parsed.uid?.let { u -> friends.firstOrNull { it.uid == u } }
@@ -383,7 +385,7 @@ private fun FriendsList(vm: FriendsViewModel = viewModel(factory = AppViewModelF
                             Text("  od ${known.name}", style = MaterialTheme.typography.bodyMedium)
                         } else {
                             Text("Od: ${parsed.owner}", style = MaterialTheme.typography.bodySmall)
-                            OutlinedTextField(friendName, { friendName = it }, singleLine = true, label = { Text("Uložit k příteli") })
+                            OutlinedTextField(friendName, { friendName = it }, singleLine = true, label = { Text(tr("Uložit k příteli")) })
                             if (friends.isNotEmpty()) Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                                 friends.forEach { f -> com.example.antimarcipan.ui.GoldChip(selected = f.name.equals(friendName, true), onClick = { friendName = f.name }, label = { Text(f.name) }) }
                             }
@@ -393,11 +395,11 @@ private fun FriendsList(vm: FriendsViewModel = viewModel(factory = AppViewModelF
             },
             confirmButton = {
                 TextButton(enabled = parsed != null, onClick = {
-                    parsed?.let { vm.importDeck(it, friendName) { n -> Toast.makeText(ctx, "Balík uložen k: $n", Toast.LENGTH_SHORT).show() } }
+                    parsed?.let { vm.importDeck(it, friendName) { n -> Toast.makeText(ctx, tr("Balík uložen k: {0}", n), Toast.LENGTH_SHORT).show() } }
                     showImport = false
-                }) { Text("Uložit") }
+                }) { Text(tr("Uložit")) }
             },
-            dismissButton = { TextButton(onClick = { showImport = false }) { Text("Zrušit") } },
+            dismissButton = { TextButton(onClick = { showImport = false }) { Text(tr("Zrušit")) } },
         )
     }
 }
@@ -424,7 +426,7 @@ private fun MyQrDialog(onDismiss: () -> Unit, onScan: () -> Unit) {
     val me by Me.profile.collectAsStateWithLifecycle()
     GoldDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Můj kód přítele") },
+        title = { Text(tr("Můj kód přítele")) },
         text = {
             Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -432,14 +434,14 @@ private fun MyQrDialog(onDismiss: () -> Unit, onScan: () -> Unit) {
                     Text("  ${Me.name}", style = MaterialTheme.typography.titleMedium)
                 }
                 androidx.compose.foundation.Image(
-                    bmp, contentDescription = "QR kód",
+                    bmp, contentDescription = tr("QR kód"),
                     modifier = Modifier.size(240.dp).clip(RoundedCornerShape(16.dp)).background(Color.White).padding(10.dp),
                 )
-                Text("Ať si kamarád v Grimoaru → Přátelé → Přidat přítele naskenuje tento kód.", style = MaterialTheme.typography.bodySmall, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                Text(tr("Ať si kamarád v Grimoaru → Přátelé → Přidat přítele naskenuje tento kód."), style = MaterialTheme.typography.bodySmall, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
             }
         },
-        confirmButton = { TextButton(onClick = onScan) { Text("Naskenovat kamaráda") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Zavřít") } },
+        confirmButton = { TextButton(onClick = onScan) { Text(tr("Naskenovat kamaráda")) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(tr("Zavřít")) } },
     )
 }
 
@@ -451,12 +453,12 @@ private fun ProfileDialog(me: Me.Profile, onDismiss: () -> Unit, onSave: (String
     var avatar by remember { mutableStateOf(me.avatar) }
     GoldDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Můj profil") },
+        title = { Text(tr("Můj profil")) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) { FriendAvatar(name.ifBlank { "?" }, color, avatar, 72.dp) }
-                OutlinedTextField(name, { name = it.take(24) }, singleLine = true, label = { Text("Jméno, jak tě uvidí kamarádi") }, modifier = Modifier.fillMaxWidth())
-                Text("Barva", style = MaterialTheme.typography.labelLarge)
+                OutlinedTextField(name, { name = it.take(24) }, singleLine = true, label = { Text(tr("Jméno, jak tě uvidí kamarádi")) }, modifier = Modifier.fillMaxWidth())
+                Text(tr("Barva"), style = MaterialTheme.typography.labelLarge)
                 Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     FRIEND_COLORS.forEachIndexed { i, c ->
                         Box(
@@ -479,8 +481,8 @@ private fun ProfileDialog(me: Me.Profile, onDismiss: () -> Unit, onSave: (String
                 }
             }
         },
-        confirmButton = { TextButton(enabled = name.isNotBlank(), onClick = { onSave(name, color, avatar) }) { Text("Uložit") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Zrušit") } },
+        confirmButton = { TextButton(enabled = name.isNotBlank(), onClick = { onSave(name, color, avatar) }) { Text(tr("Uložit")) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(tr("Zrušit")) } },
     )
 }
 
@@ -490,11 +492,11 @@ private fun ShareDeckDialog(myDecks: List<com.example.antimarcipan.data.local.De
     val scope = rememberCoroutineScope()
     GoldDialog(
         onDismissRequest = onDismiss,
-        title = { Text(if (to != null) "Poslat balík: $to" else "Poslat balík") },
+        title = { Text(if (to != null) tr("Poslat balík: {0}", to) else tr("Poslat balík")) },
         text = {
             Column {
-                Text("Pošle se zprávou (WhatsApp, Quick Share, e-mail…). Kamarád ji otevře v Grimoaru.", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f))
-                if (myDecks.isEmpty()) Text("Nemáš žádný balík.")
+                Text(tr("Pošle se zprávou (WhatsApp, Quick Share, e-mail…). Kamarád ji otevře v Grimoaru."), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f))
+                if (myDecks.isEmpty()) Text(tr("Nemáš žádný balík."))
                 myDecks.forEach { d ->
                     Text(
                         d.name,
@@ -502,9 +504,9 @@ private fun ShareDeckDialog(myDecks: List<com.example.antimarcipan.data.local.De
                             scope.launch {
                                 val text = vm.shareText(d.id)
                                 val send = Intent(Intent.ACTION_SEND).setType("text/plain")
-                                    .putExtra(Intent.EXTRA_SUBJECT, "Balík ${d.name}")
+                                    .putExtra(Intent.EXTRA_SUBJECT, tr("Balík {0}", (d.name)))
                                     .putExtra(Intent.EXTRA_TEXT, text)
-                                ctx.startActivity(Intent.createChooser(send, "Poslat balík").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                                ctx.startActivity(Intent.createChooser(send, tr("Poslat balík")).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
                                 onDismiss()
                             }
                         }.padding(12.dp),
@@ -514,7 +516,7 @@ private fun ShareDeckDialog(myDecks: List<com.example.antimarcipan.data.local.De
                 }
             }
         },
-        confirmButton = { TextButton(onClick = onDismiss) { Text("Zavřít") } },
+        confirmButton = { TextButton(onClick = onDismiss) { Text(tr("Zavřít")) } },
     )
 }
 
@@ -533,38 +535,38 @@ private fun FriendDetail(
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(14.dp)) {
         item {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Zpět") }
+                IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, tr("Zpět")) }
                 Spacer(Modifier.weight(1f))
-                IconButton(onClick = { rename = true }) { Icon(Icons.Filled.Edit, "Přejmenovat") }
-                IconButton(onClick = { confirmDel = true }) { Icon(Icons.Filled.Delete, "Odebrat přítele") }
+                IconButton(onClick = { rename = true }) { Icon(Icons.Filled.Edit, tr("Přejmenovat")) }
+                IconButton(onClick = { confirmDel = true }) { Icon(Icons.Filled.Delete, tr("Odebrat přítele")) }
             }
             Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
                 FriendAvatar(f.name, f.color, f.avatar, 84.dp, online = peer != null)
                 Row(Modifier.padding(top = 10.dp), verticalAlignment = Alignment.CenterVertically) {
                     Text(f.name, style = MaterialTheme.typography.headlineSmall)
-                    if (f.verified) Icon(Icons.Filled.Verified, "Ověřený", Modifier.padding(start = 6.dp).size(20.dp), tint = MaterialTheme.colorScheme.primary)
+                    if (f.verified) Icon(Icons.Filled.Verified, tr("Ověřený"), Modifier.padding(start = 6.dp).size(20.dp), tint = MaterialTheme.colorScheme.primary)
                 }
                 Text(
                     when {
-                        peer != null -> "V okolí na stejné Wi-Fi"
+                        peer != null -> tr("V okolí na stejné Wi-Fi")
                         f.lastSeen > 0 -> "Naposledy ${lastSeenLabel(f.lastSeen)}"
-                        else -> "Přítel od ${java.text.SimpleDateFormat("d. M. yyyy", java.util.Locale("cs")).format(java.util.Date(f.addedAt))}"
+                        else -> tr("Přítel od {0}", (java.text.SimpleDateFormat("d. M. yyyy", java.util.Locale("cs")).format(java.util.Date(f.addedAt))))
                     },
                     style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f),
                 )
                 if (!f.verified) Text(
-                    "Nespárováno — naskenujte si QR kódy nebo se přidejte v okolí, ať se balíky a hlasy přiřadí spolehlivě.",
+                    tr("Nespárováno — naskenujte si QR kódy nebo se přidejte v okolí, ať se balíky a hlasy přiřadí spolehlivě."),
                     Modifier.padding(top = 6.dp), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary,
                     textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                 )
             }
             Row(Modifier.fillMaxWidth().padding(vertical = 14.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Button(onClick = { if (peer != null) lanSend = true else onShare() }, modifier = Modifier.weight(1f)) {
-                    Icon(Icons.Filled.Share, null, Modifier.size(18.dp)); Text(if (peer != null) "  Poslat přes Wi-Fi" else "  Poslat balík")
+                    Icon(Icons.Filled.Share, null, Modifier.size(18.dp)); Text(if (peer != null) tr("  Poslat přes Wi-Fi") else tr("  Poslat balík"))
                 }
             }
-            Text("BALÍKY OD ${f.name.uppercase()}", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
-            if (fDecks.isEmpty()) Text("Zatím ti neposlal/a žádný balík.", Modifier.padding(vertical = 8.dp), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f))
+            Text(tr("BALÍKY OD {0}", (f.name.uppercase())), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+            if (fDecks.isEmpty()) Text(tr("Zatím ti neposlal/a žádný balík."), Modifier.padding(vertical = 8.dp), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f))
         }
         items(fDecks, key = { it.id }) { d ->
             val sd = remember(d.id) { DeckShareCodec.parseJson(d.json) }
@@ -577,7 +579,7 @@ private fun FriendDetail(
                     Column(Modifier.weight(1f)) {
                         Text(d.name, style = MaterialTheme.typography.titleSmall)
                         Text(
-                            "${com.example.antimarcipan.decks.DeckFormat.from(d.format).label} · ${sd?.total ?: 0} karet · rádce proti balíku",
+                            tr("{0} · {1} karet · rádce proti balíku", (com.example.antimarcipan.decks.DeckFormat.from(d.format).label), (sd?.total ?: 0)),
                             style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f),
                         )
                     }
@@ -597,7 +599,7 @@ private fun FriendDetail(
                         Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).clickable {
                             scope.launch {
                                 val res = LanShare.send(peer, vm.shareText(d.id))
-                                Toast.makeText(ctx, if (res.isSuccess) "Odesláno — čeká na potvrzení" else "Nepodařilo se odeslat", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(ctx, if (res.isSuccess) tr("Odesláno — čeká na potvrzení") else tr("Nepodařilo se odeslat"), Toast.LENGTH_SHORT).show()
                                 lanSend = false
                             }
                         }.padding(12.dp),
@@ -607,24 +609,24 @@ private fun FriendDetail(
                 }
             }
         },
-        confirmButton = { TextButton(onClick = { lanSend = false }) { Text("Zavřít") } },
+        confirmButton = { TextButton(onClick = { lanSend = false }) { Text(tr("Zavřít")) } },
     )
     if (rename) {
         var n by remember { mutableStateOf(f.name) }
         GoldDialog(
             onDismissRequest = { rename = false },
-            title = { Text("Přejmenovat přítele") },
-            text = { OutlinedTextField(n, { n = it }, singleLine = true, label = { Text("Jméno") }) },
-            confirmButton = { TextButton(onClick = { vm.renameFriend(f, n); rename = false }) { Text("Uložit") } },
-            dismissButton = { TextButton(onClick = { rename = false }) { Text("Zrušit") } },
+            title = { Text(tr("Přejmenovat přítele")) },
+            text = { OutlinedTextField(n, { n = it }, singleLine = true, label = { Text(tr("Jméno")) }) },
+            confirmButton = { TextButton(onClick = { vm.renameFriend(f, n); rename = false }) { Text(tr("Uložit")) } },
+            dismissButton = { TextButton(onClick = { rename = false }) { Text(tr("Zrušit")) } },
         )
     }
     if (confirmDel) GoldDialog(
         onDismissRequest = { confirmDel = false },
-        title = { Text("Odebrat přítele?") },
-        text = { Text("Odebrat ${f.name} i všechny jeho uložené balíky?") },
-        confirmButton = { TextButton(onClick = { vm.deleteFriend(f.id); confirmDel = false; onBack() }) { Text("Odebrat") } },
-        dismissButton = { TextButton(onClick = { confirmDel = false }) { Text("Zrušit") } },
+        title = { Text(tr("Odebrat přítele?")) },
+        text = { Text(tr("Odebrat {0} i všechny jeho uložené balíky?", (f.name))) },
+        confirmButton = { TextButton(onClick = { vm.deleteFriend(f.id); confirmDel = false; onBack() }) { Text(tr("Odebrat")) } },
+        dismissButton = { TextButton(onClick = { confirmDel = false }) { Text(tr("Zrušit")) } },
     )
 }
 
@@ -641,19 +643,19 @@ private fun FriendDeckView(fd: FriendDeck, vm: FriendsViewModel, onBack: () -> U
 
     Column(Modifier.fillMaxSize()) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Zpět") }
+            IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = tr("Zpět")) }
             Column(Modifier.weight(1f)) {
                 Text(fd.name, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
                 Text("od ${deck?.owner ?: "?"} · ${deck?.total ?: 0} karet", style = MaterialTheme.typography.labelSmall)
             }
-            IconButton(onClick = { confirmDel = true }) { Icon(Icons.Filled.Delete, contentDescription = "Smazat balík") }
+            IconButton(onClick = { confirmDel = true }) { Icon(Icons.Filled.Delete, contentDescription = tr("Smazat balík")) }
         }
-        if (deck == null) { Text("Balík se nepodařilo načíst.", Modifier.padding(16.dp)); return@Column }
+        if (deck == null) { Text(tr("Balík se nepodařilo načíst."), Modifier.padding(16.dp)); return@Column }
         com.example.antimarcipan.ui.CurveBlind(cards.map { DeckCardWithQty(it.first, it.second) })
         LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)) {
             item {
-                Text("Rádce: jak hrát proti tomuhle balíku", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
-                Text("Vyber svůj balík:", style = MaterialTheme.typography.labelSmall)
+                Text(tr("Rádce: jak hrát proti tomuhle balíku"), style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
+                Text(tr("Vyber svůj balík:"), style = MaterialTheme.typography.labelSmall)
                 Row(Modifier.horizontalScroll(rememberScrollState()).padding(vertical = 6.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     myDecks.forEach { d -> com.example.antimarcipan.ui.GoldChip(selected = myDeckId == d.id, onClick = { myDeckId = d.id }, label = { Text(d.name) }) }
                 }
@@ -669,7 +671,7 @@ private fun FriendDeckView(fd: FriendDeck, vm: FriendsViewModel, onBack: () -> U
                     }
                 }
                 if (r.sideboard.isNotEmpty()) {
-                    item { Text("Z tvé sbírky by pomohly:", Modifier.padding(top = 8.dp), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary) }
+                    item { Text(tr("Z tvé sbírky by pomohly:"), Modifier.padding(top = 8.dp), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary) }
                     items(r.sideboard, key = { "sb" + it.first.scryfallId }) { (c, why) ->
                         Row(Modifier.fillMaxWidth().padding(vertical = 3.dp), verticalAlignment = Alignment.CenterVertically) {
                             com.example.antimarcipan.ui.InteractiveThumb(c, width = 36.dp, height = 50.dp)
@@ -695,9 +697,9 @@ private fun FriendDeckView(fd: FriendDeck, vm: FriendsViewModel, onBack: () -> U
     }
     if (confirmDel) GoldDialog(
         onDismissRequest = { confirmDel = false },
-        title = { Text("Smazat balík?") },
-        text = { Text("Smazat uložený balík „${fd.name}“?") },
-        confirmButton = { TextButton(onClick = { vm.deleteDeck(fd.id); confirmDel = false; onBack() }) { Text("Smazat") } },
-        dismissButton = { TextButton(onClick = { confirmDel = false }) { Text("Zrušit") } },
+        title = { Text(tr("Smazat balík?")) },
+        text = { Text(tr("Smazat uložený balík „{0}“?", (fd.name))) },
+        confirmButton = { TextButton(onClick = { vm.deleteDeck(fd.id); confirmDel = false; onBack() }) { Text(tr("Smazat")) } },
+        dismissButton = { TextButton(onClick = { confirmDel = false }) { Text(tr("Zrušit")) } },
     )
 }

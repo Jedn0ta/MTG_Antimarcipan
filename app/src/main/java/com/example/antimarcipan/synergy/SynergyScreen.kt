@@ -1,5 +1,7 @@
 package com.example.antimarcipan.synergy
 
+import com.example.antimarcipan.i18n.tr
+
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.material.icons.Icons
@@ -57,7 +59,7 @@ fun SynergyScreen(
     var selectedDeckId by remember { mutableStateOf<Long?>(null) }
 
     Column(Modifier.fillMaxSize()) {
-        if (onBack != null) com.example.antimarcipan.advisor.HubBackRow("Analýza balíku", onBack)
+        if (onBack != null) com.example.antimarcipan.advisor.HubBackRow(tr("Analýza balíku"), onBack)
         Row(
             Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())
                 .padding(horizontal = 12.dp, vertical = 8.dp),
@@ -74,10 +76,10 @@ fun SynergyScreen(
         HorizontalDivider(Modifier.padding(vertical = 8.dp))
 
         when {
-            decks.isEmpty() -> EmptyState("Žádné balíky", "Nejdřív si vytvoř balík v záložce Balíky.")
+            decks.isEmpty() -> EmptyState(tr("Žádné balíky"), tr("Nejdřív si vytvoř balík v záložce Balíky."))
             selectedDeckId == null -> EmptyState(
-                "Vyber balík",
-                "Poradím s balíkem: rady, jak karty sedí, co nesedí a co doplnit.",
+                tr("Vyber balík"),
+                tr("Poradím s balíkem: rady, jak karty sedí, co nesedí a co doplnit."),
             )
             state.loading -> Row(
                 Modifier.fillMaxWidth().padding(24.dp),
@@ -93,25 +95,25 @@ fun SynergyScreen(
                     }
                     item { ThemeSummary(report.colors, report.topThemes, report.topTribes, report.topKeywords) }
                     if (adv.tips.isNotEmpty()) {
-                        item { SectionTitle("Zdraví balíku") }
+                        item { SectionTitle(tr("Zdraví balíku")) }
                         items(adv.tips) { TipCard(it) }
                     }
 
                     if (state.tips.isNotEmpty()) {
-                        item { SectionTitle("Rady k balíku") }
+                        item { SectionTitle(tr("Rady k balíku")) }
                         items(state.tips) { TipCard(it) }
                     }
 
                     if (report.misfits.isNotEmpty()) {
-                        item { SectionTitle("Zvaž výměnu (${report.misfits.size})") }
+                        item { SectionTitle(tr("Zvaž výměnu ({0})", (report.misfits.size))) }
                         items(report.misfits) { FitRow(it, state.replacements[it.card.scryfallId], state.images) }
                     }
 
-                    item { SectionTitle("Všechny karty podle vhodnosti") }
+                    item { SectionTitle(tr("Všechny karty podle vhodnosti")) }
                     items(report.fits) { FitRow(it) }
 
                     if (state.suggestions.isNotEmpty()) {
-                        item { SectionTitle("Návrhy karet · ${state.suggestionsSource}") }
+                        item { SectionTitle(tr("Návrhy karet · {0}", (state.suggestionsSource))) }
                         items(state.suggestions) { RecRow(it, state.images) }
                     }
                 }
@@ -124,12 +126,12 @@ fun SynergyScreen(
 private fun ThemeSummary(colors: Set<String>, themes: List<String>, tribes: List<String>, keywords: List<String>) {
     Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
         val parts = buildList {
-            if (themes.isNotEmpty()) add("Témata: ${themes.joinToString(", ")}")
+            if (themes.isNotEmpty()) add(tr("Témata: {0}", (themes.joinToString(", "))))
             if (tribes.isNotEmpty()) add("Tribaly: ${tribes.joinToString(", ")}")
-            if (keywords.isNotEmpty()) add("Klíčová slova: ${keywords.joinToString(", ")}")
+            if (keywords.isNotEmpty()) add(tr("Klíčová slova: {0}", (keywords.joinToString(", "))))
         }
         if (parts.isEmpty()) {
-            Text("Balík nemá výrazné téma — návrhy budou spíš podle barev.",
+            Text(tr("Balík nemá výrazné téma — návrhy budou spíš podle barev."),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f))
         } else {
@@ -182,7 +184,7 @@ private fun FitRow(fit: CardFit, replacements: List<String>? = null, images: Map
 
         if (!replacements.isNullOrEmpty()) {
             Text(
-                "Vhodné náhrady:",
+                tr("Vhodné náhrady:"),
                 Modifier.padding(start = 48.dp, top = 6.dp),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.primary,
@@ -204,7 +206,7 @@ private fun FitRow(fit: CardFit, replacements: List<String>? = null, images: Map
                             textAlign = TextAlign.Center,
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
                         )
-                        com.example.antimarcipan.ui.WishlistButton(name, "Náhrada za ${fit.card.name}", compact = true)
+                        com.example.antimarcipan.ui.WishlistButton(name, tr("Náhrada za {0}", (fit.card.name)), compact = true)
                     }
                 }
             }
@@ -266,13 +268,13 @@ private fun RecRow(rec: SynergyRecommendation, images: Map<String, com.example.a
             Text(rec.name, style = MaterialTheme.typography.bodyMedium)
             Text(
                 (if (rec.synergy != 0.0) "synergie ${(rec.synergy * 100).toInt()}% · " else "") +
-                    rec.category + (if (rec.owned) "  ·  máš ve sbírce ✓" else ""),
+                    rec.category + (if (rec.owned) tr("  ·  máš ve sbírce ✓") else ""),
                 style = MaterialTheme.typography.bodySmall,
                 color = if (rec.owned) MaterialTheme.colorScheme.primary
                 else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
             )
         }
-        if (!rec.owned) com.example.antimarcipan.ui.WishlistButton(rec.name, "Návrh Rádce: ${rec.category}", compact = true)
+        if (!rec.owned) com.example.antimarcipan.ui.WishlistButton(rec.name, tr("Návrh Rádce: {0}", (rec.category)), compact = true)
     }
     HorizontalDivider()
 }

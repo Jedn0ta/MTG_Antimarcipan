@@ -1,5 +1,7 @@
 package com.example.antimarcipan.collection
 
+import com.example.antimarcipan.i18n.tr
+
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.Image
@@ -135,7 +137,7 @@ fun CollectionScreen(
             com.example.antimarcipan.ui.GoldChip(
                 selected = tab == 0,
                 onClick = { tab = 0 },
-                label = { Text("Sbírka") },
+                label = { Text(tr("Sbírka")) },
             )
             com.example.antimarcipan.ui.GoldChip(
                 selected = tab == 1,
@@ -169,7 +171,7 @@ fun CollectionScreen(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(6.dp),
         ) {
-            listOf("Vše", "Land", "Spell").forEachIndexed { i, label ->
+            listOf(tr("Vše"), "Land", "Spell").forEachIndexed { i, label ->
                 com.example.antimarcipan.ui.GoldChip(
                     selected = section == i,
                     onClick = { section = i },
@@ -205,14 +207,14 @@ fun CollectionScreen(
                 }
             }
             IconButton(onClick = { settings.setCollectionGrid(!gridMode) }, modifier = Modifier.size(44.dp)) {
-                Icon(if (gridMode) Icons.AutoMirrored.Filled.ViewList else Icons.Filled.GridView, contentDescription = "Zobrazení", modifier = Modifier.size(24.dp))
+                Icon(if (gridMode) Icons.AutoMirrored.Filled.ViewList else Icons.Filled.GridView, contentDescription = tr("Zobrazení"), modifier = Modifier.size(24.dp))
             }
             androidx.compose.material3.BadgedBox(badge = {
                 if (fstate.isActive) androidx.compose.material3.Badge { Text("${fstate.activeCount}") }
             }) {
                 IconButton(onClick = { showControls = true }, modifier = Modifier.size(44.dp)) {
                     Icon(
-                        Icons.Filled.Tune, contentDescription = "Filtr", modifier = Modifier.size(24.dp),
+                        Icons.Filled.Tune, contentDescription = tr("Filtr"), modifier = Modifier.size(24.dp),
                         tint = if (fstate.isActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
                     )
                 }
@@ -240,14 +242,14 @@ fun CollectionScreen(
             Text(
                 when {
                     refreshing -> "aktualizuji…"
-                    updatedAt == 0L -> "ceny neaktuální"
+                    updatedAt == 0L -> tr("ceny neaktuální")
                     else -> "ceny " + android.text.format.DateUtils.getRelativeTimeSpanString(updatedAt, System.currentTimeMillis(), android.text.format.DateUtils.MINUTE_IN_MILLIS)
                 },
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
             )
             if (refreshing) androidx.compose.material3.CircularProgressIndicator(Modifier.padding(start = 6.dp).size(14.dp), strokeWidth = 2.dp)
-            else Icon(Icons.Filled.Refresh, contentDescription = "Aktualizovat ceny", Modifier.padding(start = 6.dp).size(16.dp), tint = MaterialTheme.colorScheme.primary)
+            else Icon(Icons.Filled.Refresh, contentDescription = tr("Aktualizovat ceny"), Modifier.padding(start = 6.dp).size(16.dp), tint = MaterialTheme.colorScheme.primary)
         }
 
         HorizontalDivider()
@@ -256,7 +258,7 @@ fun CollectionScreen(
         // na wishlistu swipe = přesun do sbírky, dlouhé podržení = pryč z wishlistu.
         val onSwipe: (CollectionCard) -> Unit = if (showWishlist || showDraft || showPlayground) {
             { card -> vm.wishlistToCollection(card.scryfallId) {
-                Toast.makeText(context, "„${card.name}“ přesunuto do sbírky", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, tr("„{0}“ přesunuto do sbírky", (card.name)), Toast.LENGTH_SHORT).show()
             } }
         } else {
             { card -> pendingAddDeck = card }
@@ -273,16 +275,16 @@ fun CollectionScreen(
 
         if (source.isEmpty()) {
             EmptyState(
-                if (showPlayground && !fstate.isActive) "Playground je prázdný"
-                else if (showDraft && !fstate.isActive) "Žádné rozpracované karty"
-                else if (showWishlist && !fstate.isActive) "Wishlist je prázdný" else if (fstate.isActive) "Nic nenalezeno" else "Zatím prázdno",
-                if (showPlayground) "Při skenování ťukni na „Playground“ — karta se sem uloží k prozkoumání."
-                else if (showDraft) "Sem patří karty naskenované do poolu draftu / sealed balíku, dokud je nepřidáš do sbírky."
-                else if (showWishlist) "Přidej karty na wishlist ze skenu nebo ručně."
-                else if (fstate.isActive) "Zkus upravit filtr." else "Naskenuj první kartu v záložce Sken.",
+                if (showPlayground && !fstate.isActive) tr("Playground je prázdný")
+                else if (showDraft && !fstate.isActive) tr("Žádné rozpracované karty")
+                else if (showWishlist && !fstate.isActive) tr("Wishlist je prázdný") else if (fstate.isActive) "Nic nenalezeno" else tr("Zatím prázdno"),
+                if (showPlayground) tr("Při skenování ťukni na „Playground“ — karta se sem uloží k prozkoumání.")
+                else if (showDraft) tr("Sem patří karty naskenované do poolu draftu / sealed balíku, dokud je nepřidáš do sbírky.")
+                else if (showWishlist) tr("Přidej karty na wishlist ze skenu nebo ručně.")
+                else if (fstate.isActive) "Zkus upravit filtr." else tr("Naskenuj první kartu v záložce Sken."),
             )
         } else if (gridMode) {
-            androidx.compose.runtime.CompositionLocalProvider(com.example.antimarcipan.ui.LocalCardList provides (if (section == 0) source else lands + spells), com.example.antimarcipan.ui.LocalCardRemoveAction provides (when { showPlayground -> "Odebrat z playgroundu"; showWishlist -> "Odebrat z wishlistu"; showDraft -> "Smazat z draftu"; else -> "Odstranit ze sbírky" } to { c: CollectionCard -> pendingDelete = c })) {
+            androidx.compose.runtime.CompositionLocalProvider(com.example.antimarcipan.ui.LocalCardList provides (if (section == 0) source else lands + spells), com.example.antimarcipan.ui.LocalCardRemoveAction provides (when { showPlayground -> "Odebrat z playgroundu"; showWishlist -> "Odebrat z wishlistu"; showDraft -> "Smazat z draftu"; else -> tr("Odstranit ze sbírky") } to { c: CollectionCard -> pendingDelete = c })) {
             androidx.compose.foundation.lazy.grid.LazyVerticalGrid(
                 columns = androidx.compose.foundation.lazy.grid.GridCells.Adaptive((90 * com.example.antimarcipan.ui.LocalThumbScale.current.grid).dp),
                 modifier = Modifier.weight(1f),
@@ -290,7 +292,7 @@ fun CollectionScreen(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                if (section == 0) collectionGridSection("Vše (${source.size})", source)
+                if (section == 0) collectionGridSection(tr("Vše ({0})", (source.size)), source)
                 else {
                     collectionGridSection("Land (${lands.size})", lands)
                     collectionGridSection("Spell (${spells.size})", spells)
@@ -298,9 +300,9 @@ fun CollectionScreen(
             }
             }
         } else {
-            androidx.compose.runtime.CompositionLocalProvider(com.example.antimarcipan.ui.LocalCardList provides (if (section == 0) source else lands + spells), com.example.antimarcipan.ui.LocalCardRemoveAction provides (when { showPlayground -> "Odebrat z playgroundu"; showWishlist -> "Odebrat z wishlistu"; showDraft -> "Smazat z draftu"; else -> "Odstranit ze sbírky" } to { c: CollectionCard -> pendingDelete = c })) {
+            androidx.compose.runtime.CompositionLocalProvider(com.example.antimarcipan.ui.LocalCardList provides (if (section == 0) source else lands + spells), com.example.antimarcipan.ui.LocalCardRemoveAction provides (when { showPlayground -> "Odebrat z playgroundu"; showWishlist -> "Odebrat z wishlistu"; showDraft -> "Smazat z draftu"; else -> tr("Odstranit ze sbírky") } to { c: CollectionCard -> pendingDelete = c })) {
             LazyColumn(Modifier.weight(1f)) {
-                if (section == 0) collectionListSection("Vše (${source.size})", source, context, vm, onSwipe, onDelete) { pendingEdition = it }
+                if (section == 0) collectionListSection(tr("Vše ({0})", (source.size)), source, context, vm, onSwipe, onDelete) { pendingEdition = it }
                 else {
                     collectionListSection("Land (${lands.size})", lands, context, vm, onSwipe, onDelete) { pendingEdition = it }
                     collectionListSection("Spell (${spells.size})", spells, context, vm, onSwipe, onDelete) { pendingEdition = it }
@@ -320,7 +322,7 @@ fun CollectionScreen(
                 vm.changePrinting(card, print) {
                     Toast.makeText(
                         context,
-                        "Edice změněna: ${print.setName ?: print.set?.uppercase()}",
+                        tr("Edice změněna: {0}", (print.setName ?: print.set?.uppercase())),
                         Toast.LENGTH_SHORT,
                     ).show()
                 }
@@ -335,7 +337,7 @@ fun CollectionScreen(
             onPick = { deck ->
                 pendingAddDeck = null
                 vm.addCardToDeck(deck.id, card.scryfallId) {
-                    Toast.makeText(context, "Přidáno do „${deck.name}“", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, tr("Přidáno do „{0}“", (deck.name)), Toast.LENGTH_SHORT).show()
                 }
             },
         )
@@ -346,8 +348,8 @@ fun CollectionScreen(
             title = if (showPlayground) "Odebrat z playgroundu?" else if (showWishlist) "Odebrat z wishlistu?" else "Smazat kartu?",
             message = if (showPlayground) "Odebrat „${card.name}“ z playgroundu?"
             else if (showWishlist) "Odebrat „${card.name}“ z wishlistu?"
-            else "Opravdu odstranit „${card.name}“ ze sbírky (všechny kusy)? Tohle nejde vrátit.",
-            confirmText = if (showPlayground || showWishlist) "Odebrat" else "Smazat",
+            else tr("Opravdu odstranit „{0}“ ze sbírky (všechny kusy)? Tohle nejde vrátit.", (card.name)),
+            confirmText = if (showPlayground || showWishlist) tr("Odebrat") else tr("Smazat"),
             onConfirm = {
                 if (showPlayground) vm.removeFromPlayground(card) else vm.remove(card.scryfallId)
                 pendingDelete = null

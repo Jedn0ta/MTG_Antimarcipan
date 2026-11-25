@@ -1,5 +1,7 @@
 package com.example.antimarcipan.advisor
 
+import com.example.antimarcipan.i18n.tr
+
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.antimarcipan.data.CollectionRepository
@@ -70,7 +72,7 @@ class AdvisorViewModel(
     fun saveBuild(name: String) {
         val b = _build.value ?: return
         viewModelScope.launch {
-            val id = deckRepo.createDeck(name.ifBlank { "Navržený balík" }, b.format.deckFormat, b.colors.joinToString(""))
+            val id = deckRepo.createDeck(name.ifBlank { tr("Navržený balík") }, b.format.deckFormat, b.colors.joinToString(""))
             b.commander?.let { deckRepo.addCard(id, it.scryfallId); deckRepo.setCommander(id, it) }
             b.cards.forEach { (c, q) -> deckRepo.setBasicLandCount(id, c.scryfallId, q) }
             b.basics.forEach { (n, q) ->
@@ -142,7 +144,7 @@ class AdvisorViewModel(
                         if (deckId > 0 && own != null) {
                             repeat(c.qty) { deckRepo.addCard(deckId, own.scryfallId) }; added += c.qty
                         } else {
-                            collectionRepo.addToWishlistByName(c.name, "Claude: do balíku")
+                            collectionRepo.addToWishlistByName(c.name, tr("Claude: do balíku"))
                                 .onSuccess { wished++ }.onFailure { missing += c.name }
                         }
                     }
@@ -156,13 +158,13 @@ class AdvisorViewModel(
                         }
                     }
                     is com.example.antimarcipan.claude.ClaudeBridge.Change.Wish -> {
-                        collectionRepo.addToWishlistByName(c.name, c.note.ifBlank { "Doporučil Claude" })
+                        collectionRepo.addToWishlistByName(c.name, c.note.ifBlank { tr("Doporučil Claude") })
                             .onSuccess { wished++ }.onFailure { missing += c.name }
                     }
                 }
             }
             onDone(buildString {
-                append("Přidáno do balíku: $added · vyhozeno: $cut · na wishlist: $wished")
+                append(tr("Přidáno do balíku: {0} · vyhozeno: {1} · na wishlist: {2}", added, cut, wished))
                 if (missing.isNotEmpty()) append("\nNenalezeno: ${missing.joinToString()}")
             })
         }

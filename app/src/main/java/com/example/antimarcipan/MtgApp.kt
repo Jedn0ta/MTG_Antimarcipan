@@ -1,5 +1,7 @@
 package com.example.antimarcipan
 
+import com.example.antimarcipan.i18n.tr
+
 import android.app.Application
 import coil.ImageLoader
 import coil.ImageLoaderFactory
@@ -76,7 +78,7 @@ class MtgApp : Application(), ImageLoaderFactory {
                 val stamp = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.ROOT).format(java.util.Date())
                 java.io.File(filesDir, CRASH_LOG).appendText(
                     "=== $stamp · verze ${BuildConfig.VERSION_NAME} · Android ${android.os.Build.VERSION.RELEASE} · " +
-                        "${android.os.Build.MANUFACTURER} ${android.os.Build.MODEL} · vlákno ${thread.name}\n$sw\n"
+                        tr("{0} {1} · vlákno {2}\n{3}\n", (android.os.Build.MANUFACTURER), (android.os.Build.MODEL), (thread.name), sw)
                 )
             }
             previous?.uncaughtException(thread, e)

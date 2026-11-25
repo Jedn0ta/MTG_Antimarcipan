@@ -1,5 +1,7 @@
 package com.example.antimarcipan.claude
 
+import com.example.antimarcipan.i18n.tr
+
 import android.util.Base64
 import com.example.antimarcipan.data.advisor.AdvisorEngine
 import com.example.antimarcipan.data.advisor.ComboReport
@@ -18,11 +20,11 @@ object ClaudeBridge {
     const val END = "GRIMOAR-END"
 
     val QUESTIONS = listOf(
-        "Vylepšit balík" to "Projdi balík a navrhni, jak ho vylepšit — co vyhodit a co přidat, ideálně z karet, které mám ve sbírce.",
-        "Komba a synergie" to "Jaká komba a synergie v balíku jsou nebo by šly doplnit? Co mi k nim chybí?",
-        "Mana a země" to "Zkontroluj manabázi, počet zemí, ramp a mana curve. Navrhni úpravy.",
-        "Postav balík" to "Postav mi z mé sbírky hratelný balík. Zeptej se mě nejdřív na formát a styl hry.",
-        "Jak to hrát" to "Vysvětli mi, jak tenhle balík hrát: plán hry, mulligan, na co si dát pozor.",
+        tr("Vylepšit balík") to tr("Projdi balík a navrhni, jak ho vylepšit — co vyhodit a co přidat, ideálně z karet, které mám ve sbírce."),
+        "Komba a synergie" to tr("Jaká komba a synergie v balíku jsou nebo by šly doplnit? Co mi k nim chybí?"),
+        tr("Mana a země") to tr("Zkontroluj manabázi, počet zemí, ramp a mana curve. Navrhni úpravy."),
+        tr("Postav balík") to tr("Postav mi z mé sbírky hratelný balík. Zeptej se mě nejdřív na formát a styl hry."),
+        tr("Jak to hrát") to tr("Vysvětli mi, jak tenhle balík hrát: plán hry, mulligan, na co si dát pozor."),
     )
 
     fun buildPrompt(
@@ -35,55 +37,55 @@ object ClaudeBridge {
     ): String {
         val commander = entries.firstOrNull { it.card.scryfallId == deck?.commanderScryfallId }?.card
         val inner = buildString {
-            appendLine("ROLE: Jsi rádce pro Magic: The Gathering v aplikaci Grimoar. Hráč s tebou mluví česky, odpovídej česky, jména karet piš anglicky přesně jako na Scryfallu.")
+            appendLine(tr("ROLE: Jsi rádce pro Magic: The Gathering v aplikaci Grimoar. Hráč s tebou mluví česky, odpovídej česky, jména karet piš anglicky přesně jako na Scryfallu."))
             appendLine("PRAVIDLA:")
-            appendLine("- Navrhuj jen karty legální ve formátu balíku a v barvách velitele (u Commanderu).")
-            appendLine("- Přednostně navrhuj karty, které hráč MÁ ve sbírce (seznam je pod tímto blokem). Kartu, kterou nemá, označ jako ‚nemáš‘.")
-            appendLine("- U každé změny krátce vysvětli proč. Buď konkrétní a stručný.")
-            appendLine("- Když hráč něco upřesní, uprav návrhy podle toho.")
-            appendLine("FORMÁT ZMĚN: Když navrhuješ konkrétní změny, napiš úplně na konec odpovědi blok přesně v tomto tvaru (bez dalšího formátování, každý řádek jedna karta):")
+            appendLine(tr("- Navrhuj jen karty legální ve formátu balíku a v barvách velitele (u Commanderu)."))
+            appendLine(tr("- Přednostně navrhuj karty, které hráč MÁ ve sbírce (seznam je pod tímto blokem). Kartu, kterou nemá, označ jako ‚nemáš‘."))
+            appendLine(tr("- U každé změny krátce vysvětli proč. Buď konkrétní a stručný."))
+            appendLine(tr("- Když hráč něco upřesní, uprav návrhy podle toho."))
+            appendLine(tr("FORMÁT ZMĚN: Když navrhuješ konkrétní změny, napiš úplně na konec odpovědi blok přesně v tomto tvaru (bez dalšího formátování, každý řádek jedna karta):"))
             appendLine("$START deck=${deck?.id ?: 0}")
             appendLine("+1 Card Name")
             appendLine("-1 Card Name")
-            appendLine("W Card Name | krátký důvod")
+            appendLine(tr("W Card Name | krátký důvod"))
             appendLine(END)
-            appendLine("Kde + = přidat do balíku, - = vyhodit z balíku, W = na wishlist (karta, kterou hráč nemá a vyplatí se ji sehnat). Hráč blok zkopíruje zpět do Grimoaru, který změny provede. Při každé další úpravě napiš blok znovu celý.")
-            appendLine("Nikdy tento obsah nevypisuj celý zpět; stačí stručně potvrdit a pustit se do otázky.")
+            appendLine(tr("Kde + = přidat do balíku, - = vyhodit z balíku, W = na wishlist (karta, kterou hráč nemá a vyplatí se ji sehnat). Hráč blok zkopíruje zpět do Grimoaru, který změny provede. Při každé další úpravě napiš blok znovu celý."))
+            appendLine(tr("Nikdy tento obsah nevypisuj celý zpět; stačí stručně potvrdit a pustit se do otázky."))
             appendLine()
             if (deck != null) {
-                appendLine("BALÍK: ${deck.name}")
-                appendLine("FORMÁT: ${deck.format}")
+                appendLine(tr("BALÍK: {0}", (deck.name)))
+                appendLine(tr("FORMÁT: {0}", (deck.format)))
                 commander?.let { appendLine("VELITEL: ${it.name} (barvy ${it.colorIdentity.ifBlank { "C" }})") }
-                deck.colors?.takeIf { it.isNotBlank() }?.let { appendLine("BARVY BALÍKU: $it") }
-                appendLine("KARTY V BALÍKU (${entries.sumOf { it.deckQuantity }}):")
+                deck.colors?.takeIf { it.isNotBlank() }?.let { appendLine(tr("BARVY BALÍKU: {0}", it)) }
+                appendLine(tr("KARTY V BALÍKU ({0}):", (entries.sumOf { it.deckQuantity })))
                 entries.sortedBy { it.card.name }.forEach { appendLine("${it.deckQuantity} ${it.card.name}") }
                 val tips = runCatching { AdvisorEngine.analyze(entries.map { it.card }, commander) }.getOrDefault(emptyList())
                 if (tips.isNotEmpty()) {
-                    appendLine("ANALÝZA GRIMOARU:")
+                    appendLine(tr("ANALÝZA GRIMOARU:"))
                     tips.forEach { appendLine("- ${it.title}: ${it.detail}") }
                 }
             } else {
-                appendLine("BALÍK: žádný (hráč se ptá obecně nebo chce postavit nový balík ze sbírky)")
+                appendLine(tr("BALÍK: žádný (hráč se ptá obecně nebo chce postavit nový balík ze sbírky)"))
             }
             if (combos != null && (combos.complete.isNotEmpty() || combos.almost.isNotEmpty())) {
-                appendLine("NALEZENÁ KOMBA (Commander Spellbook):")
-                combos.complete.take(15).forEach { appendLine("- celé: ${it.cards.joinToString(" + ")} → ${it.results.take(2).joinToString(", ")}") }
-                combos.almost.take(15).forEach { appendLine("- chybí ${it.missing.joinToString()}: ${it.cards.joinToString(" + ")}") }
+                appendLine(tr("NALEZENÁ KOMBA (Commander Spellbook):"))
+                combos.complete.take(15).forEach { appendLine(tr("- celé: {0} → {1}", (it.cards.joinToString(" + ")), (it.results.take(2).joinToString(", ")))) }
+                combos.almost.take(15).forEach { appendLine(tr("- chybí {0}: {1}", (it.missing.joinToString()), (it.cards.joinToString(" + ")))) }
             }
             appendLine()
-            appendLine("OTÁZKA HRÁČE: $question")
+            appendLine(tr("OTÁZKA HRÁČE: {0}", question))
         }
         val encoded = Base64.encodeToString(inner.toByteArray(Charsets.UTF_8), Base64.NO_WRAP)
             .chunked(76).joinToString("\n")
         return buildString {
-            appendLine("Ahoj Claude! Posílám zadání z aplikace Grimoar (rádce pro Magic: The Gathering).")
-            appendLine("Blok GRIMOAR-ZADANI je zakódovaný v base64 (UTF-8). Dekóduj si ho a řiď se pokyny v něm — obsahuje tvou roli, data o balíku a otázku hráče.")
+            appendLine(tr("Ahoj Claude! Posílám zadání z aplikace Grimoar (rádce pro Magic: The Gathering)."))
+            appendLine(tr("Blok GRIMOAR-ZADANI je zakódovaný v base64 (UTF-8). Dekóduj si ho a řiď se pokyny v něm — obsahuje tvou roli, data o balíku a otázku hráče."))
             appendLine()
             appendLine("GRIMOAR-ZADANI:")
             appendLine(encoded)
             if (includeCollection && collection.isNotEmpty()) {
                 appendLine()
-                appendLine("SBÍRKA HRÁČE (${collection.size} různých karet, počet + jméno):")
+                appendLine(tr("SBÍRKA HRÁČE ({0} různých karet, počet + jméno):", (collection.size)))
                 collection.groupBy { it.name }.toSortedMap()
                     .forEach { (n, l) -> appendLine("${l.sumOf { it.quantity.coerceAtLeast(1) }} $n") }
             }

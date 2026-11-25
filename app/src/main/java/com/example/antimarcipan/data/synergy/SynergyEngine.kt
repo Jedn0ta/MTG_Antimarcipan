@@ -1,5 +1,7 @@
 package com.example.antimarcipan.data.synergy
 
+import com.example.antimarcipan.i18n.tr
+
 import com.example.antimarcipan.data.colorIdentityList
 import com.example.antimarcipan.data.local.CollectionCard
 
@@ -113,21 +115,21 @@ object SynergyEngine {
         val ci = card.colorIdentityList()
         val offColor = ci.any { it !in deckColors } && deckColors.isNotEmpty()
         when {
-            offColor -> { score -= 35; reasons += "mimo barvu balíku" }
+            offColor -> { score -= 35; reasons += tr("mimo barvu balíku") }
             ci.isNotEmpty() -> { score += 8 }
         }
 
         // Země se vždy hodí
         if (card.isLand()) {
             score = (score + 25).coerceAtMost(85)
-            reasons += "země (mana základ)"
+            reasons += tr("země (mana základ)")
         }
 
         // Klíčová slova
         val kwHit = card.keywordList().toSet().intersect(topKeywords)
         if (kwHit.isNotEmpty()) {
             score += (kwHit.size * 7).coerceAtMost(21)
-            reasons += "sdílí: ${kwHit.joinToString(", ")}"
+            reasons += tr("sdílí: {0}", (kwHit.joinToString(", ")))
         }
 
         // Tribaly
@@ -145,7 +147,7 @@ object SynergyEngine {
         }
         if (themeHits.isNotEmpty()) {
             score += (themeHits.size * 8).coerceAtMost(24)
-            reasons += "téma: ${themeHits.joinToString(", ")}"
+            reasons += tr("téma: {0}", (themeHits.joinToString(", ")))
         }
 
         // Univerzálně užitečné role — dobré skoro v každém balíku.
@@ -155,10 +157,10 @@ object SynergyEngine {
         if (Regex("draw (a|two|three|\\w+) card").containsMatchIn(o)) roles += "draw"
         if (roles.isNotEmpty() && !card.isLand()) {
             score += (roles.size * 5).coerceAtMost(12)
-            reasons += "univerzální: ${roles.joinToString(", ")}"
+            reasons += tr("univerzální: {0}", (roles.joinToString(", ")))
         }
 
-        if (reasons.isEmpty()) reasons += "žádná zřejmá synergie"
+        if (reasons.isEmpty()) reasons += tr("žádná zřejmá synergie")
 
         return CardFit(
             card = card,

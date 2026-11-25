@@ -1,5 +1,7 @@
 package com.example.antimarcipan.decks
 
+import com.example.antimarcipan.i18n.tr
+
 import android.content.Context
 import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -125,23 +127,23 @@ internal val MAIN_TYPES = listOf(
 )
 
 internal enum class DeckSectionMode(val label: String) {
-    ALL("Vše"), LANDS("Land"), OTHERS("Spell")
+    ALL(tr("Vše")), LANDS("Land"), OTHERS("Spell")
 }
 
 // ---- Barvy balíku a název barevné kombinace ----
 
 internal val WUBRG = listOf("W", "U", "B", "R", "G")
 
-internal val COLOR_CZ = mapOf("W" to "bílé", "U" to "modré", "B" to "černé", "R" to "červené", "G" to "zelené")
+internal val COLOR_CZ = mapOf("W" to tr("bílé"), "U" to tr("modré"), "B" to tr("černé"), "R" to tr("červené"), "G" to tr("zelené"))
 
 internal val COMBO_NAMES = mapOf(
-    "W" to "Bílá", "U" to "Modrá", "B" to "Černá", "R" to "Červená", "G" to "Zelená", "C" to "Bezbarvá",
+    "W" to tr("Bílá"), "U" to tr("Modrá"), "B" to tr("Černá"), "R" to tr("Červená"), "G" to tr("Zelená"), "C" to tr("Bezbarvá"),
     "WU" to "Azorius", "WB" to "Orzhov", "WR" to "Boros", "WG" to "Selesnya",
     "UB" to "Dimir", "UR" to "Izzet", "UG" to "Simic",
     "BR" to "Rakdos", "BG" to "Golgari", "RG" to "Gruul",
     "WUB" to "Esper", "WUR" to "Jeskai", "WUG" to "Bant", "WBR" to "Mardu", "WBG" to "Abzan",
     "WRG" to "Naya", "UBR" to "Grixis", "UBG" to "Sultai", "URG" to "Temur", "BRG" to "Jund",
-    "WUBRG" to "Pětibarevný (WUBRG)",
+    "WUBRG" to tr("Pětibarevný (WUBRG)"),
 )
 
 /** "WUB" → {W,U,B}; filtruje jen platné znaky many. */
@@ -152,12 +154,12 @@ internal fun parseDeckColors(colors: String?): Set<String> =
 /** Název barevné kombinace (Azorius, Jeskai…), nebo null když se nehodí. */
 internal fun comboName(colors: Set<String>): String? {
     val cols = WUBRG.filter { it in colors }
-    if (cols.isEmpty()) return if ("C" in colors) "Bezbarvá" else null
+    if (cols.isEmpty()) return if ("C" in colors) tr("Bezbarvá") else null
     val key = cols.joinToString("")
     COMBO_NAMES[key]?.let { return it }
     if (cols.size == 4) {
         val missing = WUBRG.first { it !in colors }
-        return "Čtyřbarevný (bez ${COLOR_CZ[missing]})"
+        return tr("Čtyřbarevný (bez {0})", (COLOR_CZ[missing]))
     }
     return null
 }
@@ -175,7 +177,7 @@ internal fun formatIcon(format: DeckFormat): androidx.compose.ui.graphics.vector
 // ---- Kontextový filtr balíku (select-list) ----
 
 internal val COLOR_LABELS = linkedMapOf(
-    "W" to "Bílá", "U" to "Modrá", "B" to "Černá", "R" to "Červená", "G" to "Zelená", "C" to "Bezbarvá",
+    "W" to tr("Bílá"), "U" to tr("Modrá"), "B" to tr("Černá"), "R" to tr("Červená"), "G" to tr("Zelená"), "C" to tr("Bezbarvá"),
 )
 
 internal val MANA_BUCKETS = listOf("0–1", "2–3", "4–5", "6+")
@@ -200,7 +202,7 @@ internal fun manaBucketOf(cmc: Double?): String {
 internal fun matchDeckValue(card: CollectionCard, cat: String, value: String): Boolean = when (cat) {
     "Typ" -> card.typeLine?.contains(value, ignoreCase = true) == true
     "Tribal" -> creatureSubtypesOf(card).any { it.equals(value, ignoreCase = true) }
-    "Barva" -> card.colorIdentityList().contains(value)
+    tr("Barva") -> card.colorIdentityList().contains(value)
     "Mana" -> manaBucketOf(card.cmc) == value
     else -> true
 }
@@ -214,7 +216,7 @@ internal fun DeckGrid(
 ) {
     if (emptyDeck) {
         Text(
-            "Zatím prázdný — přepni na seznam a přidej karty ze sbírky.",
+            tr("Zatím prázdný — přepni na seznam a přidej karty ze sbírky."),
             Modifier.padding(16.dp),
             style = MaterialTheme.typography.bodySmall,
         )
@@ -230,7 +232,7 @@ internal fun DeckGrid(
     ) {
         if (orderedLands.isNotEmpty()) {
             item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(maxLineSpan) }) {
-                SectionHeader("Ostatní země (${orderedLands.sumOf { it.deckQuantity }})")
+                SectionHeader(tr("Ostatní země ({0})", (orderedLands.sumOf { it.deckQuantity })))
             }
             gridItems(orderedLands, key = { "gl-" + it.card.scryfallId }) { entry ->
                 DeckGridCell(entry)
@@ -306,7 +308,7 @@ internal fun BasicLandPanel(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    "Základní země · ${counts.values.sum()}",
+                    tr("Základní země · {0}", (counts.values.sum())),
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.primary,
                 )
@@ -378,7 +380,7 @@ internal fun BasicLandPanel(
             }
             if (expanded && relevant.isNotEmpty() && relevant.size < BASIC_TYPES.size) {
                 Text(
-                    if (showAll) "Jen barvy balíku" else "Ukázat všechny základní země",
+                    if (showAll) tr("Jen barvy balíku") else tr("Ukázat všechny základní země"),
                     Modifier.padding(start = 6.dp, top = 4.dp).clickable { showAll = !showAll },
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.primary,
@@ -428,7 +430,7 @@ internal fun DeckEntryRow(
             IconButton(onClick = onCommander, modifier = Modifier.size(40.dp)) {
                 Icon(
                     Icons.Filled.Star,
-                    contentDescription = "Velitel",
+                    contentDescription = tr("Velitel"),
                     tint = if (isCommander) MaterialTheme.colorScheme.primary
                     else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
                 )
@@ -441,7 +443,7 @@ internal fun DeckEntryRow(
         var detail by remember { mutableStateOf(false) }
         Box {
             IconButton(onClick = { menu = true }, modifier = Modifier.size(40.dp)) {
-                Icon(Icons.Filled.MoreVert, contentDescription = "Možnosti karty")
+                Icon(Icons.Filled.MoreVert, contentDescription = tr("Možnosti karty"))
             }
             androidx.compose.material3.DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
                 Text(
@@ -450,7 +452,7 @@ internal fun DeckEntryRow(
                     style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary,
                 )
                 androidx.compose.material3.DropdownMenuItem(
-                    text = { Text("Přidat kus (+1)") },
+                    text = { Text(tr("Přidat kus (+1)")) },
                     leadingIcon = { Icon(Icons.Filled.Add, null) },
                     onClick = { onChangeQty(entry.deckQuantity + 1) },
                 )
@@ -461,7 +463,7 @@ internal fun DeckEntryRow(
                     onClick = { onChangeQty(entry.deckQuantity - 1) },
                 )
                 androidx.compose.material3.DropdownMenuItem(
-                    text = { Text("Detail karty") },
+                    text = { Text(tr("Detail karty")) },
                     leadingIcon = { Icon(Icons.Filled.Info, null) },
                     onClick = { menu = false; detail = true },
                 )
@@ -473,7 +475,7 @@ internal fun DeckEntryRow(
                 )
                 androidx.compose.material3.HorizontalDivider()
                 androidx.compose.material3.DropdownMenuItem(
-                    text = { Text("Odebrat z balíku", color = Color(0xFFFF8A8A)) },
+                    text = { Text(tr("Odebrat z balíku"), color = Color(0xFFFF8A8A)) },
                     leadingIcon = { Icon(Icons.Filled.Delete, null, tint = Color(0xFFFF8A8A)) },
                     onClick = { menu = false; onLongRemove() },
                 )
@@ -499,7 +501,7 @@ internal fun BasicLandsDialog(
     val counts = remember { mutableStateMapOf<String, Int>() }
     com.example.antimarcipan.ui.GoldDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Přidat základní země") },
+        title = { Text(tr("Přidat základní země")) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 lands.forEach { (name, res) ->
@@ -525,16 +527,16 @@ internal fun BasicLandsDialog(
                     }
                 }
                 Text(
-                    "Nastavuje celkový počet dané základní země v balíku.",
+                    tr("Nastavuje celkový počet dané základní země v balíku."),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                 )
             }
         },
         confirmButton = {
-            TextButton(onClick = { onConfirm(counts.toMap()) }) { Text("Přidat") }
+            TextButton(onClick = { onConfirm(counts.toMap()) }) { Text(tr("Přidat")) }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Zrušit") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(tr("Zrušit")) } },
     )
 }
 

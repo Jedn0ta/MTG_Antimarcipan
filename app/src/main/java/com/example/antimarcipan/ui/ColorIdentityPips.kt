@@ -1,5 +1,7 @@
 package com.example.antimarcipan.ui
 
+import com.example.antimarcipan.i18n.tr
+
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
@@ -22,7 +24,7 @@ fun ColorIdentityPips(colors: Set<String>, symbolSize: Int = 18) {
         if (present.isEmpty()) {
             Image(
                 painter = painterResource(R.drawable.mana_c),
-                contentDescription = "bezbarvé",
+                contentDescription = tr("bezbarvé"),
                 modifier = Modifier.size(symbolSize.dp),
             )
         } else {
