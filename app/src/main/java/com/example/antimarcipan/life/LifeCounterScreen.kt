@@ -1,5 +1,6 @@
 package com.example.antimarcipan.life
 
+import androidx.compose.ui.draw.drawBehind
 import android.content.Context
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -309,7 +310,7 @@ fun LifeCounterScreen() {
     val n = LifeState.count
     val save = { LifeState.save(ctx) }
 
-    Column(Modifier.fillMaxSize().background(Color(0xFF0E0B1C))) {
+    Column(Modifier.fillMaxSize().dayNightBackdrop(LifeState.dayNight)) {
         // Rozložení hráčů kolem stolu + kulaté tlačítko nastavení uprostřed
         var showMenu by remember { mutableStateOf(false) }
         Box(
@@ -393,6 +394,7 @@ private fun Tile(index: Int, rotation: Float, modifier: Modifier, save: () -> Un
                     else listOf(color, color.copy(alpha = 0.55f).compositeOver(Color(0xFF120E22)))
                 )
             )
+            .dayNightTint(LifeState.dayNight, dead)
             .background(Color(0xFFFF3B3B).copy(alpha = 0.35f * blink))
             .border(
                 if (isStarter) 3.dp else 1.dp,
@@ -910,4 +912,55 @@ private fun vibrate(ctx: Context) {
         if (android.os.Build.VERSION.SDK_INT >= 26) v.vibrate(android.os.VibrationEffect.createWaveform(pattern, -1))
         else @Suppress("DEPRECATION") v.vibrate(pattern, -1)
     }
+}
+
+
+// ---------------------------------------------------------------- Den / noc
+
+/** Pozadí stolu: noc = tmavá obloha s hvězdami a měsícem, den = obloha se sluncem. */
+@Composable
+private fun Modifier.dayNightBackdrop(mode: Int): Modifier {
+    val top by androidx.compose.animation.animateColorAsState(
+        when (mode) { 1 -> Color(0xFF4F8FC9); 2 -> Color(0xFF040817); else -> Color(0xFF0E0B1C) }, androidx.compose.animation.core.tween(900), label = "dnTop",
+    )
+    val bottom by androidx.compose.animation.animateColorAsState(
+        when (mode) { 1 -> Color(0xFFF3C77A); 2 -> Color(0xFF16204A); else -> Color(0xFF0E0B1C) }, androidx.compose.animation.core.tween(900), label = "dnBot",
+    )
+    return this.drawBehind {
+        drawRect(Brush.verticalGradient(listOf(top, bottom)))
+        when (mode) {
+            2 -> {
+                STARS.forEach { (x, y, r) -> drawCircle(Color.White.copy(alpha = 0.35f + r / 4f), r * density, androidx.compose.ui.geometry.Offset(x * size.width, y * size.height)) }
+                val c = androidx.compose.ui.geometry.Offset(size.width * 0.82f, size.height * 0.5f)
+                drawCircle(Brush.radialGradient(listOf(Color(0x55DDE6FF), Color.Transparent), c, 90 * density), 90 * density, c)
+            }
+            1 -> {
+                val c = androidx.compose.ui.geometry.Offset(size.width * 0.5f, size.height * 0.5f)
+                drawCircle(Brush.radialGradient(listOf(Color(0x99FFF1B8), Color(0x22FFD76A), Color.Transparent), c, 220 * density), 220 * density, c)
+            }
+        }
+    }
+}
+
+/** Tónování dlaždice hráče: noc = chladný modrý závoj s hvězdami, den = teplé světlo. */
+@Composable
+private fun Modifier.dayNightTint(mode: Int, dead: Boolean): Modifier {
+    if (dead || mode == 0) return this
+    return this.drawBehind {
+        if (mode == 2) {
+            drawRect(Brush.verticalGradient(listOf(Color(0x99081030), Color(0x660A1440))))
+            STARS.take(18).forEach { (x, y, r) -> drawCircle(Color.White.copy(alpha = 0.25f + r / 6f), r * 0.8f * density, androidx.compose.ui.geometry.Offset(x * size.width, y * size.height)) }
+        } else {
+            drawRect(Brush.verticalGradient(listOf(Color(0x40FFF3C4), Color(0x10FFD27A))))
+            drawCircle(
+                Brush.radialGradient(listOf(Color(0x55FFF6D0), Color.Transparent), androidx.compose.ui.geometry.Offset(size.width * 0.85f, 0f), size.minDimension * 0.7f),
+                size.minDimension * 0.7f, androidx.compose.ui.geometry.Offset(size.width * 0.85f, 0f),
+            )
+        }
+    }
+}
+
+/** Pevně rozmístěné hvězdy (x, y v 0..1, poloměr v dp). */
+private val STARS: List<Triple<Float, Float, Float>> = kotlin.random.Random(7).let { rnd ->
+    List(60) { Triple(rnd.nextFloat(), rnd.nextFloat(), 0.6f + rnd.nextFloat() * 1.4f) }
 }
