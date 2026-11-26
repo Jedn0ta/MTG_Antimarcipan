@@ -4,6 +4,16 @@ package com.example.antimarcipan.i18n
 val EN: Map<String, String> by lazy {
     HashMap<String, String>(1200).apply {
         put("Podle telefonu", "Phone default")
+        put("1) Zkopíruj zadání a vlož ho do Clauda (claude.ai). 2) Až Claude navrhne změny, zkopíruj celou jeho odpověď (nebo jen blok GRIMOAR-START…END) a pošli ji do telefonu.", "1) Copy the request and paste it into Claude (claude.ai). 2) When Claude suggests changes, copy its whole answer (or just the GRIMOAR-START…END block) and send it to the phone.")
+        put("Zadání pro Clauda", "Request for Claude")
+        put("Kopírovat zadání", "Copy request")
+        put("Otevřít claude.ai", "Open claude.ai")
+        put("Načíst znovu", "Reload")
+        put("Odpověď od Clauda", "Claude's answer")
+        put("Sem vlož odpověď od Clauda…", "Paste Claude's answer here…")
+        put("Poslat do telefonu", "Send to phone")
+        put("Zkopírováno ✓", "Copied ✓")
+        put("Odesláno — potvrď změny v telefonu ✓", "Sent — confirm the changes on your phone ✓")
         put("Artefakt", "Artifact")
         put("Barvy", "Colors")
         put("Bez limitu", "No limit")

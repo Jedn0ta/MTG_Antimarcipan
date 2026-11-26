@@ -96,7 +96,7 @@ object PcBridge {
             .firstOrNull { it is Inet4Address && it.isSiteLocalAddress }?.hostAddress
     }.getOrNull()
 
-    private fun page(): String = """<!doctype html><html lang="cs"><head><meta charset="utf-8">
+    private fun page(): String = """<!doctype html><html lang="${if (com.example.antimarcipan.i18n.I18n.english) "en" else "cs"}"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1"><title>Grimoar · Claude</title>
 <style>
 body{margin:0;background:#140f24;color:#eee;font-family:system-ui,Segoe UI,Roboto,sans-serif}
@@ -110,22 +110,22 @@ button.o{background:transparent;color:#e9c46a;border:1px solid #e9c46a}
 #st,#st2{color:#8fd6a0;margin-left:6px}
 </style></head><body><main>
 <h1>Grimoar · Claude</h1>
-<p>1) Zkopíruj zadání a vlož ho do Clauda (claude.ai). 2) Až Claude navrhne změny, zkopíruj celou jeho odpověď (nebo jen blok GRIMOAR-START…END) a pošli ji do telefonu.</p>
-<h2>Zadání pro Clauda</h2>
+<p>${tr("1) Zkopíruj zadání a vlož ho do Clauda (claude.ai). 2) Až Claude navrhne změny, zkopíruj celou jeho odpověď (nebo jen blok GRIMOAR-START…END) a pošli ji do telefonu.")}</p>
+<h2>${tr("Zadání pro Clauda")}</h2>
 <textarea id="p" rows="12" readonly></textarea>
-<button onclick="cp()">Kopírovat zadání</button><button class="o" onclick="window.open('https://claude.ai/new','_blank')">Otevřít claude.ai</button><button class="o" onclick="load()">Načíst znovu</button><span id="st"></span>
-<h2>Odpověď od Clauda</h2>
-<textarea id="r" rows="10" placeholder="Sem vlož odpověď od Clauda…"></textarea>
-<button onclick="send()">Poslat do telefonu</button><span id="st2"></span>
+<button onclick="cp()">${tr("Kopírovat zadání")}</button><button class="o" onclick="window.open('https://claude.ai/new','_blank')">${tr("Otevřít claude.ai")}</button><button class="o" onclick="load()">${tr("Načíst znovu")}</button><span id="st"></span>
+<h2>${tr("Odpověď od Clauda")}</h2>
+<textarea id="r" rows="10" placeholder="${tr("Sem vlož odpověď od Clauda…")}"></textarea>
+<button onclick="send()">${tr("Poslat do telefonu")}</button><span id="st2"></span>
 <script>
 const base=location.pathname;
 async function load(){const t=await (await fetch(base+'/prompt')).text();document.getElementById('p').value=t;}
 function cp(){const p=document.getElementById('p');p.select();
  if(navigator.clipboard&&window.isSecureContext){navigator.clipboard.writeText(p.value)}else{document.execCommand('copy')}
- document.getElementById('st').textContent='Zkopírováno ✓';}
+ document.getElementById('st').textContent='${tr("Zkopírováno ✓")}';}
 async function send(){const v=document.getElementById('r').value;if(!v.trim())return;
  const r=await fetch(base+'/reply',{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:v});
- document.getElementById('st2').textContent=r.ok?'Odesláno — potvrď změny v telefonu ✓':'Nepodařilo se odeslat';}
+ document.getElementById('st2').textContent=r.ok?'${tr("Odesláno — potvrď změny v telefonu ✓")}':'${tr("Nepodařilo se odeslat")}';}
 load();
 </script></main></body></html>"""
 }
