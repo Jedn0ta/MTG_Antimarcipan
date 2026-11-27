@@ -48,7 +48,7 @@ fun PlusOffer(feature: String, modifier: Modifier = Modifier, onClose: (() -> Un
         Text("Grimoar Plus", style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.primary)
         Text(feature, style = MaterialTheme.typography.titleMedium, textAlign = TextAlign.Center)
         Text(
-            tr("Jednorázové odemknutí: počítadlo životů pro 2–6 hráčů a zakládání anket na srazy. Sken, sbírka, balíky, Rádce a hlasování v anketách zůstávají zdarma. Jako poděkování dostaneš i zlatou hvězdičku ✦."),
+            tr("Jednorázové odemknutí zakládání anket na srazy. Všechno ostatní — sken, sbírka, balíky, Rádce, počítadlo životů i hlasování v anketách — zůstává zdarma. Jako poděkování dostaneš i zlatou hvězdičku ✦."),
             style = MaterialTheme.typography.bodyMedium, textAlign = TextAlign.Center,
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.75f),
         )

@@ -468,7 +468,7 @@ private fun SupportCard() {
     Card(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp)) {
         if (unlocked) Column(Modifier.fillMaxWidth().padding(16.dp)) {
             Text("✦ Grimoar Plus", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
-            Text(tr("Díky! Máš Grimoar Plus — počítadlo životů i zakládání anket jsou odemčené."), style = MaterialTheme.typography.bodySmall)
+            Text(tr("Díky! Máš Grimoar Plus — zakládání anket je odemčené."), style = MaterialTheme.typography.bodySmall)
         } else com.example.antimarcipan.support.PlusOffer("", Modifier.fillMaxWidth())
     }
 }
