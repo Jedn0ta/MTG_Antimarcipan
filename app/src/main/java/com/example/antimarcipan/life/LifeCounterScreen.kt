@@ -504,11 +504,11 @@ private fun CommanderDamageDialog(index: Int, onDismiss: () -> Unit, save: () ->
     val p = LifeState.players[index]
     com.example.antimarcipan.ui.GoldDialog(
         onDismissRequest = onDismiss,
-        title = { Text(tr("Commander damage – Hráč {0}", (index + 1))) },
+        title = { Text(tr("Poškození od soupeřů – Hráč {0}", (index + 1))) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
-                    tr("Poškození od velitele soupeře. Změna se odečte i ze životů. 21 od jednoho velitele = prohra."),
+                    tr("Zvláštní poškození počítané zvlášť od každého soupeře. Změna se odečte i ze životů. 21 od jednoho soupeře = prohra."),
                     style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.65f),
                 )
                 for (j in 0 until LifeState.count) {
@@ -731,10 +731,10 @@ private fun LifeMenu(onDismiss: () -> Unit, save: () -> Unit) {
                     }
                 }
                 MenuSection(tr("Počítadla")) {
-                    SwitchRow(tr("Jed (infect / poison)"), tr("☠ ťuk +1, podržet −1; 10 = prohra"), LifeState.showPoison) {
+                    SwitchRow(tr("Alternativní poškození (žetony)"), tr("☠ ťuk +1, podržet −1; 10 = prohra"), LifeState.showPoison) {
                         LifeState.showPoison = it; save()
                     }
-                    SwitchRow(tr("Commander damage"), tr("⚔ poškození od velitelů soupeřů; 21 = prohra"), LifeState.showCmd) {
+                    SwitchRow(tr("Poškození od soupeřů"), tr("⚔ počítá se zvlášť od každého soupeře; 21 = prohra"), LifeState.showCmd) {
                         LifeState.showCmd = it; save()
                     }
                 }

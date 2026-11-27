@@ -71,6 +71,7 @@ fun PollsScreen() {
     val openReq by PollStore.openRequest.collectAsState()
     var openId by remember { mutableStateOf<String?>(null) }
     var creating by remember { mutableStateOf(false) }
+    var paywall by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     var lastClip by remember { mutableStateOf("") }
 
@@ -101,7 +102,7 @@ fun PollsScreen() {
             }
         }
         Row(Modifier.padding(horizontal = 14.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Button(onClick = { creating = true }) { Icon(Icons.Filled.Add, null); Text(tr(" Nová anketa")) }
+            Button(onClick = { if (com.example.antimarcipan.support.Plus.unlocked) creating = true else paywall = true }) { Icon(Icons.Filled.Add, null); Text(tr(" Nová anketa")) }
             OutlinedButton(onClick = {
                 val t = readClip(ctx)
                 if (!PollStore.receive(t)) PollStore.notice.value = tr("Ve schránce není pozvánka ani hlas z Grimoaru.")
@@ -118,6 +119,15 @@ fun PollsScreen() {
         }
     }
 
+    if (paywall) {
+        val ok = com.example.antimarcipan.support.rememberPlusUnlocked()
+        LaunchedEffect(ok) { if (ok) { paywall = false; creating = true } }
+        androidx.compose.ui.window.Dialog(onDismissRequest = { paywall = false }) {
+            androidx.compose.material3.Surface(shape = RoundedCornerShape(24.dp), color = MaterialTheme.colorScheme.surface) {
+                com.example.antimarcipan.support.PlusOffer(tr("Zakládání anket je součástí Grimoar Plus"), onClose = { paywall = false })
+            }
+        }
+    }
     if (creating) CreatePollDialog(onDismiss = { creating = false }) { openId = it.id; creating = false }
     notice?.let { msg ->
         GoldDialog(

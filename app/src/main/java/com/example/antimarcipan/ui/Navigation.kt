@@ -272,7 +272,10 @@ fun AntimarcipanApp() {
             composable(MANUAL_ROUTE) { ManualAddScreen() }
             composable(FRIENDS_ROUTE) { com.example.antimarcipan.friends.FriendsScreen() }
             composable(BOARD_ROUTE) { com.example.antimarcipan.polls.PollsScreen() }
-            composable(LIFE_ROUTE) { com.example.antimarcipan.life.LifeCounterScreen() }
+            composable(LIFE_ROUTE) {
+                if (com.example.antimarcipan.support.rememberPlusUnlocked()) com.example.antimarcipan.life.LifeCounterScreen()
+                else com.example.antimarcipan.support.PlusScreen(tr("Počítadlo životů je součástí Grimoar Plus"))
+            }
         }
         }
     }

@@ -12,4 +12,5 @@ object SupportStore {
     val message: MutableStateFlow<String?> = MutableStateFlow(null)
     fun connect(ctx: Context) { Supporter.load(ctx) }
     fun buy(activity: Activity) {}
+    fun restore() {}
 }

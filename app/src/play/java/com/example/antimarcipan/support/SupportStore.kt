@@ -1,5 +1,7 @@
 package com.example.antimarcipan.support
 
+import com.example.antimarcipan.i18n.tr
+
 import android.app.Activity
 import android.content.Context
 import com.android.billingclient.api.AcknowledgePurchaseParams
@@ -21,7 +23,7 @@ import kotlinx.coroutines.flow.StateFlow
  */
 object SupportStore {
     const val AVAILABLE = true
-    const val PRODUCT_ID = "kafe_pro_autora"
+    const val PRODUCT_ID = "grimoar_plus"
 
     private val _price = MutableStateFlow<String?>(null)
     val price: StateFlow<String?> = _price
@@ -39,7 +41,7 @@ object SupportStore {
             .setListener { result, purchases ->
                 if (result.responseCode == BillingClient.BillingResponseCode.OK) purchases?.forEach(::handle)
                 else if (result.responseCode != BillingClient.BillingResponseCode.USER_CANCELED)
-                    message.value = "Nákup se nepovedl (${result.responseCode})."
+                    message.value = tr("Nákup se nepovedl ({0}).", result.responseCode)
             }
             .enablePendingPurchases(PendingPurchasesParams.newBuilder().enableOneTimeProducts().build())
             .enableAutoServiceReconnection()
@@ -71,7 +73,7 @@ object SupportStore {
     }
 
     /** Obnoví odznak po přeinstalaci / na jiném zařízení se stejným účtem. */
-    private fun restore() {
+    fun restore() {
         client?.queryPurchasesAsync(
             QueryPurchasesParams.newBuilder().setProductType(BillingClient.ProductType.INAPP).build()
         ) { _, list -> list.forEach(::handle) }
@@ -80,11 +82,11 @@ object SupportStore {
     private fun handle(p: Purchase) {
         if (PRODUCT_ID !in p.products) return
         if (p.purchaseState != Purchase.PurchaseState.PURCHASED) {
-            if (p.purchaseState == Purchase.PurchaseState.PENDING) message.value = "Platba čeká na dokončení."
+            if (p.purchaseState == Purchase.PurchaseState.PENDING) message.value = tr("Platba čeká na dokončení.")
             return
         }
         Supporter.grant(app)
-        message.value = "Díky za kafe! ☕ Hvězdička ✦ na Nástěnce je tvoje."
+        message.value = tr("Díky! Grimoar Plus je odemčený.")
         if (!p.isAcknowledged) {
             client?.acknowledgePurchase(
                 AcknowledgePurchaseParams.newBuilder().setPurchaseToken(p.purchaseToken).build()
@@ -94,7 +96,7 @@ object SupportStore {
 
     fun buy(activity: Activity) {
         val d = details
-        if (d == null) { message.value = "Obchod zatím není dostupný, zkus to za chvíli."; loadDetails(); return }
+        if (d == null) { message.value = tr("Obchod zatím není dostupný, zkus to za chvíli."); loadDetails(); return }
         val flow = BillingFlowParams.newBuilder().setProductDetailsParamsList(
             listOf(BillingFlowParams.ProductDetailsParams.newBuilder().setProductDetails(d).build())
         ).build()

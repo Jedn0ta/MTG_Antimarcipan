@@ -460,31 +460,16 @@ private fun ThumbSizeCard() {
     }
 }
 
-/** „Kafe pro autora“ — dobrovolný příspěvek, odemkne odznak Mecenáš. */
+/** Grimoar Plus — jednorázové odemknutí (jen verze z Google Play). */
 @Composable
 private fun SupportCard() {
-    val supporter by com.example.antimarcipan.support.Supporter.active.collectAsStateWithLifecycle()
-    if (!com.example.antimarcipan.support.SupportStore.AVAILABLE && !supporter) return
-    val price by com.example.antimarcipan.support.SupportStore.price.collectAsStateWithLifecycle()
-    val msg by com.example.antimarcipan.support.SupportStore.message.collectAsStateWithLifecycle()
-    val activity = LocalContext.current as? android.app.Activity
+    if (!com.example.antimarcipan.support.SupportStore.AVAILABLE) return
+    val unlocked = com.example.antimarcipan.support.rememberPlusUnlocked()
     Card(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp)) {
-        Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text("☕ Kafe pro autora", style = MaterialTheme.typography.titleMedium)
-            if (supporter) {
-                Text(tr("Díky! Jsi Mecenáš — kamarádi uvidí u tvých zpráv na Nástěnce zlatou hvězdičku ✦."), style = MaterialTheme.typography.bodySmall)
-            } else {
-                Text(
-                    tr("Grimoar je zdarma a všechny funkce zůstanou zdarma. Pokud se ti líbí, můžeš autorovi koupit kafe. ") +
-                        tr("Jako poděkování dostaneš zlatou hvězdičku ✦ u svých zpráv na Nástěnce — nic víc, jen pro radost."),
-                    style = MaterialTheme.typography.bodySmall,
-                )
-                androidx.compose.material3.Button(onClick = { activity?.let { com.example.antimarcipan.support.SupportStore.buy(it) } }) {
-                    Text(tr("Koupit kafe") + (price?.let { " · $it" } ?: ""))
-                }
-            }
-            msg?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary) }
-        }
+        if (unlocked) Column(Modifier.fillMaxWidth().padding(16.dp)) {
+            Text("✦ Grimoar Plus", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
+            Text(tr("Díky! Máš Grimoar Plus — počítadlo životů i zakládání anket jsou odemčené."), style = MaterialTheme.typography.bodySmall)
+        } else com.example.antimarcipan.support.PlusOffer("", Modifier.fillMaxWidth())
     }
 }
 
